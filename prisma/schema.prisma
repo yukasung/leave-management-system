@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  name          String
+  password      String?
+  role          Role     @default(EMPLOYEE)
+  departmentId  String?
+  department    Department? @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  managedDepartments Department[] @relation("DepartmentManager")
+  leaveRequests LeaveRequest[]
+  leaveBalances LeaveBalance[]
+  approvals     Approval[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  createdAt     DateTime @default(now())
+}
+
+model Department {
+  id    String @id @default(uuid())
+  name  String @unique
+  managerId String?
+  manager   User? @relation("DepartmentManager", fields: [managerId], references: [id])
+  users     User[] @relation("DepartmentMembers")
+}
+
+model LeaveType {
+  id              String @id @default(uuid())
+  name            String @unique
+  daysPerYear     Int
+  requireDocument Boolean @default(false)
+  leaveRequests   LeaveRequest[]
+  leaveBalances   LeaveBalance[]
+}
+
+model LeaveBalance {
+  id          String   @id @default(uuid())
+  userId      String
+  leaveTypeId String
+  year        Int
+  totalDays   Int
+  usedDays    Int      @default(0)
+
+  user        User     @relation(fields: [userId], references: [id])
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
+
+  @@unique([userId, leaveTypeId, year])
+}
+
+model LeaveRequest {
+  id          String     @id @default(uuid())
+  userId      String
+  leaveTypeId String
+  startDate   DateTime
+  endDate     DateTime
+  totalDays   Float
+  reason      String?
+  documentUrl String?
+  status      LeaveStatus @default(PENDING)
+  approvals   Approval[]
+  createdAt   DateTime @default(now())
+
+  user        User       @relation(fields: [userId], references: [id])
+  leaveType   LeaveType  @relation(fields: [leaveTypeId], references: [id])
+}
+
+model Approval {
+  id            String @id @default(uuid())
+  leaveRequestId String
+  approverId    String
+  level         Int
+  status        ApprovalStatus @default(PENDING)
+  approvedAt    DateTime?
+
+  leaveRequest  LeaveRequest @relation(fields: [leaveRequestId], references: [id])
+  approver      User @relation(fields: [approverId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  HR
+  MANAGER
+  EMPLOYEE
+  EXECUTIVE
+}
+
+enum LeaveStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User @relation(fields: [userId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String
+  action      String
+  entityType  String
+  entityId    String
+  description String?
+  createdAt   DateTime @default(now())
+
+  user        User @relation(fields: [userId], references: [id])
+}
