@@ -139,6 +139,7 @@ enum LeaveStatus {
   APPROVED
   REJECTED
   CANCELLED
+  CANCEL_REQUESTED
 }
 
 enum ApprovalStatus {

@@ -7,6 +7,7 @@ import {
   createDraft,
   submitLeave,
   updateLeave,
+  cancelLeave,
   LeaveServiceError,
 } from '@/lib/leave-request.service'
 
@@ -123,6 +124,47 @@ export async function createLeaveRequest(
   }
 }
 
+// ── Action: cancel or request cancellation of a leave request ─────────────────
+
+export type CancelState = {
+  success?: boolean
+  requestedCancellation?: boolean   // true when APPROVED → CANCEL_REQUESTED
+  message?: string
+  error?: string
+}
+
+export async function cancelLeaveRequest(leaveId: string): Promise<CancelState> {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { error: 'กรุณาเข้าสู่ระบบก่อน' }
+  }
+
+  try {
+    const { requestedCancellation } = await cancelLeave(
+      session.user.id,
+      session.user.role,
+      leaveId
+    )
+
+    revalidatePath('/leave-request')
+    revalidatePath('/my-leaves')
+    revalidatePath('/hr/leave-requests')
+    revalidatePath('/manager/leave-requests')
+
+    if (requestedCancellation) {
+      return {
+        success: true,
+        requestedCancellation: true,
+        message: 'ส่งคำขอยกเลิกเรียบร้อยแล้ว อยู่ระหว่างรอ HR พิจารณา',
+      }
+    }
+
+    return { success: true, message: 'ยกเลิกคำขอลาเรียบร้อยแล้ว' }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'
+    return { error: message }
+  }
+}
 // ── Action: submit DRAFT → PENDING ───────────────────────────────────────────
 
 export type SubmitState = {

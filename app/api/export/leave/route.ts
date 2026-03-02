@@ -22,12 +22,13 @@ function formatDate(date: Date): string {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  DRAFT: 'ร่าง',
-  PENDING: 'รอ Manager',
-  IN_REVIEW: 'รอ HR',
-  APPROVED: 'อนุมัติแล้ว',
-  REJECTED: 'ปฏิเสธ',
-  CANCELLED: 'ยกเลิกแล้ว',
+  DRAFT:            'ร่าง',
+  PENDING:          'รอ Manager',
+  IN_REVIEW:        'รอ HR',
+  APPROVED:         'อนุมัติแล้ว',
+  REJECTED:         'ปฏิเสธ',
+  CANCELLED:        'ยกเลิกแล้ว',
+  CANCEL_REQUESTED: 'ขอยกเลิก (รอ HR)',
 }
 
 export async function GET(req: NextRequest) {
