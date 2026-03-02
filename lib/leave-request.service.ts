@@ -176,7 +176,7 @@ export async function createDraft(
         totalDays,
         reason: reason || null,
         documentUrl: documentUrl || null,
-        status: 'DRAFT',
+        status: LeaveStatus.DRAFT,
       },
     })
 
