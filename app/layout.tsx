@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar, { type CurrentUser } from "@/app/components/Navbar";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,14 +26,21 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await auth()
-  const currentUser: CurrentUser | null = session?.user
-    ? {
-        id:    session.user.id,
-        name:  session.user.name ?? '',
-        email: session.user.email ?? '',
-        role:  session.user.role as CurrentUser['role'],
-      }
-    : null
+  let currentUser: CurrentUser | null = null
+
+  if (session?.user?.id) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { avatarUrl: true },
+    })
+    currentUser = {
+      id:        session.user.id,
+      name:      session.user.name ?? '',
+      email:     session.user.email ?? '',
+      role:      session.user.role as CurrentUser['role'],
+      avatarUrl: dbUser?.avatarUrl ?? null,
+    }
+  }
 
   return (
     <html lang="en">

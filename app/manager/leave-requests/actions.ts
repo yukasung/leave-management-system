@@ -56,7 +56,8 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
             leaveTypeId: true,
             startDate: true,
             totalDays: true,
-            durationType: true,
+            startDurationType: true,
+            endDurationType: true,
             leaveType: { select: { deductFromBalance: true } },
           },
         })
@@ -81,7 +82,7 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
             action: 'APPROVE_LEAVE',
             entityType: 'LeaveRequest',
             entityId: id,
-            description: `HR approved leave request: ${request.totalDays} day(s) [${request.durationType}]`,
+            description: `HR approved leave request: ${request.totalDays} day(s) [start:${request.startDurationType} end:${request.endDurationType}]`,
           },
         })
 

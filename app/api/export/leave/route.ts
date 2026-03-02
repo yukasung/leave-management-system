@@ -15,17 +15,19 @@ function escapeCSV(value: string | number | null | undefined): string {
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('th-TH', {
-    year: 'numeric',
+    day:   '2-digit',
     month: '2-digit',
-    day: '2-digit',
+    year:  'numeric',
   })
 }
 
 const STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'ร่าง',
   PENDING: 'รอ Manager',
   IN_REVIEW: 'รอ HR',
   APPROVED: 'อนุมัติแล้ว',
   REJECTED: 'ปฏิเสธ',
+  CANCELLED: 'ยกเลิกแล้ว',
 }
 
 export async function GET(req: NextRequest) {
@@ -80,7 +82,8 @@ export async function GET(req: NextRequest) {
     'วันที่เริ่ม',
     'วันที่สิ้นสุด',
     'จำนวนวัน',
-    'ช่วงเวลา',
+    'ช่วงเวลาวันแรก',
+    'ช่วงเวลาวันสุดท้าย',
     'สถานะ',
     'เหตุผล',
     'วันที่ส่งคำขอ',
@@ -95,7 +98,8 @@ export async function GET(req: NextRequest) {
     formatDate(req.startDate),
     formatDate(req.endDate),
     req.totalDays,
-    durationLabel(req.durationType as LeaveDurationType),
+    durationLabel(req.startDurationType as LeaveDurationType),
+    durationLabel(req.endDurationType as LeaveDurationType),
     STATUS_LABELS[req.status] ?? req.status,
     req.reason ?? '',
     formatDate(req.createdAt),

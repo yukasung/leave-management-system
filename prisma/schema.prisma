@@ -79,13 +79,14 @@ model LeaveRequest {
   id          String     @id @default(uuid())
   userId      String
   leaveTypeId String
-  startDate    DateTime
-  endDate      DateTime
-  durationType LeaveDurationType @default(FULL_DAY)
-  totalDays    Float
+  startDate         DateTime
+  endDate           DateTime
+  startDurationType LeaveDurationType @default(FULL_DAY)
+  endDurationType   LeaveDurationType @default(FULL_DAY)
+  totalDays         Float
   reason      String?
   documentUrl String?
-  status      LeaveStatus @default(PENDING)
+  status      LeaveStatus @default(DRAFT)
   approvals   Approval[]
   createdAt   DateTime @default(now())
 
@@ -132,10 +133,12 @@ enum UserRole {
 }
 
 enum LeaveStatus {
+  DRAFT
   PENDING
   IN_REVIEW
   APPROVED
   REJECTED
+  CANCELLED
 }
 
 enum ApprovalStatus {

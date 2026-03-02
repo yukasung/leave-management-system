@@ -19,13 +19,7 @@ const STATUS_BADGE: Record<string, string> = {
   REJECTED: 'bg-red-100 text-red-700',
 }
 
-function formatDate(date: Date) {
-  return date.toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
+import { formatDate } from '@/lib/format-date'
 
 export default async function HRLeaveRequestsPage({
   searchParams,
@@ -140,7 +134,10 @@ export default async function HRLeaveRequestsPage({
                   <td className="px-4 py-3 text-gray-600">{formatDate(req.endDate)}</td>
                   <td className="px-4 py-3 text-gray-600 font-semibold">{req.totalDays}</td>
                   <td className="px-4 py-3 text-xs text-gray-600">
-                    {req.durationType === 'FULL_DAY' ? 'เต็มวัน' : req.durationType === 'HALF_DAY_MORNING' ? 'ครึ่งวันเช้า' : 'ครึ่งวันบ่าย'}
+                    {req.startDurationType === req.endDurationType
+                      ? (req.startDurationType === 'FULL_DAY' ? 'เต็มวัน' : req.startDurationType === 'HALF_DAY_MORNING' ? 'ครึ่งวันเช้า' : 'ครึ่งวันบ่าย')
+                      : `เริ่ม: ${req.startDurationType === 'HALF_DAY_MORNING' ? 'เช้า' : req.startDurationType === 'HALF_DAY_AFTERNOON' ? 'บ่าย' : 'เต็มวัน'} / สิ้นสุด: ${req.endDurationType === 'HALF_DAY_MORNING' ? 'เช้า' : req.endDurationType === 'HALF_DAY_AFTERNOON' ? 'บ่าย' : 'เต็มวัน'}`
+                    }
                   </td>
                   <td className="px-4 py-3">
                     <span

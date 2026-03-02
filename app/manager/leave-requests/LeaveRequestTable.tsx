@@ -3,12 +3,14 @@
 import { useState, useTransition } from 'react'
 import { approveLeaveRequest, rejectLeaveRequest } from './actions'
 import { durationLabel, type LeaveDurationType } from '@/lib/leave-calc'
+import { formatDate } from '@/lib/format-date'
 
 type LeaveRequest = {
   id: string
   startDate: Date
   endDate: Date
-  durationType: string
+  startDurationType: string
+  endDurationType: string
   totalDays: number
   reason: string | null
   createdAt: Date
@@ -84,21 +86,24 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
               </td>
               <td className="px-5 py-4 text-gray-700">{req.leaveType.name}</td>
               <td className="px-5 py-4 text-gray-700 whitespace-nowrap">
-                {req.startDate.toLocaleDateString('th-TH')}
+                {formatDate(req.startDate)}
                 {' — '}
-                {req.endDate.toLocaleDateString('th-TH')}
+                {formatDate(req.endDate)}
               </td>
               <td className="px-5 py-4 text-center font-semibold text-gray-900">
                 {req.totalDays} วัน
               </td>
               <td className="px-5 py-4 text-xs text-gray-600">
-                {durationLabel(req.durationType as LeaveDurationType)}
+                {req.startDurationType === req.endDurationType
+                  ? durationLabel(req.startDurationType as LeaveDurationType)
+                  : `เริ่ม: ${durationLabel(req.startDurationType as LeaveDurationType)} / สิ้นสุด: ${durationLabel(req.endDurationType as LeaveDurationType)}`
+                }
               </td>
               <td className="px-5 py-4 text-gray-600 max-w-xs truncate">
                 {req.reason || <span className="text-gray-400">—</span>}
               </td>
               <td className="px-5 py-4 text-gray-500 whitespace-nowrap">
-                {req.createdAt.toLocaleDateString('th-TH')}
+                {formatDate(req.createdAt)}
               </td>
               <td className="px-5 py-4">
                 <ActionButtons id={req.id} />

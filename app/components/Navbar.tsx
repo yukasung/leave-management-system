@@ -6,10 +6,11 @@ import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
 
 export type CurrentUser = {
-  id:    string
-  name:  string
-  email: string
-  role:  'ADMIN' | 'HR' | 'MANAGER' | 'EMPLOYEE' | 'EXECUTIVE'
+  id:        string
+  name:      string
+  email:     string
+  role:      'ADMIN' | 'HR' | 'MANAGER' | 'EMPLOYEE' | 'EXECUTIVE'
+  avatarUrl: string | null
 }
 
 // ── Role badge config ─────────────────────────────────────────────────────────
@@ -130,6 +131,7 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
   if (!currentUser) return null
 
   const { name, role } = currentUser
+  const initials = name.trim().split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
   const roleConf = ROLE_CONFIG[role]
   const groups   = getNavGroups(role)
 
@@ -183,8 +185,20 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
           </div>
         </div>
 
-        {/* Right: badge + name + logout + hamburger */}
+        {/* Right: avatar + badge + name + logout + hamburger */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* Avatar circle — links to profile */}
+          <Link href="/profile" className="shrink-0 h-8 w-8 rounded-full overflow-hidden ring-2 ring-gray-200 hover:ring-blue-400 transition">
+            {currentUser.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={currentUser.avatarUrl} alt={name} className="h-full w-full object-cover" />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center bg-linear-to-br from-blue-500 to-indigo-600 text-white text-xs font-bold select-none">
+                {initials}
+              </span>
+            )}
+          </Link>
+
           <span
             className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleConf.cls}`}
           >
@@ -251,6 +265,17 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
           {/* User row */}
           <div className="flex items-center justify-between py-3 border-b border-gray-100 mb-2">
             <div className="flex items-center gap-2 min-w-0">
+              {/* Avatar */}
+              <Link href="/profile" className="shrink-0 h-8 w-8 rounded-full overflow-hidden ring-2 ring-gray-200">
+                {currentUser.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={currentUser.avatarUrl} alt={name} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center bg-linear-to-br from-blue-500 to-indigo-600 text-white text-xs font-bold select-none">
+                    {initials}
+                  </span>
+                )}
+              </Link>
               <span
                 className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleConf.cls}`}
               >

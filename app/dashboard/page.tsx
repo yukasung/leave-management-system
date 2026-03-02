@@ -117,7 +117,7 @@ export default async function DashboardPage() {
                 <tr key={req.id} className="hover:bg-gray-50 transition">
                   <td className="px-5 py-3 font-medium text-gray-900">{req.leaveType.name}</td>
                   <td className="px-5 py-3 text-gray-600 whitespace-nowrap">
-                    {req.startDate.toLocaleDateString('th-TH')} — {req.endDate.toLocaleDateString('th-TH')}
+                    {new Date(req.startDate).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' })} — {new Date(req.endDate).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                   </td>
                   <td className="px-5 py-3 text-center text-gray-700">{req.totalDays} วัน</td>
                   <td className="px-5 py-3 text-center">

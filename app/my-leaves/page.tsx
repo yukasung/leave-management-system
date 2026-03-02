@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { durationLabel } from '@/lib/leave-calc'
+import { durationLabel, type LeaveDurationType } from '@/lib/leave-calc'
+import { formatDate } from '@/lib/format-date'
 
 const statusLabel: Record<string, { label: string; className: string }> = {
   PENDING:   { label: 'รออนุมัติ',  className: 'bg-yellow-100 text-yellow-700' },
@@ -57,16 +58,19 @@ export default async function MyLeaveHistoryPage() {
                       {req.leaveType.name}
                     </td>
                     <td className="px-5 py-4 text-gray-700 whitespace-nowrap">
-                      {req.startDate.toLocaleDateString('th-TH')}
+                      {formatDate(req.startDate)}
                     </td>
                     <td className="px-5 py-4 text-gray-700 whitespace-nowrap">
-                      {req.endDate.toLocaleDateString('th-TH')}
+                      {formatDate(req.endDate)}
                     </td>
                     <td className="px-5 py-4 text-center font-semibold text-gray-900">
                       {req.totalDays} วัน
                     </td>
                     <td className="px-5 py-4 text-gray-600 text-xs">
-                      {durationLabel(req.durationType as Parameters<typeof durationLabel>[0])}
+                      {req.startDurationType === req.endDurationType
+                        ? durationLabel(req.startDurationType as LeaveDurationType)
+                        : `เริ่ม: ${durationLabel(req.startDurationType as LeaveDurationType)} / สิ้นสุด: ${durationLabel(req.endDurationType as LeaveDurationType)}`
+                      }
                     </td>
                     <td className="px-5 py-4 text-gray-600 max-w-xs truncate">
                       {req.reason || <span className="text-gray-400">—</span>}
@@ -77,7 +81,7 @@ export default async function MyLeaveHistoryPage() {
                       </span>
                     </td>
                     <td className="px-5 py-4 text-gray-500 whitespace-nowrap">
-                      {req.createdAt.toLocaleDateString('th-TH')}
+                      {formatDate(req.createdAt)}
                     </td>
                   </tr>
                 )
