@@ -8,6 +8,8 @@ import { prisma } from './prisma'
 import { getUsedLeaveDaysThisYear } from './leave-policy'
 import type { LeaveDurationType } from './leave-calc'
 import { Prisma, LeaveStatus, ApprovalStatus } from '@prisma/client'
+import { isPrivileged, roleLabel } from './role-guard'
+import { logLeaveFieldChanges, leaveFieldChange } from './leave-audit-log.service'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -188,6 +190,13 @@ export async function createDraft(
       },
     })
 
+    await logLeaveFieldChanges(tx, req.id, userId, [
+      leaveFieldChange.status(null, 'DRAFT'),
+      leaveFieldChange.leaveTypeId(null, leaveTypeId),
+      leaveFieldChange.startDate(null, startDate),
+      leaveFieldChange.endDate(null, endDate),
+    ])
+
     return req
   })
 
@@ -198,11 +207,13 @@ export async function createDraft(
  * Edit a leave request's fields.
  *
  * Rules:
- *   DRAFT     → full edit allowed.
- *   PENDING   → blocked: "Cannot edit pending leave. Please cancel and reapply."
- *   APPROVED  → blocked: "Approved leave cannot be edited."
- *   Any other status (IN_REVIEW, REJECTED, CANCELLED) → blocked.
- *   Start date already in the past → only HR / ADMIN may update.
+ *   DRAFT                  → owner or HR/ADMIN: full edit (policy checks apply).
+ *   PENDING                → blocked: "Cannot edit pending leave. Please cancel and reapply."
+ *   APPROVED               → HR/ADMIN only: override edit, bypasses normal policy
+ *                            checks, adjusts balance, logs HR_OVERRIDE_UPDATE_LEAVE.
+ *   APPROVED (non-HR)      → blocked: "Approved leave cannot be edited."
+ *   IN_REVIEW / REJECTED / CANCELLED / CANCEL_REQUESTED → blocked.
+ *   Start date in the past → only HR/ADMIN may edit.
  *
  * Throws LeaveServiceError on any violation.
  */
@@ -218,15 +229,21 @@ export async function updateLeave(
     reason, documentUrl,
   } = input
 
-  // ── Load existing leave request ───────────────────────────────────────────
+  const callerIsPrivileged = isPrivileged(callerRole)
+
+  // ── Load existing leave request (with old leave type for balance adjustment) ─
   const leave = await prisma.leaveRequest.findUnique({
     where: { id: leaveId },
     select: {
       userId:      true,
       status:      true,
       startDate:   true,
+      endDate:     true,
       leaveTypeId: true,
       totalDays:   true,
+      leaveType: {
+        select: { name: true, deductFromBalance: true },
+      },
     },
   })
 
@@ -234,9 +251,8 @@ export async function updateLeave(
     throw new LeaveServiceError('ไม่พบคำขอลา')
   }
 
-  // ── Ownership: only the owner (or HR/ADMIN) can edit ──────────────────────
-  const isPrivileged = callerRole === 'HR' || callerRole === 'ADMIN'
-  if (leave.userId !== callerId && !isPrivileged) {
+  // ── Ownership: owner or HR/ADMIN ──────────────────────────────────────────
+  if (leave.userId !== callerId && !callerIsPrivileged) {
     throw new LeaveServiceError('คุณไม่มีสิทธิ์แก้ไขคำขอลานี้')
   }
 
@@ -247,32 +263,124 @@ export async function updateLeave(
     )
   }
   if (leave.status === LeaveStatus.APPROVED) {
-    throw new LeaveServiceError('Approved leave cannot be edited.')
-  }
-  if (leave.status !== LeaveStatus.DRAFT) {
-    // IN_REVIEW, REJECTED, CANCELLED — all blocked for editing
+    if (!callerIsPrivileged) {
+      throw new LeaveServiceError('Approved leave cannot be edited.')
+    }
+    // HR/ADMIN override path — handled separately below
+  } else if (leave.status !== LeaveStatus.DRAFT) {
+    // IN_REVIEW, REJECTED, CANCELLED, CANCEL_REQUESTED — all blocked
     throw new LeaveServiceError(
       `ไม่สามารถแก้ไขคำขอลาที่มีสถานะ "${leave.status}" ได้`
     )
   }
 
-  // ── Past-date gate: only HR / ADMIN may touch past leave ─────────────────
+  // ── Past-date gate: only HR/ADMIN may touch past leave ────────────────────
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const leaveStart = new Date(leave.startDate)
   leaveStart.setHours(0, 0, 0, 0)
 
-  if (leaveStart < today && !isPrivileged) {
+  if (leaveStart < today && !callerIsPrivileged) {
     throw new LeaveServiceError(
       'ไม่สามารถแก้ไขคำขอลาที่ผ่านวันเริ่มต้นแล้ว กรุณาติดต่อ HR'
     )
   }
 
   // ── Load new leave type ───────────────────────────────────────────────────
-  const leaveType = await prisma.leaveType.findUnique({ where: { id: leaveTypeId } })
-  if (!leaveType) {
+  const newLeaveType = await prisma.leaveType.findUnique({ where: { id: leaveTypeId } })
+  if (!newLeaveType) {
     throw new LeaveServiceError('ไม่พบประเภทการลา', 'leaveTypeId')
   }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // HR OVERRIDE PATH — edit an APPROVED leave
+  // Bypasses normal policy checks (quota, attachment) since this is an
+  // administrative correction.  Balance is adjusted: restore old, deduct new.
+  // ════════════════════════════════════════════════════════════════════════════
+  if (leave.status === LeaveStatus.APPROVED) {
+    const oldLeaveTypeId  = leave.leaveTypeId
+    const oldTotalDays    = leave.totalDays
+    const oldDeducts      = leave.leaveType.deductFromBalance
+    const newDeducts      = newLeaveType.deductFromBalance
+    const oldYear         = new Date(leave.startDate).getFullYear()
+    const newYear         = startDate.getFullYear()
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // 1. Restore balance for the old approved leave
+      if (oldDeducts) {
+        await tx.leaveBalance.updateMany({
+          where: { userId: leave.userId, leaveTypeId: oldLeaveTypeId, year: oldYear },
+          data:  { usedDays: { decrement: oldTotalDays } },
+        })
+      }
+
+      // 2. Apply new leave fields
+      await tx.leaveRequest.update({
+        where: { id: leaveId },
+        data:  {
+          leaveTypeId,
+          startDate,
+          endDate,
+          startDurationType,
+          endDurationType,
+          totalDays,
+          reason:      reason || null,
+          documentUrl: documentUrl || null,
+          // Status stays APPROVED — HR correction, not a re-approval
+        },
+      })
+
+      // 3. Deduct balance for the new adjusted leave
+      if (newDeducts) {
+        await tx.leaveBalance.updateMany({
+          where: { userId: leave.userId, leaveTypeId, year: newYear },
+          data:  { usedDays: { increment: totalDays } },
+        })
+      }
+
+      // 4. Mandatory HR override audit log
+      await tx.auditLog.create({
+        data: {
+          userId:      callerId,
+          action:      'HR_OVERRIDE_UPDATE_LEAVE',
+          entityType:  'LeaveRequest',
+          entityId:    leaveId,
+          description:
+            `[${roleLabel(callerRole)} OVERRIDE] Edited approved leave: ` +
+            `${leave.leaveType.name} → ${newLeaveType.name}, ` +
+            `${oldTotalDays} → ${totalDays} day(s) ` +
+            `[start:${startDurationType} end:${endDurationType}]` +
+            (oldDeducts || newDeducts ? ` | balance adjusted` : ''),
+        },
+      })
+
+      // 5. Field-level change log
+      await logLeaveFieldChanges(tx, leaveId, callerId, [
+        leaveFieldChange.leaveTypeId(oldLeaveTypeId, leaveTypeId),
+        leaveFieldChange.startDate(leave.startDate, startDate),
+        leaveFieldChange.endDate(leave.endDate, endDate),
+      ])
+
+      // 6. Notify leave owner of the HR correction
+      await tx.notification.create({
+        data: {
+          userId:  leave.userId,
+          message:
+            `คำขอลาของคุณถูกแก้ไขโดย ${roleLabel(callerRole)}: ` +
+            `${newLeaveType.name} จำนวน ${totalDays} วัน`,
+          isRead: false,
+        },
+      })
+    })
+
+    return
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // NORMAL PATH — edit a DRAFT leave (owner or HR/ADMIN)
+  // Full policy checks apply.
+  // ════════════════════════════════════════════════════════════════════════════
+  const leaveType = newLeaveType
 
   // ── Policy: maxDaysPerRequest ─────────────────────────────────────────────
   if (leaveType.maxDaysPerRequest !== null && totalDays > leaveType.maxDaysPerRequest) {
@@ -281,11 +389,9 @@ export async function updateLeave(
     throw new LeaveServiceError(msg)
   }
 
-  // ── Policy: maxDaysPerYear (exclude this leave's own existing total) ───────
+  // ── Policy: maxDaysPerYear ────────────────────────────────────────────────
   if (leaveType.maxDaysPerYear !== null) {
     const used = await getUsedLeaveDaysThisYear(leave.userId, leaveTypeId)
-    // Days previously counted for this request are already excluded because
-    // status is DRAFT (getUsedLeaveDaysThisYear only counts APPROVED).
     const remaining = leaveType.maxDaysPerYear - used
     if (used + totalDays > leaveType.maxDaysPerYear) {
       const msg = `เกินสิทธิ์ลาประจำปี "${leaveType.name}" (ใช้ไปแล้ว ${used} วัน / สูงสุด ${leaveType.maxDaysPerYear} วัน · คงเหลือ ${remaining} วัน)`
@@ -302,7 +408,7 @@ export async function updateLeave(
     )
   }
 
-  // ── Transaction: balance check (if type changed) + update ────────────────
+  // ── Transaction: balance check + update ──────────────────────────────────
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const year = startDate.getFullYear()
 
@@ -327,7 +433,7 @@ export async function updateLeave(
         startDurationType,
         endDurationType,
         totalDays,
-        reason: reason || null,
+        reason:      reason || null,
         documentUrl: documentUrl || null,
       },
     })
@@ -338,9 +444,15 @@ export async function updateLeave(
         action:      'UPDATE_LEAVE_DRAFT',
         entityType:  'LeaveRequest',
         entityId:    leaveId,
-        description: `Leave draft updated by ${isPrivileged ? callerRole : 'owner'}: ${leaveType.name} — ${totalDays} day(s) [start:${startDurationType} end:${endDurationType}]`,
+        description: `Leave draft updated by ${callerIsPrivileged ? roleLabel(callerRole) : 'owner'}: ${leaveType.name} — ${totalDays} day(s) [start:${startDurationType} end:${endDurationType}]`,
       },
     })
+
+    await logLeaveFieldChanges(tx, leaveId, callerId, [
+      leaveFieldChange.leaveTypeId(leave.leaveTypeId, leaveTypeId),
+      leaveFieldChange.startDate(leave.startDate, startDate),
+      leaveFieldChange.endDate(leave.endDate, endDate),
+    ])
   })
 }
 
@@ -398,6 +510,10 @@ export async function submitLeave(
       },
     })
 
+    await logLeaveFieldChanges(tx, leaveId, userId, [
+      leaveFieldChange.status('DRAFT', 'PENDING'),
+    ])
+
     // Assign approver + notify
     if (approverId) {
       // Remove any previous approval records for this draft (safety)
@@ -449,7 +565,7 @@ export async function cancelLeave(
   callerRole: string,
   leaveId: string
 ): Promise<{ requestedCancellation: boolean }> {
-  const isPrivileged = callerRole === 'HR' || callerRole === 'ADMIN'
+  const callerIsPrivileged = isPrivileged(callerRole)
 
   // ── Load leave request ────────────────────────────────────────────────────
   const leave = await prisma.leaveRequest.findUnique({
@@ -477,7 +593,7 @@ export async function cancelLeave(
   }
 
   // ── Ownership ─────────────────────────────────────────────────────────────
-  if (leave.userId !== callerId && !isPrivileged) {
+  if (leave.userId !== callerId && !callerIsPrivileged) {
     throw new LeaveServiceError('คุณไม่มีสิทธิ์ยกเลิกคำขอลานี้')
   }
 
@@ -493,7 +609,7 @@ export async function cancelLeave(
 
   // ── CANCEL_REQUESTED — only HR/ADMIN may proceed ──────────────────────────
   if (status === LeaveStatus.CANCEL_REQUESTED) {
-    if (!isPrivileged) {
+    if (!callerIsPrivileged) {
       throw new LeaveServiceError(
         'คำขอยกเลิกอยู่ระหว่างรอการพิจารณาจาก HR กรุณารอการดำเนินการ'
       )
@@ -512,12 +628,16 @@ export async function cancelLeave(
       await tx.auditLog.create({
         data: {
           userId:      callerId,
-          action:      'CANCEL_LEAVE_APPROVED',
+          action:      'HR_OVERRIDE_CANCEL_LEAVE',
           entityType:  'LeaveRequest',
           entityId:    leaveId,
-          description: `${callerRole} approved cancellation for ${leave.leaveType.name} — ${leave.totalDays} day(s) restored`,
+          description: `[${roleLabel(callerRole)} OVERRIDE] Approved cancellation request: ${leave.leaveType.name} — ${leave.totalDays} day(s) restored`,
         },
       })
+
+      await logLeaveFieldChanges(tx, leaveId, callerId, [
+        leaveFieldChange.status('CANCEL_REQUESTED', 'CANCELLED'),
+      ])
 
       await tx.notification.create({
         data: {
@@ -533,7 +653,7 @@ export async function cancelLeave(
   }
 
   // ── APPROVED — non-privileged owner → request cancellation ───────────────
-  if (status === LeaveStatus.APPROVED && !isPrivileged) {
+  if (status === LeaveStatus.APPROVED && !callerIsPrivileged) {
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.leaveRequest.update({
         where: { id: leaveId },
@@ -549,6 +669,10 @@ export async function cancelLeave(
           description: `Employee requested cancellation of approved leave: ${leave.leaveType.name} — ${leave.totalDays} day(s)`,
         },
       })
+
+      await logLeaveFieldChanges(tx, leaveId, callerId, [
+        leaveFieldChange.status('APPROVED', 'CANCEL_REQUESTED'),
+      ])
 
       // Notify all HR users
       const hrUsers = await tx.user.findMany({
@@ -573,6 +697,9 @@ export async function cancelLeave(
   // Also handles: DRAFT, PENDING, IN_REVIEW for any authorised caller
   const needsBalanceRestore =
     status === LeaveStatus.APPROVED && leave.leaveType.deductFromBalance
+  const auditAction = status === LeaveStatus.APPROVED
+    ? 'HR_OVERRIDE_CANCEL_LEAVE'
+    : 'CANCEL_LEAVE'
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.leaveRequest.update({
@@ -587,20 +714,27 @@ export async function cancelLeave(
     await tx.auditLog.create({
       data: {
         userId:      callerId,
-        action:      'CANCEL_LEAVE',
+        action:      auditAction,
         entityType:  'LeaveRequest',
         entityId:    leaveId,
-        description: `Leave cancelled (status was ${status}): ${leave.leaveType.name} — ${leave.totalDays} day(s)` +
-                     (needsBalanceRestore ? ' [balance restored]' : ''),
+        description: (status === LeaveStatus.APPROVED
+          ? `[${roleLabel(callerRole)} OVERRIDE] Cancelled approved leave`
+          : `Leave cancelled (status was ${status})`) +
+          `: ${leave.leaveType.name} — ${leave.totalDays} day(s)` +
+          (needsBalanceRestore ? ' [balance restored]' : ''),
       },
     })
+
+    await logLeaveFieldChanges(tx, leaveId, callerId, [
+      leaveFieldChange.status(status, 'CANCELLED'),
+    ])
 
     // Notify owner if someone else (HR/ADMIN) cancelled on their behalf
     if (callerId !== leave.userId) {
       await tx.notification.create({
         data: {
           userId:  leave.userId,
-          message: `คำขอลา "${leave.leaveType.name}" ของคุณถูกยกเลิกโดย ${callerRole}` +
+          message: `คำขอลา "${leave.leaveType.name}" ของคุณถูกยกเลิกโดย ${roleLabel(callerRole)}` +
                    (needsBalanceRestore ? ` (คืน ${leave.totalDays} วัน)` : ''),
           isRead:  false,
         },

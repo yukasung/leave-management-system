@@ -21,8 +21,9 @@ model User {
   leaveRequests LeaveRequest[]
   leaveBalances LeaveBalance[]
   approvals     Approval[]
-  auditLogs     AuditLog[]
-  notifications Notification[]
+  auditLogs         AuditLog[]
+  leaveAuditChanges LeaveAuditLog[] @relation("LeaveAuditChangedBy")
+  notifications     Notification[]
   employee      Employee?
   managedEmployees Employee[] @relation("EmployeeManager")
   createdAt     DateTime @default(now())
@@ -87,8 +88,9 @@ model LeaveRequest {
   reason      String?
   documentUrl String?
   status      LeaveStatus @default(DRAFT)
-  approvals   Approval[]
-  createdAt   DateTime @default(now())
+  approvals      Approval[]
+  leaveAuditLogs LeaveAuditLog[]
+  createdAt      DateTime @default(now())
 
   user        User       @relation(fields: [userId], references: [id])
   leaveType   LeaveType  @relation(fields: [leaveTypeId], references: [id])
@@ -204,4 +206,21 @@ model Employee {
   @@index([departmentId])
   @@index([managerId])
   @@index([userId])
+}
+
+model LeaveAuditLog {
+  id           String   @id @default(uuid())
+  leaveId      String
+  changedBy    String
+  fieldChanged String
+  oldValue     String?
+  newValue     String?
+  timestamp    DateTime @default(now())
+
+  leave         LeaveRequest @relation(fields: [leaveId], references: [id])
+  changedByUser User         @relation("LeaveAuditChangedBy", fields: [changedBy], references: [id])
+
+  @@index([leaveId])
+  @@index([changedBy])
+  @@map("leave_audit_logs")
 }

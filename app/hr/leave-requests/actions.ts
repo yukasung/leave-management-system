@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import type { ActionResult } from '@/lib/types'
+import { logLeaveFieldChanges, leaveFieldChange } from '@/lib/leave-audit-log.service'
 
 export async function hrApproveLeaveRequest(id: string): Promise<ActionResult> {
   try {
@@ -14,6 +15,11 @@ export async function hrApproveLeaveRequest(id: string): Promise<ActionResult> {
     }
 
     await prisma.$transaction(async (tx) => {
+      const oldLeave = await tx.leaveRequest.findUnique({
+        where: { id },
+        select: { status: true },
+      })
+
       const request = await tx.leaveRequest.update({
         where: { id },
         data: { status: 'APPROVED' },
@@ -39,6 +45,10 @@ export async function hrApproveLeaveRequest(id: string): Promise<ActionResult> {
           description: 'HR approved leave request',
         },
       })
+
+      await logLeaveFieldChanges(tx, id, session.user.id, [
+        leaveFieldChange.status(oldLeave?.status ?? null, 'APPROVED'),
+      ])
 
       await tx.notification.create({
         data: {
@@ -67,6 +77,11 @@ export async function hrRejectLeaveRequest(id: string): Promise<ActionResult> {
     }
 
     await prisma.$transaction(async (tx) => {
+      const oldLeave = await tx.leaveRequest.findUnique({
+        where: { id },
+        select: { status: true },
+      })
+
       const request = await tx.leaveRequest.update({
         where: { id },
         data: { status: 'REJECTED' },
@@ -81,6 +96,10 @@ export async function hrRejectLeaveRequest(id: string): Promise<ActionResult> {
           description: 'HR rejected leave request',
         },
       })
+
+      await logLeaveFieldChanges(tx, id, session.user.id, [
+        leaveFieldChange.status(oldLeave?.status ?? null, 'REJECTED'),
+      ])
 
       await tx.notification.create({
         data: {

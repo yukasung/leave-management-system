@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import type { ActionResult } from '@/lib/types'
+import { logLeaveFieldChanges, leaveFieldChange } from '@/lib/leave-audit-log.service'
 
 export async function approveLeaveRequest(id: string): Promise<ActionResult> {
   try {
@@ -16,6 +17,11 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
     }
 
     await prisma.$transaction(async (tx) => {
+      const oldLeave = await tx.leaveRequest.findUnique({
+        where: { id },
+        select: { status: true },
+      })
+
       if (role === 'MANAGER') {
         const request = await tx.leaveRequest.update({
           where: { id },
@@ -32,6 +38,10 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
             description: 'Manager approved leave request — pending HR review',
           },
         })
+
+        await logLeaveFieldChanges(tx, id, session.user.id, [
+          leaveFieldChange.status(oldLeave?.status ?? null, 'IN_REVIEW'),
+        ])
 
         const hrUsers = await tx.user.findMany({
           where: { role: 'HR' },
@@ -86,6 +96,10 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
           },
         })
 
+        await logLeaveFieldChanges(tx, id, session.user.id, [
+          leaveFieldChange.status(oldLeave?.status ?? null, 'APPROVED'),
+        ])
+
         await tx.notification.create({
           data: {
             userId: request.userId,
@@ -112,6 +126,11 @@ export async function rejectLeaveRequest(id: string): Promise<ActionResult> {
     if (!session?.user?.id) return { success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }
 
     await prisma.$transaction(async (tx) => {
+      const oldLeave = await tx.leaveRequest.findUnique({
+        where: { id },
+        select: { status: true },
+      })
+
       const request = await tx.leaveRequest.update({
         where: { id },
         data: { status: 'REJECTED' },
@@ -126,6 +145,10 @@ export async function rejectLeaveRequest(id: string): Promise<ActionResult> {
           description: 'Manager rejected leave request',
         },
       })
+
+      await logLeaveFieldChanges(tx, id, session.user.id, [
+        leaveFieldChange.status(oldLeave?.status ?? null, 'REJECTED'),
+      ])
 
       await tx.notification.create({
         data: {
