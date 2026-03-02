@@ -37,6 +37,17 @@ export type CreateLeaveResult = {
   leaveRequestId: string
 }
 
+export type UpdateLeaveInput = {
+  leaveTypeId:        string
+  startDate:          Date
+  endDate:            Date
+  startDurationType:  LeaveDurationType
+  endDurationType:    LeaveDurationType
+  totalDays:          number
+  reason:             string | null
+  documentUrl:        string | null
+}
+
 // ── Private helpers ──────────────────────────────────────────────────────────
 
 async function logPolicyRejection(
@@ -181,6 +192,156 @@ export async function createDraft(
   })
 
   return { leaveRequestId: leaveRequest.id }
+}
+
+/**
+ * Edit a leave request's fields.
+ *
+ * Rules:
+ *   DRAFT     → full edit allowed.
+ *   PENDING   → blocked: "Cannot edit pending leave. Please cancel and reapply."
+ *   APPROVED  → blocked: "Approved leave cannot be edited."
+ *   Any other status (IN_REVIEW, REJECTED, CANCELLED) → blocked.
+ *   Start date already in the past → only HR / ADMIN may update.
+ *
+ * Throws LeaveServiceError on any violation.
+ */
+export async function updateLeave(
+  callerId: string,
+  callerRole: string,
+  leaveId: string,
+  input: UpdateLeaveInput
+): Promise<void> {
+  const {
+    leaveTypeId, startDate, endDate,
+    startDurationType, endDurationType, totalDays,
+    reason, documentUrl,
+  } = input
+
+  // ── Load existing leave request ───────────────────────────────────────────
+  const leave = await prisma.leaveRequest.findUnique({
+    where: { id: leaveId },
+    select: {
+      userId:      true,
+      status:      true,
+      startDate:   true,
+      leaveTypeId: true,
+      totalDays:   true,
+    },
+  })
+
+  if (!leave) {
+    throw new LeaveServiceError('ไม่พบคำขอลา')
+  }
+
+  // ── Ownership: only the owner (or HR/ADMIN) can edit ──────────────────────
+  const isPrivileged = callerRole === 'HR' || callerRole === 'ADMIN'
+  if (leave.userId !== callerId && !isPrivileged) {
+    throw new LeaveServiceError('คุณไม่มีสิทธิ์แก้ไขคำขอลานี้')
+  }
+
+  // ── Status gate ───────────────────────────────────────────────────────────
+  if (leave.status === LeaveStatus.PENDING) {
+    throw new LeaveServiceError(
+      'Cannot edit pending leave. Please cancel and reapply.'
+    )
+  }
+  if (leave.status === LeaveStatus.APPROVED) {
+    throw new LeaveServiceError('Approved leave cannot be edited.')
+  }
+  if (leave.status !== LeaveStatus.DRAFT) {
+    // IN_REVIEW, REJECTED, CANCELLED — all blocked for editing
+    throw new LeaveServiceError(
+      `ไม่สามารถแก้ไขคำขอลาที่มีสถานะ "${leave.status}" ได้`
+    )
+  }
+
+  // ── Past-date gate: only HR / ADMIN may touch past leave ─────────────────
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const leaveStart = new Date(leave.startDate)
+  leaveStart.setHours(0, 0, 0, 0)
+
+  if (leaveStart < today && !isPrivileged) {
+    throw new LeaveServiceError(
+      'ไม่สามารถแก้ไขคำขอลาที่ผ่านวันเริ่มต้นแล้ว กรุณาติดต่อ HR'
+    )
+  }
+
+  // ── Load new leave type ───────────────────────────────────────────────────
+  const leaveType = await prisma.leaveType.findUnique({ where: { id: leaveTypeId } })
+  if (!leaveType) {
+    throw new LeaveServiceError('ไม่พบประเภทการลา', 'leaveTypeId')
+  }
+
+  // ── Policy: maxDaysPerRequest ─────────────────────────────────────────────
+  if (leaveType.maxDaysPerRequest !== null && totalDays > leaveType.maxDaysPerRequest) {
+    const msg = `เกินจำนวนวันลาสูงสุดต่อครั้ง: "${leaveType.name}" อนุญาตสูงสุด ${leaveType.maxDaysPerRequest} วัน (ขอลา ${totalDays} วัน)`
+    await logPolicyRejection(callerId, msg)
+    throw new LeaveServiceError(msg)
+  }
+
+  // ── Policy: maxDaysPerYear (exclude this leave's own existing total) ───────
+  if (leaveType.maxDaysPerYear !== null) {
+    const used = await getUsedLeaveDaysThisYear(leave.userId, leaveTypeId)
+    // Days previously counted for this request are already excluded because
+    // status is DRAFT (getUsedLeaveDaysThisYear only counts APPROVED).
+    const remaining = leaveType.maxDaysPerYear - used
+    if (used + totalDays > leaveType.maxDaysPerYear) {
+      const msg = `เกินสิทธิ์ลาประจำปี "${leaveType.name}" (ใช้ไปแล้ว ${used} วัน / สูงสุด ${leaveType.maxDaysPerYear} วัน · คงเหลือ ${remaining} วัน)`
+      await logPolicyRejection(callerId, msg)
+      throw new LeaveServiceError(msg)
+    }
+  }
+
+  // ── Policy: requiresAttachment ────────────────────────────────────────────
+  if (leaveType.requiresAttachment && !documentUrl) {
+    throw new LeaveServiceError(
+      `ประเภทการลา "${leaveType.name}" จำเป็นต้องแนบเอกสารประกอบ`,
+      'documentUrl'
+    )
+  }
+
+  // ── Transaction: balance check (if type changed) + update ────────────────
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const year = startDate.getFullYear()
+
+    if (leaveType.deductFromBalance) {
+      const balance = await tx.leaveBalance.findUnique({
+        where: { userId_leaveTypeId_year: { userId: leave.userId, leaveTypeId, year } },
+      })
+      const remaining = (balance?.totalDays ?? 0) - (balance?.usedDays ?? 0)
+      if (totalDays > remaining) {
+        throw new Error(
+          `สิทธิ์การลาไม่เพียงพอ (คงเหลือ ${remaining} วัน แต่ขอลา ${totalDays} วัน)`
+        )
+      }
+    }
+
+    await tx.leaveRequest.update({
+      where: { id: leaveId },
+      data: {
+        leaveTypeId,
+        startDate,
+        endDate,
+        startDurationType,
+        endDurationType,
+        totalDays,
+        reason: reason || null,
+        documentUrl: documentUrl || null,
+      },
+    })
+
+    await tx.auditLog.create({
+      data: {
+        userId:      callerId,
+        action:      'UPDATE_LEAVE_DRAFT',
+        entityType:  'LeaveRequest',
+        entityId:    leaveId,
+        description: `Leave draft updated by ${isPrivileged ? callerRole : 'owner'}: ${leaveType.name} — ${totalDays} day(s) [start:${startDurationType} end:${endDurationType}]`,
+      },
+    })
+  })
 }
 
 /**
