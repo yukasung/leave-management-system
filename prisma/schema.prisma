@@ -11,7 +11,10 @@ model User {
   email         String   @unique
   name          String
   password      String?
+  avatarUrl     String?
+  phone         String?
   role          Role     @default(EMPLOYEE)
+  isProbation   Boolean  @default(false)
   departmentId  String?
   department    Department? @relation("DepartmentMembers", fields: [departmentId], references: [id])
   managedDepartments Department[] @relation("DepartmentManager")
@@ -20,24 +23,42 @@ model User {
   approvals     Approval[]
   auditLogs     AuditLog[]
   notifications Notification[]
+  employee      Employee?
+  managedEmployees Employee[] @relation("EmployeeManager")
   createdAt     DateTime @default(now())
 }
 
 model Department {
-  id    String @id @default(uuid())
-  name  String @unique
+  id        String     @id @default(uuid())
+  name      String     @unique
   managerId String?
-  manager   User? @relation("DepartmentManager", fields: [managerId], references: [id])
-  users     User[] @relation("DepartmentMembers")
+  manager   User?      @relation("DepartmentManager", fields: [managerId], references: [id])
+  users     User[]     @relation("DepartmentMembers")
+  employees Employee[]
+  createdAt DateTime   @default(now())
+
+  @@index([name])
+}
+
+model Position {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  employees Employee[]
+  createdAt DateTime   @default(now())
+
+  @@index([name])
 }
 
 model LeaveType {
-  id              String @id @default(uuid())
-  name            String @unique
-  daysPerYear     Int
-  requireDocument Boolean @default(false)
-  leaveRequests   LeaveRequest[]
-  leaveBalances   LeaveBalance[]
+  id                   String  @id @default(uuid())
+  name                 String  @unique
+  maxDaysPerYear       Float?
+  maxDaysPerRequest    Float?
+  requiresAttachment   Boolean @default(false)
+  deductFromBalance    Boolean @default(true)
+  allowDuringProbation Boolean @default(true)
+  leaveRequests        LeaveRequest[]
+  leaveBalances        LeaveBalance[]
 }
 
 model LeaveBalance {
@@ -45,8 +66,8 @@ model LeaveBalance {
   userId      String
   leaveTypeId String
   year        Int
-  totalDays   Int
-  usedDays    Int      @default(0)
+  totalDays   Float
+  usedDays    Float    @default(0)
 
   user        User     @relation(fields: [userId], references: [id])
   leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
@@ -58,9 +79,10 @@ model LeaveRequest {
   id          String     @id @default(uuid())
   userId      String
   leaveTypeId String
-  startDate   DateTime
-  endDate     DateTime
-  totalDays   Float
+  startDate    DateTime
+  endDate      DateTime
+  durationType LeaveDurationType @default(FULL_DAY)
+  totalDays    Float
   reason      String?
   documentUrl String?
   status      LeaveStatus @default(PENDING)
@@ -69,6 +91,10 @@ model LeaveRequest {
 
   user        User       @relation(fields: [userId], references: [id])
   leaveType   LeaveType  @relation(fields: [leaveTypeId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Approval {
@@ -83,7 +109,21 @@ model Approval {
   approver      User @relation(fields: [approverId], references: [id])
 }
 
+enum LeaveDurationType {
+  FULL_DAY
+  HALF_DAY_MORNING
+  HALF_DAY_AFTERNOON
+}
+
 enum Role {
+  ADMIN
+  HR
+  MANAGER
+  EMPLOYEE
+  EXECUTIVE
+}
+
+enum UserRole {
   ADMIN
   HR
   MANAGER
@@ -124,4 +164,40 @@ model AuditLog {
   createdAt   DateTime @default(now())
 
   user        User @relation(fields: [userId], references: [id])
+}
+
+model Employee {
+  id           String      @id @default(uuid())
+  employeeCode String      @unique
+  firstName    String
+  lastName     String
+  email        String      @unique
+  phone        String?
+  avatarUrl    String?
+
+  // 1:1 link to User account (optional — employee may not have a login yet)
+  userId       String?     @unique
+  user         User?       @relation(fields: [userId], references: [id])
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  position     String
+  positionId   String?
+  positionRef  Position?   @relation(fields: [positionId], references: [id])
+
+  role         UserRole    @default(EMPLOYEE)
+
+  // Manager is a User account (so leave approvals work)
+  managerId    String?
+  manager      User?       @relation("EmployeeManager", fields: [managerId], references: [id])
+
+  isActive     Boolean  @default(true)
+  isProbation  Boolean  @default(true)
+
+  createdAt    DateTime @default(now())
+
+  @@index([departmentId])
+  @@index([managerId])
+  @@index([userId])
 }

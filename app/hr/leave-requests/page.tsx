@@ -69,12 +69,20 @@ export default async function HRLeaveRequestsPage({
   return (
     <div className="p-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">HR — ประวัติคำขอลาทั้งหมด</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          แสดง {requests.length} รายการ
-          {activeStatus !== 'ALL' ? ` · กรอง: ${STATUS_LABELS[activeStatus]}` : ''}
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">HR — ประวัติคำขอลาทั้งหมด</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            แสดง {requests.length} รายการ
+            {activeStatus !== 'ALL' ? ` · กรอง: ${STATUS_LABELS[activeStatus]}` : ''}
+          </p>
+        </div>
+        <a
+          href="/api/export/leave"
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+        >
+          Export CSV
+        </a>
       </div>
 
       {/* Filter tabs */}
@@ -112,6 +120,7 @@ export default async function HRLeaveRequestsPage({
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">วันที่เริ่ม</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">วันที่สิ้นสุด</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">จำนวนวัน</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600">ช่วงเวลา</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">สถานะ</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">การดำเนินการ</th>
               </tr>
@@ -129,7 +138,10 @@ export default async function HRLeaveRequestsPage({
                   <td className="px-4 py-3 text-gray-600">{req.leaveType.name}</td>
                   <td className="px-4 py-3 text-gray-600">{formatDate(req.startDate)}</td>
                   <td className="px-4 py-3 text-gray-600">{formatDate(req.endDate)}</td>
-                  <td className="px-4 py-3 text-gray-600">{req.totalDays}</td>
+                  <td className="px-4 py-3 text-gray-600 font-semibold">{req.totalDays}</td>
+                  <td className="px-4 py-3 text-xs text-gray-600">
+                    {req.durationType === 'FULL_DAY' ? 'เต็มวัน' : req.durationType === 'HALF_DAY_MORNING' ? 'ครึ่งวันเช้า' : 'ครึ่งวันบ่าย'}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE[req.status] ?? 'bg-gray-100 text-gray-600'}`}

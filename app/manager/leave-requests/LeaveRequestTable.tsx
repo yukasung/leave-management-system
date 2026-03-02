@@ -1,12 +1,14 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { approveLeaveRequest, rejectLeaveRequest } from './actions'
+import { durationLabel, type LeaveDurationType } from '@/lib/leave-calc'
 
 type LeaveRequest = {
   id: string
   startDate: Date
   endDate: Date
+  durationType: string
   totalDays: number
   reason: string | null
   createdAt: Date
@@ -16,23 +18,35 @@ type LeaveRequest = {
 
 function ActionButtons({ id }: { id: string }) {
   const [isPending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+
+  async function handle(action: (id: string) => Promise<{ success: boolean; message?: string }>) {
+    setError(null)
+    startTransition(async () => {
+      const result = await action(id)
+      if (!result.success) setError(result.message ?? 'เกิดข้อผิดพลาด')
+    })
+  }
 
   return (
-    <div className="flex gap-2">
-      <button
-        disabled={isPending}
-        onClick={() => startTransition(() => approveLeaveRequest(id))}
-        className="px-3 py-1.5 text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50"
-      >
-        {isPending ? '...' : 'อนุมัติ'}
-      </button>
-      <button
-        disabled={isPending}
-        onClick={() => startTransition(() => rejectLeaveRequest(id))}
-        className="px-3 py-1.5 text-sm font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg transition disabled:opacity-50"
-      >
-        {isPending ? '...' : 'ไม่อนุมัติ'}
-      </button>
+    <div className="space-y-1">
+      <div className="flex gap-2">
+        <button
+          disabled={isPending}
+          onClick={() => handle(approveLeaveRequest)}
+          className="px-3 py-1.5 text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50"
+        >
+          {isPending ? '...' : 'อนุมัติ'}
+        </button>
+        <button
+          disabled={isPending}
+          onClick={() => handle(rejectLeaveRequest)}
+          className="px-3 py-1.5 text-sm font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg transition disabled:opacity-50"
+        >
+          {isPending ? '...' : 'ไม่อนุมัติ'}
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   )
 }
@@ -55,6 +69,7 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
             <th className="px-5 py-3">ประเภทการลา</th>
             <th className="px-5 py-3">วันที่</th>
             <th className="px-5 py-3 text-center">จำนวน</th>
+            <th className="px-5 py-3">ช่วงเวลา</th>
             <th className="px-5 py-3">เหตุผล</th>
             <th className="px-5 py-3">วันที่ส่งคำขอ</th>
             <th className="px-5 py-3">การดำเนินการ</th>
@@ -75,6 +90,9 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
               </td>
               <td className="px-5 py-4 text-center font-semibold text-gray-900">
                 {req.totalDays} วัน
+              </td>
+              <td className="px-5 py-4 text-xs text-gray-600">
+                {durationLabel(req.durationType as LeaveDurationType)}
               </td>
               <td className="px-5 py-4 text-gray-600 max-w-xs truncate">
                 {req.reason || <span className="text-gray-400">—</span>}

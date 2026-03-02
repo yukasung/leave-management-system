@@ -1,0 +1,91 @@
+'use client'
+
+import { useActionState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { createDepartment, type DepartmentFormState } from './actions'
+
+type Manager = { id: string; name: string; role: string }
+
+const initial: DepartmentFormState = { success: false, message: '' }
+
+export default function NewDepartmentForm({ managers }: { managers: Manager[] }) {
+  const router = useRouter()
+  const [state, action, pending] = useActionState(createDepartment, initial)
+
+  useEffect(() => {
+    if (state.success) {
+      const t = setTimeout(() => router.push('/admin/departments'), 1200)
+      return () => clearTimeout(t)
+    }
+  }, [state.success, router])
+
+  return (
+    <form action={action} className="space-y-5">
+      {/* Feedback */}
+      {state.message && (
+        <div
+          className={`rounded-lg px-4 py-3 text-sm font-medium ${
+            state.success
+              ? 'bg-green-50 text-green-700 border border-green-200'
+              : 'bg-red-50 text-red-700 border border-red-200'
+          }`}
+        >
+          {state.message}
+          {state.success && <span className="ml-2 text-green-500">กำลังกลับไปหน้าแผนก…</span>}
+        </div>
+      )}
+
+      {/* Department Name */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          ชื่อแผนก <span className="text-red-500">*</span>
+        </label>
+        <input
+          name="name"
+          type="text"
+          required
+          placeholder="เช่น ฝ่ายบุคคล, ฝ่ายไอที"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        {state.errors?.name && (
+          <p className="text-xs text-red-500 mt-1">{state.errors.name}</p>
+        )}
+      </div>
+
+      {/* Manager */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          ผู้จัดการแผนก
+        </label>
+        <select
+          name="managerId"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="">— ไม่ระบุ —</option>
+          {managers.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name} ({m.role})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-3 pt-2">
+        <button
+          type="submit"
+          disabled={pending || state.success}
+          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+        >
+          {pending ? 'กำลังบันทึก…' : 'บันทึก'}
+        </button>
+        <a
+          href="/admin/departments"
+          className="text-sm text-gray-500 hover:text-gray-700 underline"
+        >
+          ยกเลิก
+        </a>
+      </div>
+    </form>
+  )
+}

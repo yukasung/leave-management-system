@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { durationLabel } from '@/lib/leave-calc'
 
 const statusLabel: Record<string, { label: string; className: string }> = {
   PENDING:   { label: 'รออนุมัติ',  className: 'bg-yellow-100 text-yellow-700' },
@@ -41,6 +42,7 @@ export default async function MyLeaveHistoryPage() {
                 <th className="px-5 py-3">วันที่เริ่มต้น</th>
                 <th className="px-5 py-3">วันที่สิ้นสุด</th>
                 <th className="px-5 py-3 text-center">จำนวน</th>
+                <th className="px-5 py-3">ช่วงเวลา</th>
                 <th className="px-5 py-3">เหตุผล</th>
                 <th className="px-5 py-3 text-center">สถานะ</th>
                 <th className="px-5 py-3">วันที่ส่งคำขอ</th>
@@ -62,6 +64,9 @@ export default async function MyLeaveHistoryPage() {
                     </td>
                     <td className="px-5 py-4 text-center font-semibold text-gray-900">
                       {req.totalDays} วัน
+                    </td>
+                    <td className="px-5 py-4 text-gray-600 text-xs">
+                      {durationLabel(req.durationType as Parameters<typeof durationLabel>[0])}
                     </td>
                     <td className="px-5 py-4 text-gray-600 max-w-xs truncate">
                       {req.reason || <span className="text-gray-400">—</span>}

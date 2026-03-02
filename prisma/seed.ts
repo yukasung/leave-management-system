@@ -7,15 +7,89 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  // Leave types
-  await prisma.leaveType.createMany({
-    data: [
-      { name: 'ลาป่วย', daysPerYear: 30 },
-      { name: 'ลากิจ', daysPerYear: 10 },
-      { name: 'ลาพักร้อน', daysPerYear: 6 },
-    ],
-    skipDuplicates: true,
-  })
+  // ── Leave types per company policy ────────────────────────────────────────
+  const leaveTypesData = [
+    {
+      name: 'ลาป่วย',
+      maxDaysPerYear: 30,
+      maxDaysPerRequest: null,
+      requiresAttachment: false,
+      deductFromBalance: false,
+      allowDuringProbation: true,
+    },
+    {
+      name: 'ลาฌาปนกิจ',
+      maxDaysPerYear: null,
+      maxDaysPerRequest: 3,
+      requiresAttachment: false,
+      deductFromBalance: false,
+      allowDuringProbation: true,
+    },
+    {
+      name: 'ลาแต่งงาน',
+      maxDaysPerYear: null,
+      maxDaysPerRequest: 3,
+      requiresAttachment: true,
+      deductFromBalance: false,
+      allowDuringProbation: true,
+    },
+    {
+      name: 'ลาอุปสมบท',
+      maxDaysPerYear: 5,
+      maxDaysPerRequest: null,
+      requiresAttachment: false,
+      deductFromBalance: true,
+      allowDuringProbation: true,
+    },
+    {
+      name: 'ลาคลอดบุตร',
+      maxDaysPerYear: null,
+      maxDaysPerRequest: 98,
+      requiresAttachment: false,
+      deductFromBalance: false,
+      allowDuringProbation: true,
+    },
+    {
+      name: 'ลาทำหมัน',
+      maxDaysPerYear: null,
+      maxDaysPerRequest: null,
+      requiresAttachment: true,
+      deductFromBalance: false,
+      allowDuringProbation: true,
+    },
+    {
+      name: 'ลาพัฒนาความรู้',
+      maxDaysPerYear: 5,
+      maxDaysPerRequest: null,
+      requiresAttachment: false,
+      deductFromBalance: true,
+      allowDuringProbation: true,
+    },
+    {
+      name: 'ลากิจส่วนตัว',
+      maxDaysPerYear: 6,
+      maxDaysPerRequest: null,
+      requiresAttachment: false,
+      deductFromBalance: true,
+      allowDuringProbation: true,
+    },
+    {
+      name: 'ลาพักร้อน',
+      maxDaysPerYear: 12,
+      maxDaysPerRequest: null,
+      requiresAttachment: false,
+      deductFromBalance: true,
+      allowDuringProbation: false,
+    },
+  ]
+
+  for (const lt of leaveTypesData) {
+    await prisma.leaveType.upsert({
+      where: { name: lt.name },
+      update: lt,
+      create: lt,
+    })
+  }
 
   const hashedPassword = await hash('admin1234', 10)
 
@@ -53,6 +127,16 @@ async function main() {
     },
   })
 
+  // Additional departments per company structure
+  await prisma.department.createMany({
+    data: [
+      { name: 'Legal' },
+      { name: 'Business Development' },
+      { name: 'Accounting & Admin' },
+    ],
+    skipDuplicates: true,
+  })
+
   // Employee user belonging to the department
   const employee = await prisma.user.upsert({
     where: { email: 'employee@company.com' },
@@ -72,8 +156,10 @@ async function main() {
     data: { departmentId: department.id },
   })
 
-  // Leave balances for all users
-  const leaveTypes = await prisma.leaveType.findMany()
+  // Leave balances — only for types that deduct from balance
+  const leaveTypes = await prisma.leaveType.findMany({
+    where: { deductFromBalance: true },
+  })
   const year = new Date().getFullYear()
 
   for (const user of [admin, manager, employee]) {
@@ -85,7 +171,7 @@ async function main() {
           userId: user.id,
           leaveTypeId: lt.id,
           year,
-          totalDays: lt.daysPerYear,
+          totalDays: lt.maxDaysPerYear ?? 0,
           usedDays: 0,
         },
       })

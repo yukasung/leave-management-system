@@ -1,0 +1,11 @@
+-- CreateEnum
+CREATE TYPE "LeaveDurationType" AS ENUM ('FULL_DAY', 'HALF_DAY_MORNING', 'HALF_DAY_AFTERNOON');
+
+-- AlterTable
+ALTER TABLE "LeaveBalance" ALTER COLUMN "totalDays" SET DATA TYPE DOUBLE PRECISION,
+ALTER COLUMN "usedDays" SET DEFAULT 0,
+ALTER COLUMN "usedDays" SET DATA TYPE DOUBLE PRECISION;
+
+-- AlterTable
+ALTER TABLE "LeaveRequest" ADD COLUMN     "endType" "LeaveDurationType" NOT NULL DEFAULT 'FULL_DAY',
+ADD COLUMN     "startType" "LeaveDurationType" NOT NULL DEFAULT 'FULL_DAY';

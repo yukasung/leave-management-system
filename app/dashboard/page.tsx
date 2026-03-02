@@ -77,7 +77,7 @@ export default async function DashboardPage() {
             <p className="text-3xl font-bold text-blue-700 mt-1">{pendingAll} รายการ</p>
           </div>
           <Link
-            href="/manager/leave-requests"
+            href={role === 'MANAGER' ? '/manager/leave-requests' : '/hr/leave-requests'}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition"
           >
             จัดการคำขอ →
