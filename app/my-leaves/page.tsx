@@ -3,12 +3,16 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { durationLabel, type LeaveDurationType } from '@/lib/leave-calc'
 import { formatDate } from '@/lib/format-date'
+import LeaveActionsCell from './LeaveActionsCell'
 
 const statusLabel: Record<string, { label: string; className: string }> = {
-  PENDING:   { label: 'รออนุมัติ',  className: 'bg-yellow-100 text-yellow-700' },
-  IN_REVIEW: { label: 'กำลังพิจารณา', className: 'bg-blue-100 text-blue-700' },
-  APPROVED:  { label: 'อนุมัติแล้ว', className: 'bg-green-100 text-green-700' },
-  REJECTED:  { label: 'ไม่อนุมัติ',  className: 'bg-red-100 text-red-600' },
+  DRAFT:            { label: 'ร่าง',              className: 'bg-gray-100 text-gray-600' },
+  PENDING:          { label: 'รออนุมัติ',         className: 'bg-yellow-100 text-yellow-700' },
+  IN_REVIEW:        { label: 'กำลังพิจารณา',      className: 'bg-blue-100 text-blue-700' },
+  APPROVED:         { label: 'อนุมัติแล้ว',       className: 'bg-green-100 text-green-700' },
+  REJECTED:         { label: 'ไม่อนุมัติ',        className: 'bg-red-100 text-red-600' },
+  CANCELLED:        { label: 'ยกเลิกแล้ว',        className: 'bg-gray-200 text-gray-500' },
+  CANCEL_REQUESTED: { label: 'ขอยกเลิก (รอ HR)',  className: 'bg-orange-100 text-orange-700' },
 }
 
 export default async function MyLeaveHistoryPage() {
@@ -47,6 +51,7 @@ export default async function MyLeaveHistoryPage() {
                 <th className="px-5 py-3">เหตุผล</th>
                 <th className="px-5 py-3 text-center">สถานะ</th>
                 <th className="px-5 py-3">วันที่ส่งคำขอ</th>
+                <th className="px-5 py-3 text-center">การดำเนินการ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -82,6 +87,9 @@ export default async function MyLeaveHistoryPage() {
                     </td>
                     <td className="px-5 py-4 text-gray-500 whitespace-nowrap">
                       {formatDate(req.createdAt)}
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <LeaveActionsCell leaveId={req.id} status={req.status} />
                     </td>
                   </tr>
                 )
