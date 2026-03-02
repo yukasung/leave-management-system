@@ -15,6 +15,31 @@
 			"isBackground": true,
 			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "Start Dev Server",
+			"type": "shell",
+			"command": "npm run dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Kill Port 3000",
+			"type": "shell",
+			"command": "Stop-Process -Id (Get-NetTCPConnection -LocalPort 3000 -State Listen).OwningProcess -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2; Write-Host 'Port 3000 freed'",
+			"isBackground": false
+		},
+		{
+			"label": "Dev Server Port 3000",
+			"type": "shell",
+			"command": "Stop-Process -Id (Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue).OwningProcess -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2; npm run dev",
+			"isBackground": true
+		},
+		{
+			"label": "Clean Restart Dev",
+			"type": "shell",
+			"command": "Stop-Process -Id (Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue).OwningProcess -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue; Write-Host 'Cleaned'; Start-Sleep -Seconds 1; npm run dev",
+			"isBackground": true
 		}
 	]
 }
