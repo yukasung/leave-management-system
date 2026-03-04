@@ -2,7 +2,8 @@
 
 import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
-import { calculateLeaveDays, type LeaveDurationType } from '@/lib/leave-calc'
+import { type LeaveDurationType } from '@/lib/leave-calc'
+import { calculateLeaveDaysServer } from '@/lib/leave-calc-server'
 import {
   createDraft,
   submitLeave,
@@ -84,8 +85,8 @@ export async function createLeaveRequest(
     return { errors: { startDate: 'วันที่เริ่มต้นต้องไม่เป็นวันที่ผ่านมาแล้ว' } }
   }
 
-  // ── Server-side recalculation (never trust the client) ────────────────────
-  const calc = calculateLeaveDays(startDate, endDate, startDurationType, endDurationType)
+  // ── Server-side recalculation — skips weekends + public holidays ──────────
+  const calc = await calculateLeaveDaysServer(startDate, endDate, startDurationType, endDurationType)
   if (calc.error) {
     return { errors: { general: calc.error } }
   }
@@ -234,8 +235,8 @@ export async function updateLeaveRequest(
   startDate.setHours(0, 0, 0, 0)
   endDate.setHours(0, 0, 0, 0)
 
-  // ── Server-side recalculation ─────────────────────────────────────────────
-  const calc = calculateLeaveDays(startDate, endDate, startDurationType, endDurationType)
+  // ── Server-side recalculation — skips weekends + public holidays ──────────
+  const calc = await calculateLeaveDaysServer(startDate, endDate, startDurationType, endDurationType)
   if (calc.error) {
     return { errors: { general: calc.error } }
   }

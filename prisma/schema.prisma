@@ -224,3 +224,21 @@ model LeaveAuditLog {
   @@index([changedBy])
   @@map("leave_audit_logs")
 }
+
+enum HolidaySource {
+  BOT
+  MANUAL
+}
+
+model CompanyHoliday {
+  id        String        @id @default(uuid())
+  date      DateTime      @db.Date
+  name      String
+  year      Int
+  source    HolidaySource @default(MANUAL)
+  createdAt DateTime      @default(now())
+
+  @@unique([date])
+  @@index([year])
+  @@map("company_holidays")
+}

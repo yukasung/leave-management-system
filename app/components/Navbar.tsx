@@ -59,9 +59,10 @@ function getNavGroups(role: CurrentUser['role']): NavGroup[] {
     groups.push({
       label: 'HR',
       links: [
-        { href: '/hr/leave-requests', label: 'คำขอลาทั้งหมด' },
-        { href: '/hr/leave-report',   label: 'รายงานการลา'   },
-        { href: '/hr/audit-logs',     label: 'Audit Log'     },
+        { href: '/hr/leave-requests',         label: 'คำขอลาทั้งหมด'      },
+        { href: '/hr/leave-report',            label: 'รายงานการลา'        },
+        { href: '/hr/audit-logs',              label: 'Audit Log'          },
+        { href: '/admin/holiday-management',   label: 'วันหยุดนักขัตฤกษ์' },
       ],
     })
   }
@@ -77,10 +78,11 @@ function getNavGroups(role: CurrentUser['role']): NavGroup[] {
     groups.push({
       label: 'Admin',
       links: [
-        { href: '/hr/leave-requests',  label: 'คำขอลาทั้งหมด'  },
-        { href: '/admin/employees',    label: 'จัดการพนักงาน' },
-        { href: '/admin/departments',  label: 'จัดการแผนก'    },
-        { href: '/admin/settings',     label: 'ตั้งค่าระบบ'   },
+        { href: '/hr/leave-requests',        label: 'คำขอลาทั้งหมด'      },
+        { href: '/admin/employees',          label: 'จัดการพนักงาน'      },
+        { href: '/admin/departments',        label: 'จัดการแผนก'         },
+        { href: '/admin/settings',           label: 'ตั้งค่าระบบ'        },
+        { href: '/admin/holiday-management', label: 'วันหยุดนักขัตฤกษ์' },
       ],
     })
   }
