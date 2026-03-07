@@ -20,12 +20,16 @@ export default async function NewEmployeePage() {
   const [departments, managers, positions] = await Promise.all([
     prisma.department.findMany({
       orderBy: { name: 'asc' },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        manager: { select: { employee: { select: { id: true } } } },
+      },
     }),
-    prisma.user.findMany({
-      where: { role: 'MANAGER' },
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true, role: true, email: true },
+    prisma.employee.findMany({
+      where: { isActive: true },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+      select: { id: true, firstName: true, lastName: true, position: true },
     }),
     prisma.position.findMany({
       orderBy: { name: 'asc' },

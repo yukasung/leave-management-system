@@ -5,11 +5,8 @@ import { useRouter } from 'next/navigation'
 import { createEmployee, type CreateEmployeeState } from './actions'
 import AvatarUploader from '../AvatarUploader'
 
-type Department = { id: string; name: string }
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: 'Admin', HR: 'HR', MANAGER: 'Manager', EMPLOYEE: 'พนักงาน', EXECUTIVE: 'ผู้บริหาร',
-}
-type ManagerOption  = { id: string; name: string; role: string; email: string }
+type Department = { id: string; name: string; manager: { employee: { id: string } | null } | null }
+type ManagerOption  = { id: string; firstName: string; lastName: string; position: string }
 type PositionOption = { id: string; name: string }
 
 const ROLE_OPTIONS = [
@@ -32,9 +29,18 @@ export default function NewEmployeeForm({
   positions:   PositionOption[]
 }) {
   const router = useRouter()
-  const [firstName, setFirstName] = useState('')
-  const [lastName,  setLastName]  = useState('')
+  const [firstName,         setFirstName]        = useState('')
+  const [lastName,          setLastName]          = useState('')
+  const [selectedDeptId,    setSelectedDeptId]    = useState('')
+  const [selectedManagerId, setSelectedManagerId] = useState('')
   const [state, formAction, pending] = useActionState(createEmployee, initialState)
+
+  function handleDeptChange(deptId: string) {
+    setSelectedDeptId(deptId)
+    const dept = departments.find((d) => d.id === deptId)
+    const deptManagerEmployeeId = dept?.manager?.employee?.id
+    if (deptManagerEmployeeId) setSelectedManagerId(deptManagerEmployeeId)
+  }
 
   useEffect(() => {
     if (state.success) {
@@ -152,6 +158,27 @@ export default function NewEmployeeForm({
           ตำแหน่งและบทบาท
         </legend>
 
+        {/* Department */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            แผนก
+          </label>
+          <select
+            name="departmentId"
+            value={selectedDeptId}
+            onChange={(ev) => handleDeptChange(ev.target.value)}
+            className={selectCls(!!e.departmentId)}
+          >
+            <option value="">— ไม่ระบุแผนก —</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+          <FieldError msg={e.departmentId} />
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Position */}
           <div>
@@ -187,32 +214,21 @@ export default function NewEmployeeForm({
           </div>
         </div>
 
-        {/* Department */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            แผนก
-          </label>
-          <select name="departmentId" defaultValue="" className={selectCls(!!e.departmentId)}>
-            <option value="">— ไม่ระบุแผนก —</option>
-            {departments.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-          <FieldError msg={e.departmentId} />
-        </div>
-
         {/* Manager */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             ผู้จัดการสายงาน
           </label>
-          <select name="managerId" defaultValue="" className={selectCls(!!e.managerId)}>
+          <select
+            name="managerId"
+            value={selectedManagerId}
+            onChange={(ev) => setSelectedManagerId(ev.target.value)}
+            className={selectCls(!!e.managerId)}
+          >
             <option value="">— ไม่มีผู้จัดการ —</option>
             {managers.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.name} — {ROLE_LABEL[m.role] ?? m.role}
+                {m.firstName} {m.lastName} — {m.position}
               </option>
             ))}
           </select>

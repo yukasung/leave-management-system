@@ -74,7 +74,14 @@ async function logPolicyRejection(
 async function resolveApproverId(
   employee: { managerId: string | null } | null | undefined
 ): Promise<string | null> {
-  if (employee?.managerId) return employee.managerId
+  if (employee?.managerId) {
+    // managerId now references Employee.id — resolve the manager's User account
+    const managerEmp = await prisma.employee.findUnique({
+      where: { id: employee.managerId },
+      select: { userId: true },
+    })
+    if (managerEmp?.userId) return managerEmp.userId
+  }
 
   // Fallback: first HR user by creation order
   const hr = await prisma.user.findFirst({

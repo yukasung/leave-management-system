@@ -5,11 +5,8 @@ import { useRouter } from 'next/navigation'
 import { updateEmployee, deactivateEmployee, type UpdateEmployeeState } from './actions'
 import AvatarUploader from '../AvatarUploader'
 
-type Department   = { id: string; name: string }
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: 'Admin', HR: 'HR', MANAGER: 'Manager', EMPLOYEE: 'พนักงาน', EXECUTIVE: 'ผู้บริหาร',
-}
-type ManagerOption  = { id: string; name: string; role: string; email: string }
+type Department   = { id: string; name: string; manager: { employee: { id: string } | null } | null }
+type ManagerOption  = { id: string; firstName: string; lastName: string; position: string }
 type PositionOption = { id: string; name: string }
 
 export type EmployeeData = {
@@ -57,9 +54,18 @@ export default function EditEmployeeForm({
   const [state, formAction, pending] = useActionState(boundAction, initialState)
 
   // Deactivate confirmation state
+  const [selectedDeptId,    setSelectedDeptId]    = useState(employee.departmentId ?? '')
+  const [selectedManagerId, setSelectedManagerId] = useState(employee.managerId ?? '')
   const [confirmDeactivate, setConfirmDeactivate] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
   const [deactivateMsg, setDeactivateMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  function handleDeptChange(deptId: string) {
+    setSelectedDeptId(deptId)
+    const dept = departments.find((d) => d.id === deptId)
+    const deptManagerEmployeeId = dept?.manager?.employee?.id
+    if (deptManagerEmployeeId) setSelectedManagerId(deptManagerEmployeeId)
+  }
 
   useEffect(() => {
     if (state.success) {
@@ -162,6 +168,22 @@ export default function EditEmployeeForm({
             ตำแหน่งและบทบาท
           </legend>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">แผนก</label>
+            <select
+              name="departmentId"
+              value={selectedDeptId}
+              onChange={(e) => handleDeptChange(e.target.value)}
+              className={selectCls(!!e.departmentId)}
+            >
+              <option value="">— ไม่ระบุแผนก —</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+            <FieldError msg={e.departmentId} />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -193,35 +215,23 @@ export default function EditEmployeeForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">แผนก</label>
-            <select
-              name="departmentId"
-              defaultValue={employee.departmentId ?? ''}
-              className={selectCls(!!e.departmentId)}
-            >
-              <option value="">— ไม่ระบุแผนก —</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
-            <FieldError msg={e.departmentId} />
-          </div>
-
-          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               ผู้จัดการสายงาน
             </label>
             <select
               name="managerId"
-              defaultValue={employee.managerId ?? ''}
+              value={selectedManagerId}
+              onChange={(e) => setSelectedManagerId(e.target.value)}
               className={selectCls(!!e.managerId)}
             >
               <option value="">— ไม่มีผู้จัดการ —</option>
-              {managers.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name} — {ROLE_LABEL[m.role] ?? m.role}
-                </option>
-              ))}
+              {managers
+                .filter((m) => m.id !== employee.id)
+                .map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.firstName} {m.lastName} — {m.position}
+                  </option>
+                ))}
             </select>
             <FieldError msg={e.managerId} />
           </div>

@@ -25,7 +25,6 @@ model User {
   leaveAuditChanges LeaveAuditLog[] @relation("LeaveAuditChangedBy")
   notifications     Notification[]
   employee      Employee?
-  managedEmployees Employee[] @relation("EmployeeManager")
   createdAt     DateTime @default(now())
 }
 
@@ -194,9 +193,10 @@ model Employee {
 
   role         UserRole    @default(EMPLOYEE)
 
-  // Manager is a User account (so leave approvals work)
+  // Direct supervisor — references another Employee (self-relation)
   managerId    String?
-  manager      User?       @relation("EmployeeManager", fields: [managerId], references: [id])
+  manager      Employee?   @relation("EmployeeReportsTo", fields: [managerId], references: [id])
+  subordinates Employee[]  @relation("EmployeeReportsTo")
 
   isActive     Boolean  @default(true)
   isProbation  Boolean  @default(true)
