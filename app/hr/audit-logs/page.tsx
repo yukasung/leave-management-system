@@ -1,16 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-
-function formatDateTime(date: Date) {
-  return date.toLocaleString('th-TH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
-}
+import { formatThaiDateTime } from '@/lib/date-utils'
 
 const ACTION_BADGE: Record<string, string> = {
   CREATE_LEAVE_REQUEST: 'bg-blue-100 text-blue-700',
@@ -82,7 +72,7 @@ export default async function AuditLogPage() {
                     {log.description ?? <span className="text-gray-300 italic">—</span>}
                   </td>
                   <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                    {formatDateTime(log.createdAt)}
+                    {formatThaiDateTime(log.createdAt, true)}
                   </td>
                 </tr>
               ))}

@@ -12,6 +12,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { formatThaiDateFromISO, toBE } from '@/lib/date-utils'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -46,12 +47,6 @@ function parseYM(dateStr: string): { year: number; month: number } {
   }
   const [y, m] = dateStr.split('-').map(Number)
   return { year: y, month: m - 1 }
-}
-
-function formatThai(dateStr: string): string {
-  if (!dateStr) return ''
-  const [y, m, d] = dateStr.split('-').map(Number)
-  return `${d} ${MONTH_TH[m - 1]} ${y + 543}`
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -177,7 +172,7 @@ export default function HolidayDatePicker({
         ].join(' ')}
       >
         {value
-          ? <span className="text-gray-900">{formatThai(value)}</span>
+          ? <span className="text-gray-900">{formatThaiDateFromISO(value)}</span>
           : <span className="text-gray-400">เลือกวันที่</span>
         }
         <span className="float-right text-gray-400 mt-0.5">📅</span>
@@ -197,7 +192,7 @@ export default function HolidayDatePicker({
               ‹
             </button>
             <span className="text-sm font-semibold text-gray-800">
-              {MONTH_TH[viewMonth]} {viewYear + 543}
+              {MONTH_TH[viewMonth]} {toBE(viewYear)}
             </span>
             <button
               type="button"

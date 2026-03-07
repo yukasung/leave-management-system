@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { formatThaiDateShort } from '@/lib/date-utils'
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -109,7 +110,7 @@ export default async function DashboardPage() {
                 <tr key={req.id} className="hover:bg-gray-50 transition">
                   <td className="px-5 py-3 font-medium text-gray-900">{req.leaveType.name}</td>
                   <td className="px-5 py-3 text-gray-600 whitespace-nowrap">
-                    {new Date(req.startDate).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' })} — {new Date(req.endDate).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    {formatThaiDateShort(new Date(req.startDate))} — {formatThaiDateShort(new Date(req.endDate))}
                   </td>
                   <td className="px-5 py-3 text-center text-gray-700">{req.totalDays} วัน</td>
                   <td className="px-5 py-3 text-center">

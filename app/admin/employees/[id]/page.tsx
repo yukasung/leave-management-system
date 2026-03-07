@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import EditEmployeeForm from './EditEmployeeForm'
+import { formatThaiDate } from '@/lib/date-utils'
 
 export default async function EditEmployeePage({
   params,
@@ -67,11 +68,7 @@ export default async function EditEmployeePage({
 
   if (!employee) notFound()
 
-  const createdDate = employee.createdAt.toLocaleDateString('th-TH', {
-    year:  'numeric',
-    month: 'long',
-    day:   'numeric',
-  })
+  const createdDate = formatThaiDate(employee.createdAt)
 
   return (
     <div className="p-6 md:p-8 max-w-3xl mx-auto">

@@ -211,12 +211,31 @@ export default function NewEmployeeForm({
           </select>
           <FieldError msg={e.managerId} />
         </div>
+
+        <div className="pt-1">
+          <label className="flex items-start gap-3 cursor-pointer select-none group">
+            <input
+              type="checkbox"
+              name="isProbation"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                อยู่ระหว่างทดลองงาน (Probation)
+              </span>
+              <br />
+              <span className="text-xs text-gray-400">
+                พนักงานทดลองงานอาจไม่สามารถลาบางประเภทได้ตามนโยบาย เช่น วันลาพักร้อน
+              </span>
+            </span>
+          </label>
+        </div>
       </fieldset>
 
-      {/* ── Section: Status ── */}
+      {/* ── Section: System Permissions ── */}
       <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5 mb-4">
-          สถานะและสิทธิ์
+          สิทธิ์ระบบ
         </legend>
         <div className="space-y-4">
           <label className="flex items-start gap-3 cursor-pointer select-none group">
@@ -232,22 +251,6 @@ export default function NewEmployeeForm({
               <br />
               <span className="text-xs text-gray-400">
                 สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้จัดการสายงาน
-              </span>
-            </span>
-          </label>
-          <label className="flex items-start gap-3 cursor-pointer select-none group">
-            <input
-              type="checkbox"
-              name="isProbation"
-              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span>
-              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                อยู่ระหว่างทดลองงาน
-              </span>
-              <br />
-              <span className="text-xs text-gray-400">
-                พนักงานทดลองงานอาจไม่สามารถลาบางประเภทได้ตามนโยบาย
               </span>
             </span>
           </label>

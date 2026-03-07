@@ -35,7 +35,6 @@ export async function updateEmployee(
     const departmentId = (formData.get('departmentId') as string | null)?.trim() || null
     const managerId    = (formData.get('managerId')    as string | null)?.trim() || null
     const isProbation  = formData.get('isProbation') === 'on'
-    const isActive     = formData.get('isActive') === 'on'
 
     // ── Guard: cannot remove the last admin ──────────────────────────────────
     if (!isAdmin) {
@@ -95,7 +94,6 @@ export async function updateEmployee(
             : { disconnect: true },
           isAdmin,
           isProbation,
-          isActive,
           department: departmentId
             ? { connect: { id: departmentId } }
             : { disconnect: true },
@@ -111,7 +109,7 @@ export async function updateEmployee(
           action:      'UPDATE_EMPLOYEE',
           entityType:  'Employee',
           entityId:    id,
-          description: `Updated employee ${existing.firstName} ${existing.lastName} (${existing.employeeCode}): isAdmin=${isAdmin}, position=${position}, isActive=${isActive}`,
+          description: `Updated employee ${existing.firstName} ${existing.lastName} (${existing.employeeCode}): isAdmin=${isAdmin}, position=${position}`,
         },
       })
     })
@@ -177,6 +175,53 @@ export async function deactivateEmployee(id: string): Promise<DeactivateState> {
     }
   } catch (err) {
     console.error('[deactivateEmployee]', err)
+    return { success: false, message: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' }
+  }
+}
+
+// ── Reactivate ────────────────────────────────────────────────────────────────
+
+export async function reactivateEmployee(id: string): Promise<DeactivateState> {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }
+    if (!session.user.isAdmin) {
+      return { success: false, message: 'คุณไม่มีสิทธิ์ดำเนินการนี้' }
+    }
+
+    const employee = await prisma.employee.findUnique({
+      where: { id },
+      select: { id: true, firstName: true, lastName: true, employeeCode: true, isActive: true },
+    })
+    if (!employee) return { success: false, message: 'ไม่พบข้อมูลพนักงาน' }
+    if (employee.isActive) return { success: false, message: 'พนักงานนี้ใช้งานอยู่แล้ว' }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.employee.update({
+        where: { id },
+        data: { isActive: true },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          userId:      session.user.id,
+          action:      'REACTIVATE_EMPLOYEE',
+          entityType:  'Employee',
+          entityId:    id,
+          description: `Reactivated employee ${employee.firstName} ${employee.lastName} (${employee.employeeCode})`,
+        },
+      })
+    })
+
+    revalidatePath('/admin/employees')
+    revalidatePath(`/admin/employees/${id}`)
+
+    return {
+      success: true,
+      message: `เปิดใช้งาน ${employee.firstName} ${employee.lastName} เรียบร้อยแล้ว`,
+    }
+  } catch (err) {
+    console.error('[reactivateEmployee]', err)
     return { success: false, message: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' }
   }
 }

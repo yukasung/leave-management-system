@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { formatThaiDateFromISO, toBE } from '@/lib/date-utils'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,16 +41,6 @@ const CURRENT_YEAR = new Date().getFullYear()
 const YEAR_OPTIONS = Array.from({ length: 11 }, (_, i) => CURRENT_YEAR - 5 + i)
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatThaiDate(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('th-TH', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
-}
 
 function toISODate(date: Date): string {
   return date.toISOString().slice(0, 10)
@@ -196,7 +187,7 @@ export default function HolidayImportClient() {
       {/* ───────── SECTION 1: Year selector ────────────────────────────────── */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <label htmlFor="year-select" className="block text-sm font-semibold text-gray-700 mb-2">
-          เลือกปี (ค.ศ.)
+          เลือกปี (พ.ศ.)
         </label>
         <select
           id="year-select"
@@ -208,7 +199,7 @@ export default function HolidayImportClient() {
           className="block w-40 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
         >
           {YEAR_OPTIONS.map((y) => (
-            <option key={y} value={y}>{y}</option>
+            <option key={y} value={y}>{toBE(y)}</option>
           ))}
         </select>
       </div>
@@ -308,7 +299,7 @@ export default function HolidayImportClient() {
                   return (
                     <tr key={h.date} className="hover:bg-gray-50">
                       <td className="text-center px-4 py-3 text-gray-400">{i + 1}</td>
-                      <td className="px-4 py-3 text-gray-900 font-medium tabular-nums">{formatThaiDate(h.date)}</td>
+                      <td className="px-4 py-3 text-gray-900 font-medium tabular-nums">{formatThaiDateFromISO(h.date)}</td>
                       <td className="px-4 py-3 text-gray-700">{h.name}</td>
                       <td className={`text-center px-4 py-3 text-xs font-medium ${isWeekend ? 'text-red-600' : 'text-gray-500'}`}>{weekday}</td>
                     </tr>
@@ -372,7 +363,7 @@ export default function HolidayImportClient() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
             <h2 className="text-base font-semibold text-gray-800">
-              วันหยุดที่บันทึกแล้ว — ปี {year}
+              วันหยุดที่บันทึกแล้ว — ปี {toBE(year)}
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">
               {loadingSaved ? 'กำลังโหลด…' : `${saved.length} รายการ`}
@@ -405,7 +396,7 @@ export default function HolidayImportClient() {
                 <tr key={h.id} className="hover:bg-gray-50 transition-colors">
                   <td className="text-center px-4 py-3 text-gray-400">{i + 1}</td>
                   <td className="px-4 py-3 text-gray-900 font-medium tabular-nums">
-                    {formatThaiDate(h.date)}
+                    {formatThaiDateFromISO(h.date)}
                   </td>
                   <td className="px-4 py-3 text-gray-700">{h.name}</td>
                   <td className="text-center px-4 py-3">

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateEmployee, deactivateEmployee, type UpdateEmployeeState } from './actions'
+import { updateEmployee, deactivateEmployee, reactivateEmployee, type UpdateEmployeeState } from './actions'
 import AvatarUploader from '../AvatarUploader'
 
 type Department   = { id: string; name: string; manager: { employee: { id: string } | null } | null }
@@ -50,6 +50,7 @@ export default function EditEmployeeForm({
   const [selectedManagerId, setSelectedManagerId] = useState(employee.managerId ?? '')
   const [confirmDeactivate, setConfirmDeactivate] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
+  const [reactivating, setReactivating] = useState(false)
   const [deactivateMsg, setDeactivateMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   function handleDeptChange(deptId: string) {
@@ -71,6 +72,16 @@ export default function EditEmployeeForm({
     const result = await deactivateEmployee(employee.id)
     setDeactivating(false)
     setConfirmDeactivate(false)
+    setDeactivateMsg({ ok: result.success ?? false, text: result.message ?? '' })
+    if (result.success) {
+      setTimeout(() => router.push('/admin/employees'), 1500)
+    }
+  }
+
+  async function handleReactivate() {
+    setReactivating(true)
+    const result = await reactivateEmployee(employee.id)
+    setReactivating(false)
     setDeactivateMsg({ ok: result.success ?? false, text: result.message ?? '' })
     if (result.success) {
       setTimeout(() => router.push('/admin/employees'), 1500)
@@ -154,10 +165,10 @@ export default function EditEmployeeForm({
           </div>
         )}
 
-        {/* Position & Role */}
+        {/* Position & Organisation */}
         <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
           <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5">
-            ตำแหน่งและบทบาท
+            ตำแหน่งและองค์กร
           </legend>
 
           <div>
@@ -216,12 +227,19 @@ export default function EditEmployeeForm({
             </select>
             <FieldError msg={e.managerId} />
           </div>
+
+          <CheckboxField
+            name="isProbation"
+            defaultChecked={employee.isProbation}
+            label="อยู่ระหว่างทดลองงาน (Probation)"
+            hint="พนักงานทดลองงานอาจไม่สามารถลาบางประเภทได้ตามนโยบาย เช่น วันลาพักร้อน"
+          />
         </fieldset>
 
-        {/* Status */}
+        {/* System Permissions */}
         <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
           <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5">
-            สถานะและสิทธิ์
+            สิทธิ์ระบบ
           </legend>
 
           <CheckboxField
@@ -229,20 +247,6 @@ export default function EditEmployeeForm({
             defaultChecked={employee.isAdmin}
             label="ผู้ดูแลระบบ (System Admin)"
             hint="สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้จัดการสายงาน"
-          />
-
-          <CheckboxField
-            name="isProbation"
-            defaultChecked={employee.isProbation}
-            label="อยู่ระหว่างทดลองงาน"
-            hint="พนักงานทดลองงานอาจไม่สามารถลาบางประเภทได้ตามนโยบาย"
-          />
-
-          <CheckboxField
-            name="isActive"
-            defaultChecked={employee.isActive}
-            label="ใช้งานอยู่ (Active)"
-            hint="ยกเลิกเพื่อระงับการเข้าใช้งานระบบโดยไม่ลบข้อมูล"
           />
         </fieldset>
 
@@ -264,42 +268,58 @@ export default function EditEmployeeForm({
         </div>
       </form>
 
-      {/* Danger zone — soft delete */}
-      {employee.isActive && (
-        <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-6">
-          <p className="text-sm font-semibold text-red-600 mb-1">Danger Zone</p>
-          <p className="text-sm text-gray-500 mb-4">
-            การระงับบัญชีจะซ่อนพนักงานออกจากระบบ แต่ไม่ลบข้อมูล สามารถเปิดใช้งานใหม่ได้ในภายหลัง
-          </p>
-          {!confirmDeactivate ? (
+      {/* Danger zone */}
+      <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-6">
+        <p className="text-sm font-semibold text-red-600 mb-1">Danger Zone</p>
+
+        {employee.isActive ? (
+          <>
+            <p className="text-sm text-gray-500 mb-4">
+              การระงับบัญชีจะซ่อนพนักงานออกจากระบบ แต่ไม่ลบข้อมูล สามารถเปิดใช้งานใหม่ได้ในภายหลัง
+            </p>
+            {!confirmDeactivate ? (
+              <button
+                onClick={() => setConfirmDeactivate(true)}
+                className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition"
+              >
+                ระงับการใช้งาน
+              </button>
+            ) : (
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-sm text-red-700 font-medium">
+                  ยืนยันการระงับ {employee.firstName} {employee.lastName}?
+                </p>
+                <button
+                  onClick={handleDeactivate}
+                  disabled={deactivating}
+                  className="px-4 py-2 text-sm font-semibold bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white rounded-lg transition"
+                >
+                  {deactivating ? 'กำลังดำเนินการ…' : 'ยืนยัน ระงับบัญชี'}
+                </button>
+                <button
+                  onClick={() => setConfirmDeactivate(false)}
+                  className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                >
+                  ยกเลิก
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-gray-500 mb-4">
+              บัญชีนี้ถูกระงับการใช้งานอยู่ กดปุ่มด้านล่างเพื่อเปิดใช้งานใหม่
+            </p>
             <button
-              onClick={() => setConfirmDeactivate(true)}
-              className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition"
+              onClick={handleReactivate}
+              disabled={reactivating}
+              className="px-4 py-2 text-sm font-medium text-green-700 border border-green-300 rounded-lg hover:bg-green-50 disabled:opacity-60 transition"
             >
-              ระงับการใช้งาน
+              {reactivating ? 'กำลังดำเนินการ…' : 'เปิดใช้งานอีกครั้ง'}
             </button>
-          ) : (
-            <div className="flex items-center gap-3 flex-wrap">
-              <p className="text-sm text-red-700 font-medium">
-                ยืนยันการระงับ {employee.firstName} {employee.lastName}?
-              </p>
-              <button
-                onClick={handleDeactivate}
-                disabled={deactivating}
-                className="px-4 py-2 text-sm font-semibold bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white rounded-lg transition"
-              >
-                {deactivating ? 'กำลังดำเนินการ…' : 'ยืนยัน ระงับบัญชี'}
-              </button>
-              <button
-                onClick={() => setConfirmDeactivate(false)}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-              >
-                ยกเลิก
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

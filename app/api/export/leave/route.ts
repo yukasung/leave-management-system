@@ -3,22 +3,15 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { LeaveStatus } from '@prisma/client'
 import { durationLabel, type LeaveDurationType } from '@/lib/leave-calc'
+import { formatThaiDateShort } from '@/lib/date-utils'
 
 function escapeCSV(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return ''
   const str = String(value)
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-    return `"${str.replace(/"/g, '""')}"`
+    return `"${str.replace(/"/g, '""')}`
   }
   return str
-}
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('th-TH', {
-    day:   '2-digit',
-    month: '2-digit',
-    year:  'numeric',
-  })
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -96,14 +89,14 @@ export async function GET(req: NextRequest) {
     req.user.email,
     req.user.department?.name ?? '',
     req.leaveType.name,
-    formatDate(req.startDate),
-    formatDate(req.endDate),
+    formatThaiDateShort(req.startDate),
+    formatThaiDateShort(req.endDate),
     req.totalDays,
     durationLabel(req.startDurationType as LeaveDurationType),
     durationLabel(req.endDurationType as LeaveDurationType),
     STATUS_LABELS[req.status] ?? req.status,
     req.reason ?? '',
-    formatDate(req.createdAt),
+    formatThaiDateShort(req.createdAt),
   ])
 
   const csvLines = [

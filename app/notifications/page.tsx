@@ -1,16 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-
-function formatDateTime(date: Date) {
-  return date.toLocaleString('th-TH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+import { formatThaiDateTime } from '@/lib/date-utils'
 
 export default async function NotificationsPage() {
   const session = await auth()
@@ -70,7 +61,7 @@ export default async function NotificationsPage() {
                   {notification.message}
                 </p>
                 <p className="mt-1 text-xs text-gray-400">
-                  {formatDateTime(notification.createdAt)}
+                  {formatThaiDateTime(notification.createdAt)}
                 </p>
               </div>
 

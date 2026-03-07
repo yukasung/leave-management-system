@@ -1,10 +1,5 @@
 /**
- * Format a Date as DD/MM/YYYY (Thai Buddhist era, e.g. 02/03/2569)
+ * @deprecated Import directly from `@/lib/date-utils` for full utilities.
+ * Re-exported here for backward compatibility.
  */
-export function formatDate(date: Date): string {
-  return date.toLocaleDateString('th-TH', {
-    day:   '2-digit',
-    month: '2-digit',
-    year:  'numeric',
-  })
-}
+export { formatThaiDateShort as formatDate } from '@/lib/date-utils'
