@@ -1,10 +1,11 @@
 'use client'
 
-import { useActionState, useState, useEffect, useRef, useTransition } from 'react'
+import { useActionState, useState, useEffect, useRef, useTransition, useCallback } from 'react'
 import { createLeaveRequest, submitLeaveRequest, type FormState } from './actions'
 import { calculateLeaveDays, type LeaveDurationType } from '@/lib/leave-calc'
 import { buildPolicySummary, type LeaveTypePolicy } from '@/lib/leave-policy-utils'
 import { formatDate } from '@/lib/format-date'
+import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
 type BalanceInfo = { totalDays: number; usedDays: number }
 
@@ -70,6 +71,33 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   const [uploadError, setUploadError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // ── Holiday set for accurate client-side preview ──────────────────────────
+  const [holidaySet, setHolidaySet] = useState<Set<string>>(new Set())
+  const fetchedHolidayYears = useRef<Set<number>>(new Set())
+
+  const fetchHolidaysForYear = useCallback(async (year: number) => {
+    if (fetchedHolidayYears.current.has(year)) return
+    fetchedHolidayYears.current.add(year)
+    try {
+      const res = await fetch(`/api/holidays?year=${year}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const list: { date: string }[] = data.holidays ?? []
+      setHolidaySet((prev) => {
+        const next = new Set(prev)
+        for (const h of list) next.add(h.date)
+        return next
+      })
+    } catch { /* ignore — preview degrades gracefully */ }
+  }, [])
+
+  useEffect(() => {
+    const years = new Set<number>()
+    if (startDate) years.add(new Date(startDate + 'T00:00:00').getFullYear())
+    if (endDate)   years.add(new Date(endDate   + 'T00:00:00').getFullYear())
+    years.forEach(fetchHolidaysForYear)
+  }, [startDate, endDate, fetchHolidaysForYear])
+
   const selectedType = leaveTypes.find((lt) => lt.id === leaveTypeId) ?? null
   const isMultiDay = startDate !== '' && endDate !== '' && startDate !== endDate
 
@@ -81,7 +109,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   // Live preview
   const preview = (() => {
     if (!startDate || !endDate) return null
-    return calculateLeaveDays(new Date(startDate), new Date(endDate), startDurationType, endDurationType)
+    return calculateLeaveDays(new Date(startDate), new Date(endDate), startDurationType, endDurationType, holidaySet)
   })()
 
   // Remaining quota for selected type
@@ -344,14 +372,12 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
               วันที่เริ่มต้น <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
+            <HolidayDatePicker
               id="startDate"
               name="startDate"
-              min={today}
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              min={today}
+              onChange={setStartDate}
             />
             {state.errors?.startDate && (
               <p className="mt-1 text-xs text-red-500">{state.errors.startDate}</p>
@@ -362,14 +388,12 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
               วันที่สิ้นสุด <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
+            <HolidayDatePicker
               id="endDate"
               name="endDate"
-              min={startDate || today}
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              min={startDate || today}
+              onChange={setEndDate}
             />
             {state.errors?.endDate && (
               <p className="mt-1 text-xs text-red-500">{state.errors.endDate}</p>

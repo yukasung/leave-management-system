@@ -11,12 +11,13 @@
  * offers a link back to "ประวัติการลาของฉัน".
  */
 
-import { useActionState, useState, useEffect, useRef, useTransition } from 'react'
+import { useActionState, useState, useEffect, useRef, useTransition, useCallback } from 'react'
 import Link from 'next/link'
 import { updateLeaveRequest, type FormState } from './actions'
 import { calculateLeaveDays, type LeaveDurationType } from '@/lib/leave-calc'
 import { buildPolicySummary, type LeaveTypePolicy } from '@/lib/leave-policy-utils'
 import { formatDate } from '@/lib/format-date'
+import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -91,6 +92,33 @@ export default function EditLeaveForm({
   const [uploadError, setUploadError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // ── Holiday set for accurate client-side preview ──────────────────────────
+  const [holidaySet, setHolidaySet] = useState<Set<string>>(new Set())
+  const fetchedHolidayYears = useRef<Set<number>>(new Set())
+
+  const fetchHolidaysForYear = useCallback(async (year: number) => {
+    if (fetchedHolidayYears.current.has(year)) return
+    fetchedHolidayYears.current.add(year)
+    try {
+      const res = await fetch(`/api/holidays?year=${year}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const list: { date: string }[] = data.holidays ?? []
+      setHolidaySet((prev) => {
+        const next = new Set(prev)
+        for (const h of list) next.add(h.date)
+        return next
+      })
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    const years = new Set<number>()
+    if (startDate) years.add(new Date(startDate + 'T00:00:00').getFullYear())
+    if (endDate)   years.add(new Date(endDate   + 'T00:00:00').getFullYear())
+    years.forEach(fetchHolidaysForYear)
+  }, [startDate, endDate, fetchHolidaysForYear])
+
   const [_submitPending, startSaveTransition] = useTransition()
 
   const disabled = !isEditable
@@ -105,7 +133,7 @@ export default function EditLeaveForm({
 
   const preview = (() => {
     if (!startDate || !endDate) return null
-    return calculateLeaveDays(new Date(startDate), new Date(endDate), startDurationType, endDurationType)
+    return calculateLeaveDays(new Date(startDate), new Date(endDate), startDurationType, endDurationType, holidaySet)
   })()
 
   const remainingQuota = (() => {
@@ -266,15 +294,13 @@ export default function EditLeaveForm({
             <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
               วันที่เริ่มต้น <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
+            <HolidayDatePicker
               id="startDate"
               name="startDate"
-              min={disabled ? undefined : today}
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              min={disabled ? undefined : today}
+              onChange={setStartDate}
               disabled={disabled}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
             />
             {state.errors?.startDate && (
               <p className="mt-1 text-xs text-red-500">{state.errors.startDate}</p>
@@ -284,15 +310,13 @@ export default function EditLeaveForm({
             <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
               วันที่สิ้นสุด <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
+            <HolidayDatePicker
               id="endDate"
               name="endDate"
-              min={disabled ? undefined : (startDate || today)}
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              min={disabled ? undefined : (startDate || today)}
+              onChange={setEndDate}
               disabled={disabled}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
             />
             {state.errors?.endDate && (
               <p className="mt-1 text-xs text-red-500">{state.errors.endDate}</p>
