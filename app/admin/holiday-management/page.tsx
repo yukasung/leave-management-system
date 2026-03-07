@@ -7,8 +7,7 @@ export default async function HolidayManagementPage() {
 
   if (!session) redirect('/login')
 
-  const role = session.user.role
-  if (role !== 'ADMIN' && role !== 'HR') {
+  if (!session.user.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

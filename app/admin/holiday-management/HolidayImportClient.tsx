@@ -37,7 +37,7 @@ type BotStage = 'idle' | 'previewing' | 'previewed' | 'importing' | 'done' | 'er
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const CURRENT_YEAR = new Date().getFullYear()
-const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - 1 + i)
+const YEAR_OPTIONS = Array.from({ length: 11 }, (_, i) => CURRENT_YEAR - 5 + i)
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

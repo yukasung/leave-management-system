@@ -11,7 +11,7 @@ export default async function EditLeaveTypePage({
 }) {
   const session = await auth()
 
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-red-500 font-semibold">Unauthorized</p>

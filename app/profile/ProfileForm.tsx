@@ -8,7 +8,7 @@ export type ProfileData = {
   userId:      string
   name:        string
   email:       string
-  role:        string
+  isAdmin:     boolean
   department:  string | null
   // from linked Employee
   firstName:   string | null
@@ -16,14 +16,6 @@ export type ProfileData = {
   phone:       string | null
   avatarUrl:   string | null
   position:    string | null
-}
-
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN:     'ผู้ดูแลระบบ',
-  HR:        'ฝ่ายบุคคล',
-  MANAGER:   'ผู้จัดการ',
-  EMPLOYEE:  'พนักงาน',
-  EXECUTIVE: 'ผู้บริหาร',
 }
 
 const inputCls =
@@ -105,8 +97,11 @@ export default function ProfileForm({ data }: { data: ProfileData }) {
               {data.email}
             </div>
             <div>
-              <span className="font-medium text-gray-500 block mb-0.5">บทบาท</span>
-              {ROLE_LABEL[data.role] ?? data.role}
+              <span className="font-medium text-gray-500 block mb-0.5">สิทธิ์ระบบ</span>
+              {data.isAdmin
+                ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">Admin</span>
+                : <span className="text-gray-600">พนักงาน</span>
+              }
             </div>
             {data.department && (
               <div>

@@ -10,7 +10,7 @@ export async function hrApproveLeaveRequest(id: string): Promise<ActionResult> {
   try {
     const session = await auth()
     if (!session?.user?.id) return { success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }
-    if (session.user.role !== 'HR' && session.user.role !== 'ADMIN') {
+    if (!session.user.isAdmin) {
       return { success: false, message: 'คุณไม่มีสิทธิ์ดำเนินการนี้' }
     }
 
@@ -72,7 +72,7 @@ export async function hrRejectLeaveRequest(id: string): Promise<ActionResult> {
   try {
     const session = await auth()
     if (!session?.user?.id) return { success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }
-    if (session.user.role !== 'HR' && session.user.role !== 'ADMIN') {
+    if (!session.user.isAdmin) {
       return { success: false, message: 'คุณไม่มีสิทธิ์ดำเนินการนี้' }
     }
 

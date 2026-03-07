@@ -29,16 +29,21 @@ export default async function RootLayout({
   let currentUser: CurrentUser | null = null
 
   if (session?.user?.id) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { avatarUrl: true },
-    })
+    const [dbUser, reportCount] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { avatarUrl: true },
+      }),
+      // Check if this user is a direct manager of any employee
+      prisma.employee.count({ where: { manager: { userId: session.user.id } } }),
+    ])
     currentUser = {
-      id:        session.user.id,
-      name:      session.user.name ?? '',
-      email:     session.user.email ?? '',
-      role:      session.user.role as CurrentUser['role'],
-      avatarUrl: dbUser?.avatarUrl ?? null,
+      id:         session.user.id,
+      name:       session.user.name ?? '',
+      email:      session.user.email ?? '',
+      isAdmin:    session.user.isAdmin,
+      avatarUrl:  dbUser?.avatarUrl ?? null,
+      hasReports: reportCount > 0,
     }
   }
 

@@ -3,30 +3,22 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
-const roleLabel: Record<string, string> = {
-  ADMIN:    'ผู้ดูแลระบบ',
-  HR:       'ฝ่ายบุคคล',
-  MANAGER:  'ผู้จัดการ',
-  EMPLOYEE: 'พนักงาน',
-  EXECUTIVE: 'ผู้บริหาร',
-}
-
 export default async function DashboardPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
   const userId = session.user.id
-  const role = session.user.role
+  const isAdmin = session.user.isAdmin
 
   const [pending, approved, rejected, total, pendingAll] = await Promise.all([
     prisma.leaveRequest.count({ where: { userId, status: 'PENDING' } }),
     prisma.leaveRequest.count({ where: { userId, status: 'APPROVED' } }),
     prisma.leaveRequest.count({ where: { userId, status: 'REJECTED' } }),
     prisma.leaveRequest.count({ where: { userId } }),
-    // สำหรับ manager/hr/admin — คำขอที่รออนุมัติทั้งหมด
-    (role === 'EMPLOYEE')
-      ? Promise.resolve(0)
-      : prisma.leaveRequest.count({ where: { status: 'PENDING' } }),
+    // สำหรับ admin — คำขอที่รออนุมัติทั้งหมด
+    isAdmin
+      ? prisma.leaveRequest.count({ where: { status: 'PENDING' } })
+      : Promise.resolve(0),
   ])
 
   const recentRequests = await prisma.leaveRequest.findMany({
@@ -57,7 +49,7 @@ export default async function DashboardPage() {
           สวัสดี, {session.user.name} 👋
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          {roleLabel[role] ?? role} · ระบบจัดการวันลา
+          {isAdmin ? 'ผู้ดูแลระบบ' : 'พนักงาน'} · ระบบจัดการวันลา
         </p>
       </div>
 
@@ -69,15 +61,15 @@ export default async function DashboardPage() {
         <StatCard label="ไม่อนุมัติ" value={rejected} color="text-red-500" bg="bg-red-50" />
       </div>
 
-      {/* Manager/HR/Admin extra card */}
-      {role !== 'EMPLOYEE' && (
+      {/* Admin extra card */}
+      {isAdmin && (
         <div className="mb-8 p-5 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-between">
           <div>
             <p className="text-sm text-blue-600 font-medium">คำขอลาที่รอการอนุมัติ (ทั้งหมด)</p>
             <p className="text-3xl font-bold text-blue-700 mt-1">{pendingAll} รายการ</p>
           </div>
           <Link
-            href={role === 'MANAGER' ? '/manager/leave-requests' : '/hr/leave-requests'}
+            href="/hr/leave-requests"
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition"
           >
             จัดการคำขอ →

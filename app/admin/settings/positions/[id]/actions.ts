@@ -16,7 +16,7 @@ export async function updatePosition(
   formData: FormData,
 ): Promise<PositionFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
@@ -37,7 +37,7 @@ export async function updatePosition(
 
 export async function deletePosition(id: string): Promise<PositionFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 

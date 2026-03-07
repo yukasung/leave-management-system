@@ -6,22 +6,6 @@ import EmployeeFilters from './EmployeeFilters'
 
 const PAGE_SIZE = 15
 
-const ROLE_LABELS: Record<string, string> = {
-  ADMIN: 'Admin',
-  HR: 'HR',
-  MANAGER: 'Manager',
-  EMPLOYEE: 'พนักงาน',
-  EXECUTIVE: 'ผู้บริหาร',
-}
-
-const ROLE_BADGE: Record<string, string> = {
-  ADMIN: 'bg-purple-100 text-purple-700',
-  HR: 'bg-blue-100 text-blue-700',
-  MANAGER: 'bg-indigo-100 text-indigo-700',
-  EMPLOYEE: 'bg-gray-100 text-gray-600',
-  EXECUTIVE: 'bg-amber-100 text-amber-700',
-}
-
 export default async function EmployeesPage({
   searchParams,
 }: {
@@ -29,7 +13,7 @@ export default async function EmployeesPage({
 }) {
   const session = await auth()
 
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -72,7 +56,7 @@ export default async function EmployeesPage({
         email: true,
         avatarUrl: true,
         position: true,
-        role: true,
+        isAdmin: true,
         isActive: true,
         isProbation: true,
         department: { select: { id: true, name: true } },
@@ -139,7 +123,7 @@ export default async function EmployeesPage({
                   <th className="px-5 py-3.5">ชื่อ-นามสกุล</th>
                   <th className="px-5 py-3.5">แผนก</th>
                   <th className="px-5 py-3.5">ตำแหน่ง</th>
-                  <th className="px-5 py-3.5">บทบาท</th>
+                  <th className="px-5 py-3.5">ผู้ดูแลระบบ</th>
                   <th className="px-5 py-3.5">สถานะ</th>
                   <th className="px-5 py-3.5 text-right">จัดการ</th>
                 </tr>
@@ -182,13 +166,11 @@ export default async function EmployeesPage({
                     </td>
                     <td className="px-5 py-3.5 text-gray-600">{emp.position}</td>
                     <td className="px-5 py-3.5">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          ROLE_BADGE[emp.role] ?? 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {ROLE_LABELS[emp.role] ?? emp.role}
-                      </span>
+                      {emp.isAdmin && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                          Admin
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-3.5">
                       <span

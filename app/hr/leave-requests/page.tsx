@@ -6,7 +6,7 @@ import { HRActionButtons } from './HRActionButtons'
 
 const STATUS_LABELS: Record<string, string> = {
   ALL: 'ทั้งหมด',
-  PENDING: 'รอ Manager',
+  PENDING:   'รออนุมัติ',
   IN_REVIEW: 'รอ HR',
   APPROVED: 'อนุมัติแล้ว',
   REJECTED: 'ปฏิเสธ',
@@ -29,7 +29,7 @@ export default async function HRLeaveRequestsPage({
   const { status } = await searchParams
   const session = await auth()
 
-  if (!session || (session.user.role !== 'HR' && session.user.role !== 'ADMIN')) {
+  if (!session || !session.user.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-red-500 text-lg font-semibold">Unauthorized</p>

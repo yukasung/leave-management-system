@@ -3,15 +3,15 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { HolidaySource } from "@prisma/client";
 
-function guard(role: string) {
-  return role !== "ADMIN" && role !== "HR";
+function guard(isAdmin: boolean) {
+  return !isAdmin
 }
 
-// ── GET /api/admin/holidays?year=2026 ─────────────────────────────────────────
+// ── GET /api/admin/holidays?year=2026 ───────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (guard(session.user.role))
+  if (guard(session.user.isAdmin))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const yearParam = req.nextUrl.searchParams.get("year");
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (guard(session.user.role))
+  if (guard(session.user.isAdmin))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   let body: unknown;

@@ -23,7 +23,7 @@ function formatDate(date: Date): string {
 
 const STATUS_LABELS: Record<string, string> = {
   DRAFT:            'ร่าง',
-  PENDING:          'รอ Manager',
+  PENDING:          'รออนุมัติ',
   IN_REVIEW:        'รอ HR',
   APPROVED:         'อนุมัติแล้ว',
   REJECTED:         'ปฏิเสธ',
@@ -34,7 +34,7 @@ const STATUS_LABELS: Record<string, string> = {
 export async function GET(req: NextRequest) {
   const session = await auth()
 
-  if (!session || (session.user.role !== 'HR' && session.user.role !== 'ADMIN')) {
+  if (!session || !session.user.isAdmin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

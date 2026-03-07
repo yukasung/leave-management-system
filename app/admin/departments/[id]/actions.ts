@@ -16,7 +16,7 @@ export async function updateDepartment(
   formData: FormData,
 ): Promise<DepartmentFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
@@ -57,7 +57,7 @@ export async function updateDepartment(
 
 export async function deleteDepartment(id: string): Promise<DepartmentFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 

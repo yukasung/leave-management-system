@@ -28,10 +28,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const role = session.user.role;
-  if (role !== "ADMIN" && role !== "HR") {
+  const role = session.user.isAdmin;
+  if (!role) {
     return NextResponse.json(
-      { error: "Forbidden — only ADMIN or HR may access this endpoint" },
+      { error: "Forbidden — only Admin may access this endpoint" },
       { status: 403 }
     );
   }

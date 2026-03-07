@@ -143,7 +143,7 @@ export async function cancelLeaveRequest(leaveId: string): Promise<CancelState> 
   try {
     const { requestedCancellation } = await cancelLeave(
       session.user.id,
-      session.user.role,
+      session.user.isAdmin,
       leaveId
     )
 
@@ -245,7 +245,7 @@ export async function updateLeaveRequest(
   try {
     await updateLeave(
       session.user.id,
-      session.user.role,
+      session.user.isAdmin,
       leaveId,
       {
         leaveTypeId,

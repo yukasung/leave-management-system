@@ -1,77 +1,35 @@
 /**
- * Role Guard — single source of truth for all role-based authorization.
+ * Permission Guard  simple isAdmin-based authorization.
  *
- * Usage in service layer:
- *   import { isPrivileged, assertHR } from '@/lib/role-guard'
- *
- * Usage in actions (controller):
- *   — None. Actions pass session.user.role to the service and let the
- *     service handle authorization via this module.
+ * In this system there are no roles. Every user is either an admin or not.
+ * Admin users can manage employees, view all leave, and act as fallback approvers.
  */
 import 'server-only'
 
-export type AppRole = 'ADMIN' | 'HR' | 'MANAGER' | 'EMPLOYEE' | 'EXECUTIVE'
+//  Error 
 
-// ── Error ─────────────────────────────────────────────────────────────────────
-
-export class RoleGuardError extends Error {
+export class PermissionError extends Error {
   constructor(message: string) {
     super(message)
-    this.name = 'RoleGuardError'
+    this.name = 'PermissionError'
   }
 }
 
-// ── Boolean predicates (no throw — use in service branch logic) ───────────────
+// Legacy alias so existing catch blocks don't break
+export { PermissionError as RoleGuardError }
 
-export const isAdmin     = (role: string): boolean => role === 'ADMIN'
-export const isHR        = (role: string): boolean => role === 'HR' || role === 'ADMIN'
-export const isManager   = (role: string): boolean =>
-  role === 'MANAGER' || role === 'HR' || role === 'ADMIN'
-export const isPrivileged = isHR   // alias — "privileged" means HR or ADMIN in this system
-
-export function hasRole(role: string, ...allowed: AppRole[]): boolean {
-  return allowed.includes(role as AppRole)
-}
-
-// ── Throwing guards (use at authorization checkpoints) ────────────────────────
+//  Guard 
 
 /**
- * Throws RoleGuardError if the caller's role is not in the allowed list.
+ * Throws PermissionError if the caller is not an admin.
  */
-export function assertRole(callerRole: string, ...allowed: AppRole[]): void {
-  if (!hasRole(callerRole, ...allowed)) {
-    const label = allowed.join(' หรือ ')
-    throw new RoleGuardError(
-      `คุณไม่มีสิทธิ์ดำเนินการนี้ (ต้องการสิทธิ์: ${label})`
-    )
+export function assertAdmin(isAdmin: boolean): void {
+  if (!isAdmin) {
+    throw new PermissionError('?????????????????????????? (????????????????????????)')
   }
 }
 
-/**
- * Throws RoleGuardError if the caller is not HR or ADMIN.
- * Use this for operations that require HR override power.
- */
-export function assertHR(callerRole: string): void {
-  assertRole(callerRole, 'HR', 'ADMIN')
-}
+//  Helpers used by service layer 
 
-/**
- * Throws RoleGuardError if the caller lacks manager-level access.
- */
-export function assertManager(callerRole: string): void {
-  assertRole(callerRole, 'MANAGER', 'HR', 'ADMIN')
-}
-
-/**
- * Human-readable label for a role, used in audit log descriptions.
- */
-export function roleLabel(role: string): string {
-  const labels: Record<string, string> = {
-    ADMIN:     'Admin',
-    HR:        'HR',
-    MANAGER:   'Manager',
-    EMPLOYEE:  'Employee',
-    EXECUTIVE: 'Executive',
-  }
-  return labels[role] ?? role
-}
+/** True when the caller is privileged (admin). Used by service functions. */
+export const isPrivileged = (isAdmin: boolean): boolean => isAdmin

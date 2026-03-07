@@ -11,7 +11,7 @@ export default async function EditDepartmentPage({
 }) {
   const session = await auth()
 
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-red-500 font-semibold">Unauthorized</p>
@@ -27,7 +27,7 @@ export default async function EditDepartmentPage({
       include: { _count: { select: { employees: true } } },
     }),
     prisma.user.findMany({
-      where: { role: { in: ['MANAGER', 'HR', 'EXECUTIVE', 'ADMIN'] } },
+      where: { role: { in: ['HR', 'ADMIN'] } },
       orderBy: { name: 'asc' },
       select: { id: true, name: true, role: true },
     }),

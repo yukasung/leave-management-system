@@ -21,7 +21,7 @@ const ACTION_BADGE: Record<string, string> = {
 export default async function AuditLogPage() {
   const session = await auth()
 
-  if (!session || (session.user.role !== 'HR' && session.user.role !== 'ADMIN')) {
+  if (!session || !session.user.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-red-500 text-lg font-semibold">Unauthorized</p>

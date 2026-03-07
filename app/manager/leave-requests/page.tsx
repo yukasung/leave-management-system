@@ -1,9 +1,20 @@
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 import LeaveRequestTable from './LeaveRequestTable'
 
 export default async function ManagerLeaveRequestsPage() {
+  const session = await auth()
+  if (!session?.user?.id) redirect('/login')
+
+  const userId = session.user.id
+
+  // Only show requests from employees who report directly to this user
   const requests = await prisma.leaveRequest.findMany({
-    where: { status: 'PENDING' },
+    where: {
+      status: 'PENDING',
+      user: { employee: { manager: { userId } } },
+    },
     orderBy: { createdAt: 'asc' },
     include: {
       user: { select: { name: true, email: true } },

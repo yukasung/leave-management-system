@@ -9,17 +9,9 @@ export type CurrentUser = {
   id:        string
   name:      string
   email:     string
-  role:      'ADMIN' | 'HR' | 'MANAGER' | 'EMPLOYEE' | 'EXECUTIVE'
+  isAdmin:   boolean
   avatarUrl: string | null
-}
-
-// ── Role badge config ─────────────────────────────────────────────────────────
-const ROLE_CONFIG: Record<CurrentUser['role'], { label: string; cls: string }> = {
-  ADMIN:     { label: 'Admin',     cls: 'bg-purple-100 text-purple-700' },
-  HR:        { label: 'HR',        cls: 'bg-blue-100 text-blue-700'     },
-  MANAGER:   { label: 'Manager',   cls: 'bg-indigo-100 text-indigo-700' },
-  EXECUTIVE: { label: 'Executive', cls: 'bg-amber-100 text-amber-700'   },
-  EMPLOYEE:  { label: 'พนักงาน',  cls: 'bg-gray-100 text-gray-600'     },
+  hasReports?: boolean  // true if this user is a direct manager of any employee
 }
 
 // ── Nav types ─────────────────────────────────────────────────────────────────
@@ -33,7 +25,7 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(href + '/')
 }
 
-function getNavGroups(role: CurrentUser['role']): NavGroup[] {
+function getNavGroups(currentUser: CurrentUser): NavGroup[] {
   const groups: NavGroup[] = []
 
   groups.push({
@@ -48,33 +40,14 @@ function getNavGroups(role: CurrentUser['role']): NavGroup[] {
     ],
   })
 
-  if (role === 'MANAGER') {
+  if (currentUser.hasReports) {
     groups.push({
       label: 'จัดการทีม',
       links: [{ href: '/manager/leave-requests', label: 'อนุมัติการลาทีม' }],
     })
   }
 
-  if (role === 'HR') {
-    groups.push({
-      label: 'HR',
-      links: [
-        { href: '/hr/leave-requests',         label: 'คำขอลาทั้งหมด'      },
-        { href: '/hr/leave-report',            label: 'รายงานการลา'        },
-        { href: '/hr/audit-logs',              label: 'Audit Log'          },
-        { href: '/admin/holiday-management',   label: 'วันหยุดนักขัตฤกษ์' },
-      ],
-    })
-  }
-
-  if (role === 'EXECUTIVE') {
-    groups.push({
-      label: 'ผู้บริหาร',
-      links: [{ href: '/executive', label: 'Executive Dashboard' }],
-    })
-  }
-
-  if (role === 'ADMIN') {
+  if (currentUser.isAdmin) {
     groups.push({
       label: 'Admin',
       links: [
@@ -83,6 +56,7 @@ function getNavGroups(role: CurrentUser['role']): NavGroup[] {
         { href: '/admin/departments',        label: 'จัดการแผนก'         },
         { href: '/admin/settings',           label: 'ตั้งค่าระบบ'        },
         { href: '/admin/holiday-management', label: 'วันหยุดนักขัตฤกษ์' },
+        { href: '/hr/audit-logs',            label: 'Audit Log'          },
       ],
     })
   }
@@ -132,10 +106,9 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
 
   if (!currentUser) return null
 
-  const { name, role } = currentUser
+  const { name, isAdmin } = currentUser
   const initials = name.trim().split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
-  const roleConf = ROLE_CONFIG[role]
-  const groups   = getNavGroups(role)
+  const groups   = getNavGroups(currentUser)
 
   return (
     <nav
@@ -201,11 +174,11 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
             )}
           </Link>
 
-          <span
-            className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleConf.cls}`}
-          >
-            {roleConf.label}
-          </span>
+          {isAdmin && (
+            <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+              Admin
+            </span>
+          )}
 
           <span className="hidden md:block text-sm font-medium text-gray-700 max-w-30 truncate">
             {name}
@@ -278,11 +251,11 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
                   </span>
                 )}
               </Link>
-              <span
-                className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleConf.cls}`}
-              >
-                {roleConf.label}
-              </span>
+              {isAdmin && (
+                <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                  Admin
+                </span>
+              )}
               <span className="text-sm font-medium text-gray-700 truncate">{name}</span>
             </div>
             <form action={logout}>

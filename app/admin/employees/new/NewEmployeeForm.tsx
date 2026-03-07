@@ -9,14 +9,6 @@ type Department = { id: string; name: string; manager: { employee: { id: string 
 type ManagerOption  = { id: string; firstName: string; lastName: string; position: string }
 type PositionOption = { id: string; name: string }
 
-const ROLE_OPTIONS = [
-  { value: 'EMPLOYEE',  label: 'พนักงาน (Employee)' },
-  { value: 'MANAGER',   label: 'ผู้จัดการ (Manager)' },
-  { value: 'HR',        label: 'HR' },
-  { value: 'EXECUTIVE', label: 'ผู้บริหาร (Executive)' },
-  { value: 'ADMIN',     label: 'ผู้ดูแลระบบ (Admin)' },
-]
-
 const initialState: CreateEmployeeState = {}
 
 export default function NewEmployeeForm({
@@ -179,7 +171,7 @@ export default function NewEmployeeForm({
           <FieldError msg={e.departmentId} />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Position */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -197,22 +189,7 @@ export default function NewEmployeeForm({
             </select>
             <FieldError msg={e.positionId} />
           </div>
-
-          {/* Role */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              บทบาทในระบบ <Required />
-            </label>
-            <select name="role" defaultValue="EMPLOYEE" className={selectCls(!!e.role)}>
-              {ROLE_OPTIONS.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-            <FieldError msg={e.role} />
           </div>
-        </div>
 
         {/* Manager */}
         <div>
@@ -239,24 +216,42 @@ export default function NewEmployeeForm({
       {/* ── Section: Status ── */}
       <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5 mb-4">
-          สถานะ
+          สถานะและสิทธิ์
         </legend>
-        <label className="flex items-start gap-3 cursor-pointer select-none group">
-          <input
-            type="checkbox"
-            name="isProbation"
-            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-              อยู่ระหว่างทดลองงาน
+        <div className="space-y-4">
+          <label className="flex items-start gap-3 cursor-pointer select-none group">
+            <input
+              type="checkbox"
+              name="isAdmin"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                ผู้ดูแลระบบ (System Admin)
+              </span>
+              <br />
+              <span className="text-xs text-gray-400">
+                สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้จัดการสายงาน
+              </span>
             </span>
-            <br />
-            <span className="text-xs text-gray-400">
-              พนักงานทดลองงานอาจไม่สามารถลาบางประเภทได้ตามนโยบาย
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer select-none group">
+            <input
+              type="checkbox"
+              name="isProbation"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                อยู่ระหว่างทดลองงาน
+              </span>
+              <br />
+              <span className="text-xs text-gray-400">
+                พนักงานทดลองงานอาจไม่สามารถลาบางประเภทได้ตามนโยบาย
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+        </div>
       </fieldset>
 
       {/* ── Actions ── */}

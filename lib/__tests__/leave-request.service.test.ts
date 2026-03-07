@@ -66,8 +66,7 @@ vi.mock('@/lib/leave-audit-log.service', () => ({
 }))
 
 vi.mock('@/lib/role-guard', () => ({
-  isPrivileged: vi.fn((role: string) => role === 'ADMIN' || role === 'HR'),
-  roleLabel:    vi.fn((role: string) => role),
+  isPrivileged: vi.fn((isAdmin: boolean) => isAdmin),
 }))
 
 // Import after mocks
@@ -157,7 +156,7 @@ describe('createDraft — guard clauses', () => {
     mockGetUsed.mockResolvedValue(9)     // 9 used + 1 = 10 exactly
     const tx = makeTx()
     tx.leaveRequest.create = vi.fn().mockResolvedValue({ id: 'leave-new' })
-    mockTransaction.mockImplementation((cb: (tx: typeof tx) => unknown) => cb(tx))
+    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
     await expect(createDraft(baseInput({ totalDays: 1 }))).resolves.toBeDefined()
   })
 
@@ -171,7 +170,7 @@ describe('createDraft — guard clauses', () => {
     mockFindUniqueLeaveType.mockResolvedValue(leaveType({ requiresAttachment: true }))
     const tx = makeTx()
     tx.leaveRequest.create = vi.fn().mockResolvedValue({ id: 'leave-new' })
-    mockTransaction.mockImplementation((cb: (tx: typeof tx) => unknown) => cb(tx))
+    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
     await expect(createDraft(baseInput({ documentUrl: 'https://example.com/doc.pdf' }))).resolves.toBeDefined()
   })
 
@@ -187,7 +186,7 @@ describe('createDraft — guard clauses', () => {
     mockFindUniqueUser.mockResolvedValue({ isProbation: false, name: 'Alice', employee: { managerId: null } })
     const tx = makeTx()
     tx.leaveRequest.create = vi.fn().mockResolvedValue({ id: 'leave-new' })
-    mockTransaction.mockImplementation((cb: (tx: typeof tx) => unknown) => cb(tx))
+    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
     await expect(createDraft(baseInput())).resolves.toBeDefined()
   })
 
@@ -196,7 +195,7 @@ describe('createDraft — guard clauses', () => {
     const tx = makeTx()
     // balance: totalDays=3, usedDays=3  → remaining=0
     tx.leaveBalance.findUnique = vi.fn().mockResolvedValue({ totalDays: 3, usedDays: 3 })
-    mockTransaction.mockImplementation((cb: (tx: typeof tx) => unknown) => cb(tx))
+    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
     await expect(createDraft(baseInput({ totalDays: 1 }))).rejects.toThrow('สิทธิ์การลาไม่เพียงพอ')
   })
 
@@ -204,7 +203,7 @@ describe('createDraft — guard clauses', () => {
     mockFindUniqueLeaveType.mockResolvedValue(leaveType())
     const tx = makeTx()
     tx.leaveRequest.create = vi.fn().mockResolvedValue({ id: 'leave-new' })
-    mockTransaction.mockImplementation((cb: (tx: typeof tx) => unknown) => cb(tx))
+    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
     const result = await createDraft(baseInput())
     expect(result).toEqual({ leaveRequestId: 'leave-new' })
   })
@@ -238,7 +237,7 @@ describe('submitLeave — guard clauses', () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow())
     mockFindFirstUser.mockResolvedValue({ id: 'hr-1' })
     const tx = makeTx()
-    mockTransaction.mockImplementation((cb: (tx: typeof tx) => unknown) => cb(tx))
+    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
     await expect(submitLeave('user-1', 'leave-1')).resolves.toBeUndefined()
   })
 })
@@ -252,58 +251,58 @@ describe('cancelLeave — guard clauses', () => {
 
   it('throws when leave request does not exist', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(null)
-    await expect(cancelLeave('user-1', 'EMPLOYEE', 'leave-x')).rejects.toThrow('ไม่พบคำขอลา')
+    await expect(cancelLeave('user-1', false, 'leave-x')).rejects.toThrow('ไม่พบคำขอลา')
   })
 
   it('throws when non-privileged caller does not own the leave', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ userId: 'other-user' }))
-    await expect(cancelLeave('user-1', 'EMPLOYEE', 'leave-1')).rejects.toThrow('ไม่มีสิทธิ์ยกเลิก')
+    await expect(cancelLeave('user-1', false, 'leave-1')).rejects.toThrow('ไม่มีสิทธิ์ยกเลิก')
   })
 
   it('throws when status is REJECTED (terminal)', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.REJECTED }))
-    await expect(cancelLeave('user-1', 'EMPLOYEE', 'leave-1')).rejects.toThrow('ถูกปฏิเสธ')
+    await expect(cancelLeave('user-1', false, 'leave-1')).rejects.toThrow('ถูกปฏิเสธ')
   })
 
   it('throws when status is already CANCELLED (terminal)', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.CANCELLED }))
-    await expect(cancelLeave('user-1', 'EMPLOYEE', 'leave-1')).rejects.toThrow('ถูกยกเลิกไปแล้ว')
+    await expect(cancelLeave('user-1', false, 'leave-1')).rejects.toThrow('ถูกยกเลิกไปแล้ว')
   })
 
   it('throws when CANCEL_REQUESTED and caller is non-privileged', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.CANCEL_REQUESTED }))
-    await expect(cancelLeave('user-1', 'EMPLOYEE', 'leave-1')).rejects.toThrow('รอการพิจารณา')
+    await expect(cancelLeave('user-1', false, 'leave-1')).rejects.toThrow('รอการพิจารณา')
   })
 
   it('returns { requestedCancellation: true } when owner cancels APPROVED leave', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.APPROVED }))
     const tx = makeTx()
-    mockTransaction.mockImplementation((cb: (tx: typeof tx) => unknown) => cb(tx))
-    const result = await cancelLeave('user-1', 'EMPLOYEE', 'leave-1')
+    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
+    const result = await cancelLeave('user-1', false, 'leave-1')
     expect(result).toEqual({ requestedCancellation: true })
   })
 
   it('returns { requestedCancellation: false } when HR cancels APPROVED leave', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.APPROVED }))
     const tx = makeTx()
-    mockTransaction.mockImplementation((cb: (tx: typeof tx) => unknown) => cb(tx))
-    const result = await cancelLeave('hr-1', 'HR', 'leave-1')
+    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
+    const result = await cancelLeave('hr-1', true, 'leave-1')
     expect(result).toEqual({ requestedCancellation: false })
   })
 
   it('returns { requestedCancellation: false } when cancelling a DRAFT', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.DRAFT }))
     const tx = makeTx()
-    mockTransaction.mockImplementation((cb: (tx: typeof tx) => unknown) => cb(tx))
-    const result = await cancelLeave('user-1', 'EMPLOYEE', 'leave-1')
+    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
+    const result = await cancelLeave('user-1', false, 'leave-1')
     expect(result).toEqual({ requestedCancellation: false })
   })
 
   it('returns { requestedCancellation: false } when cancelling a PENDING leave', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.PENDING }))
     const tx = makeTx()
-    mockTransaction.mockImplementation((cb: (tx: typeof tx) => unknown) => cb(tx))
-    const result = await cancelLeave('user-1', 'EMPLOYEE', 'leave-1')
+    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
+    const result = await cancelLeave('user-1', false, 'leave-1')
     expect(result).toEqual({ requestedCancellation: false })
   })
 })
@@ -332,52 +331,52 @@ describe('updateLeave — guard clauses', () => {
 
   it('throws when leave request does not exist', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(null)
-    await expect(updateLeave('user-1', 'EMPLOYEE', 'leave-x', updateInput)).rejects.toThrow('ไม่พบคำขอลา')
+    await expect(updateLeave('user-1', false, 'leave-x', updateInput)).rejects.toThrow('ไม่พบคำขอลา')
   })
 
   it('throws when non-privileged caller does not own the leave', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ userId: 'other-user' }))
-    await expect(updateLeave('user-1', 'EMPLOYEE', 'leave-1', updateInput)).rejects.toThrow('ไม่มีสิทธิ์')
+    await expect(updateLeave('user-1', false, 'leave-1', updateInput)).rejects.toThrow('ไม่มีสิทธิ์')
   })
 
   it('throws when status is PENDING', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.PENDING }))
-    await expect(updateLeave('user-1', 'EMPLOYEE', 'leave-1', updateInput)).rejects.toThrow('Cannot edit pending leave')
+    await expect(updateLeave('user-1', false, 'leave-1', updateInput)).rejects.toThrow('Cannot edit pending leave')
   })
 
   it('throws when status is APPROVED and caller is non-privileged', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.APPROVED }))
-    await expect(updateLeave('user-1', 'EMPLOYEE', 'leave-1', updateInput)).rejects.toThrow('Approved leave cannot be edited')
+    await expect(updateLeave('user-1', false, 'leave-1', updateInput)).rejects.toThrow('Approved leave cannot be edited')
   })
 
   it('throws when status is REJECTED', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.REJECTED }))
-    await expect(updateLeave('user-1', 'EMPLOYEE', 'leave-1', updateInput)).rejects.toThrow(LeaveServiceError)
+    await expect(updateLeave('user-1', false, 'leave-1', updateInput)).rejects.toThrow(LeaveServiceError)
   })
 
   it('throws when status is CANCELLED', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.CANCELLED }))
-    await expect(updateLeave('user-1', 'EMPLOYEE', 'leave-1', updateInput)).rejects.toThrow(LeaveServiceError)
+    await expect(updateLeave('user-1', false, 'leave-1', updateInput)).rejects.toThrow(LeaveServiceError)
   })
 
   it('throws when status is IN_REVIEW', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.IN_REVIEW }))
-    await expect(updateLeave('user-1', 'EMPLOYEE', 'leave-1', updateInput)).rejects.toThrow(LeaveServiceError)
+    await expect(updateLeave('user-1', false, 'leave-1', updateInput)).rejects.toThrow(LeaveServiceError)
   })
 
   it('succeeds for a DRAFT leave owned by the caller', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow())
     mockFindUniqueLeaveType.mockResolvedValue(leaveType())
     const tx = makeTx()
-    mockTransaction.mockImplementation((cb: (tx: typeof tx) => unknown) => cb(tx))
-    await expect(updateLeave('user-1', 'EMPLOYEE', 'leave-1', updateInput)).resolves.toBeUndefined()
+    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
+    await expect(updateLeave('user-1', false, 'leave-1', updateInput)).resolves.toBeUndefined()
   })
 
   it('allows HR to edit a DRAFT owned by another user', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ userId: 'other-user' }))
     mockFindUniqueLeaveType.mockResolvedValue(leaveType())
     const tx = makeTx()
-    mockTransaction.mockImplementation((cb: (tx: typeof tx) => unknown) => cb(tx))
-    await expect(updateLeave('hr-1', 'HR', 'leave-1', updateInput)).resolves.toBeUndefined()
+    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
+    await expect(updateLeave('hr-1', true, 'leave-1', updateInput)).resolves.toBeUndefined()
   })
 })

@@ -15,7 +15,7 @@ export async function createPosition(
   formData: FormData,
 ): Promise<PositionFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 

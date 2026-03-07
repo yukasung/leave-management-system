@@ -2,7 +2,6 @@ import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { compare } from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
-import type { Role } from '@prisma/client'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: 'jwt' },
@@ -27,11 +26,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const isValid = await compare(credentials.password as string, user.password)
         if (!isValid) return null
 
+        // Resolve admin flag from employee record
+        const employee = await prisma.employee.findUnique({
+          where: { userId: user.id },
+          select: { isAdmin: true },
+        })
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
+          isAdmin: employee?.isAdmin ?? false,
         }
       },
     }),
@@ -40,14 +45,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.role = (user as { role: Role }).role
+        token.isAdmin = (user as { isAdmin: boolean }).isAdmin
+      }
+      // Re-hydrate isAdmin on every token refresh in case the token pre-dates the field
+      if (token.id && token.isAdmin === undefined) {
+        const employee = await prisma.employee.findUnique({
+          where: { userId: token.id as string },
+          select: { isAdmin: true },
+        })
+        token.isAdmin = employee?.isAdmin ?? false
       }
       return token
     },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string
-        session.user.role = token.role as Role
+        session.user.isAdmin = token.isAdmin as boolean
       }
       return session
     },

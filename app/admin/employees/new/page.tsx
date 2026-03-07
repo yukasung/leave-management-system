@@ -6,7 +6,7 @@ import NewEmployeeForm from './NewEmployeeForm'
 export default async function NewEmployeePage() {
   const session = await auth()
 
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

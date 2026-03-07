@@ -19,20 +19,12 @@ export type EmployeeData = {
   avatarUrl:    string | null
   position:     string
   positionId:   string | null
-  role:         string
+  isAdmin:      boolean
   isProbation:  boolean
   isActive:     boolean
   departmentId: string | null
   managerId:    string | null
 }
-
-const ROLE_OPTIONS = [
-  { value: 'EMPLOYEE',  label: 'พนักงาน (Employee)' },
-  { value: 'MANAGER',   label: 'ผู้จัดการ (Manager)' },
-  { value: 'HR',        label: 'HR' },
-  { value: 'EXECUTIVE', label: 'ผู้บริหาร (Executive)' },
-  { value: 'ADMIN',     label: 'ผู้ดูแลระบบ (Admin)' },
-]
 
 const initialState: UpdateEmployeeState = {}
 
@@ -201,17 +193,6 @@ export default function EditEmployeeForm({
               </select>
               <FieldError msg={e.positionId} />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                บทบาทในระบบ <Required />
-              </label>
-              <select name="role" defaultValue={employee.role} className={selectCls(!!e.role)}>
-                {ROLE_OPTIONS.map((r) => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
-                ))}
-              </select>
-              <FieldError msg={e.role} />
-            </div>
           </div>
 
           <div>
@@ -240,8 +221,15 @@ export default function EditEmployeeForm({
         {/* Status */}
         <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
           <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5">
-            สถานะ
+            สถานะและสิทธิ์
           </legend>
+
+          <CheckboxField
+            name="isAdmin"
+            defaultChecked={employee.isAdmin}
+            label="ผู้ดูแลระบบ (System Admin)"
+            hint="สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้จัดการสายงาน"
+          />
 
           <CheckboxField
             name="isProbation"

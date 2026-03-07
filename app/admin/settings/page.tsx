@@ -5,7 +5,7 @@ import Link from 'next/link'
 export default async function SettingsPage() {
   const session = await auth()
 
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

@@ -32,8 +32,7 @@ export default async function EditLeavePage({
 
   if (!leave) notFound()
 
-  const isPrivileged =
-    session.user.role === 'HR' || session.user.role === 'ADMIN'
+  const isPrivileged = session.user.isAdmin
 
   // Only the owner (or HR/ADMIN) may visit this page
   if (leave.userId !== session.user.id && !isPrivileged) {

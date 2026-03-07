@@ -8,7 +8,7 @@ import { prisma } from './prisma'
 import { getUsedLeaveDaysThisYear } from './leave-policy'
 import type { LeaveDurationType } from './leave-calc'
 import { Prisma, LeaveStatus, ApprovalStatus } from '@prisma/client'
-import { isPrivileged, roleLabel } from './role-guard'
+import { isPrivileged } from './role-guard'
 import { logLeaveFieldChanges, leaveFieldChange } from './leave-audit-log.service'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -71,25 +71,38 @@ async function logPolicyRejection(
   }
 }
 
-async function resolveApproverId(
+type ApproverTarget = {
+  /** Stored in Approval record (FK must be non-null). */
+  approverId: string
+  /** All users who should receive a notification (manager or ALL admins). */
+  notifyIds: string[]
+}
+
+async function resolveApproverTarget(
   employee: { managerId: string | null } | null | undefined
-): Promise<string | null> {
+): Promise<ApproverTarget | null> {
   if (employee?.managerId) {
-    // managerId now references Employee.id — resolve the manager's User account
+    // managerId references Employee.id — resolve the manager's User account
     const managerEmp = await prisma.employee.findUnique({
       where: { id: employee.managerId },
       select: { userId: true },
     })
-    if (managerEmp?.userId) return managerEmp.userId
+    if (managerEmp?.userId) {
+      return { approverId: managerEmp.userId, notifyIds: [managerEmp.userId] }
+    }
   }
 
-  // Fallback: first HR user by creation order
-  const hr = await prisma.user.findFirst({
-    where: { role: 'HR' },
+  // Fallback: all admin users receive the request (any one can approve)
+  const adminUsers = await prisma.user.findMany({
+    where: { employee: { isAdmin: true } },
     orderBy: { createdAt: 'asc' },
     select: { id: true },
   })
-  return hr?.id ?? null
+  if (adminUsers.length === 0) return null
+  return {
+    approverId: adminUsers[0].id,           // first admin stored for FK integrity
+    notifyIds:  adminUsers.map((u) => u.id), // ALL admins notified
+  }
 }
 
 // ── Service methods ──────────────────────────────────────────────────────────
@@ -226,7 +239,7 @@ export async function createDraft(
  */
 export async function updateLeave(
   callerId: string,
-  callerRole: string,
+  callerIsAdmin: boolean,
   leaveId: string,
   input: UpdateLeaveInput
 ): Promise<void> {
@@ -236,7 +249,7 @@ export async function updateLeave(
     reason, documentUrl,
   } = input
 
-  const callerIsPrivileged = isPrivileged(callerRole)
+  const callerIsPrivileged = isPrivileged(callerIsAdmin)
 
   // ── Load existing leave request (with old leave type for balance adjustment) ─
   const leave = await prisma.leaveRequest.findUnique({
@@ -353,7 +366,7 @@ export async function updateLeave(
           entityType:  'LeaveRequest',
           entityId:    leaveId,
           description:
-            `[${roleLabel(callerRole)} OVERRIDE] Edited approved leave: ` +
+            `[Admin OVERRIDE] Edited approved leave: ` +
             `${leave.leaveType.name} → ${newLeaveType.name}, ` +
             `${oldTotalDays} → ${totalDays} day(s) ` +
             `[start:${startDurationType} end:${endDurationType}]` +
@@ -373,7 +386,7 @@ export async function updateLeave(
         data: {
           userId:  leave.userId,
           message:
-            `คำขอลาของคุณถูกแก้ไขโดย ${roleLabel(callerRole)}: ` +
+            `คำขอลาของคุณถูกแก้ไขโดย Admin: ` +
             `${newLeaveType.name} จำนวน ${totalDays} วัน`,
           isRead: false,
         },
@@ -451,7 +464,7 @@ export async function updateLeave(
         action:      'UPDATE_LEAVE_DRAFT',
         entityType:  'LeaveRequest',
         entityId:    leaveId,
-        description: `Leave draft updated by ${callerIsPrivileged ? roleLabel(callerRole) : 'owner'}: ${leaveType.name} — ${totalDays} day(s) [start:${startDurationType} end:${endDurationType}]`,
+        description: `Leave draft updated by ${callerIsPrivileged ? 'Admin' : 'owner'}: ${leaveType.name} — ${totalDays} day(s) [start:${startDurationType} end:${endDurationType}]`,
       },
     })
 
@@ -498,7 +511,7 @@ export async function submitLeave(
     )
   }
 
-  const approverId = await resolveApproverId(leave.user.employee)
+  const approverTarget = await resolveApproverTarget(leave.user.employee)
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Transition DRAFT → PENDING
@@ -521,26 +534,27 @@ export async function submitLeave(
       leaveFieldChange.status('DRAFT', 'PENDING'),
     ])
 
-    // Assign approver + notify
-    if (approverId) {
+    // Assign approver + notify all recipients
+    if (approverTarget) {
       // Remove any previous approval records for this draft (safety)
       await tx.approval.deleteMany({ where: { leaveRequestId: leaveId } })
 
       await tx.approval.create({
         data: {
           leaveRequestId: leaveId,
-          approverId,
+          approverId:     approverTarget.approverId,
           level: 1,
           status: ApprovalStatus.PENDING,
         },
       })
 
-      await tx.notification.create({
-        data: {
-          userId: approverId,
-          message: `New leave request: ${leave.leaveType.name} by ${leave.user.name} (${leave.totalDays} day${leave.totalDays !== 1 ? 's' : ''})`,
-          isRead: false,
-        },
+      const notifyMessage = `New leave request: ${leave.leaveType.name} by ${leave.user.name} (${leave.totalDays} day${leave.totalDays !== 1 ? 's' : ''})`
+      await tx.notification.createMany({
+        data: approverTarget.notifyIds.map((uid) => ({
+          userId:  uid,
+          message: notifyMessage,
+          isRead:  false,
+        })),
       })
     }
   })
@@ -569,10 +583,10 @@ export async function submitLeave(
  */
 export async function cancelLeave(
   callerId: string,
-  callerRole: string,
+  callerIsAdmin: boolean,
   leaveId: string
 ): Promise<{ requestedCancellation: boolean }> {
-  const callerIsPrivileged = isPrivileged(callerRole)
+  const callerIsPrivileged = isPrivileged(callerIsAdmin)
 
   // ── Load leave request ────────────────────────────────────────────────────
   const leave = await prisma.leaveRequest.findUnique({
@@ -638,7 +652,7 @@ export async function cancelLeave(
           action:      'HR_OVERRIDE_CANCEL_LEAVE',
           entityType:  'LeaveRequest',
           entityId:    leaveId,
-          description: `[${roleLabel(callerRole)} OVERRIDE] Approved cancellation request: ${leave.leaveType.name} — ${leave.totalDays} day(s) restored`,
+          description: `[Admin OVERRIDE] Approved cancellation request: ${leave.leaveType.name} — ${leave.totalDays} day(s) restored`,
         },
       })
 
@@ -683,7 +697,7 @@ export async function cancelLeave(
 
       // Notify all HR users
       const hrUsers = await tx.user.findMany({
-        where:  { role: 'HR' },
+        where:  { employee: { isAdmin: true } },
         select: { id: true },
       })
       if (hrUsers.length > 0) {
@@ -725,7 +739,7 @@ export async function cancelLeave(
         entityType:  'LeaveRequest',
         entityId:    leaveId,
         description: (status === LeaveStatus.APPROVED
-          ? `[${roleLabel(callerRole)} OVERRIDE] Cancelled approved leave`
+          ? `[Admin OVERRIDE] Cancelled approved leave`
           : `Leave cancelled (status was ${status})`) +
           `: ${leave.leaveType.name} — ${leave.totalDays} day(s)` +
           (needsBalanceRestore ? ' [balance restored]' : ''),
@@ -741,7 +755,7 @@ export async function cancelLeave(
       await tx.notification.create({
         data: {
           userId:  leave.userId,
-          message: `คำขอลา "${leave.leaveType.name}" ของคุณถูกยกเลิกโดย ${roleLabel(callerRole)}` +
+          message: `คำขอลา "${leave.leaveType.name}" ของคุณถูกยกเลิกโดย Admin` +
                    (needsBalanceRestore ? ` (คืน ${leave.totalDays} วัน)` : ''),
           isRead:  false,
         },

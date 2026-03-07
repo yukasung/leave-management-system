@@ -14,14 +14,10 @@ export type CreateEmployeeState = {
     email?: string
     departmentId?: string
     positionId?: string
-    role?: string
     managerId?: string
     general?: string
   }
 }
-
-const VALID_ROLES = ['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'EXECUTIVE'] as const
-type EmployeeRole = (typeof VALID_ROLES)[number]
 
 export async function createEmployee(
   _prevState: CreateEmployeeState,
@@ -32,7 +28,7 @@ export async function createEmployee(
     if (!session?.user?.id) {
       return { success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }
     }
-    if (session.user.role !== 'ADMIN') {
+    if (!session.user.isAdmin) {
       return { success: false, message: 'คุณไม่มีสิทธิ์ดำเนินการนี้' }
     }
 
@@ -45,11 +41,11 @@ export async function createEmployee(
     const avatarUrl    = (formData.get('avatarUrl')    as string | null)?.trim() || null
     const departmentId = (formData.get('departmentId') as string | null)?.trim() || null
     const positionId   = (formData.get('positionId')   as string | null)?.trim() || null
-    const role         = (formData.get('role')         as string | null)?.trim() ?? ''
+    const isAdmin      = formData.get('isAdmin') === 'on'
     const managerId    = (formData.get('managerId')    as string | null)?.trim() || null
     const isProbation  = formData.get('isProbation') === 'on'
 
-    // ── Validation ───────────────────────────────────────────────────────────
+    // ── Validation ───────────────────────────────────────────────────────────────────
     const errors: CreateEmployeeState['errors'] = {}
 
     if (!employeeCode) errors.employeeCode = 'กรุณากรอกรหัสพนักงาน'
@@ -57,9 +53,6 @@ export async function createEmployee(
     if (!lastName)     errors.lastName     = 'กรุณากรอกนามสกุล'
     if (!email)        errors.email        = 'กรุณากรอกอีเมล'
     if (!positionId)   errors.positionId   = 'กรุณาเลือกตำแหน่ง'
-    if (!role || !VALID_ROLES.includes(role as EmployeeRole)) {
-      errors.role = 'กรุณาเลือกบทบาท'
-    }
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.email = 'รูปแบบอีเมลไม่ถูกต้อง'
@@ -103,7 +96,7 @@ export async function createEmployee(
           phone,
           avatarUrl,
           position,
-          role:         role as EmployeeRole,
+          isAdmin,
           isProbation,
           isActive:     true,
           ...(positionId   ? { positionRef: { connect: { id: positionId   } } } : {}),

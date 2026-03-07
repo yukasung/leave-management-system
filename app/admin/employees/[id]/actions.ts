@@ -10,14 +10,10 @@ export type UpdateEmployeeState = {
   errors?: {
     departmentId?: string
     positionId?: string
-    role?: string
     managerId?: string
     general?: string
   }
 }
-
-const VALID_ROLES = ['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'EXECUTIVE'] as const
-type EmployeeRole = (typeof VALID_ROLES)[number]
 
 export async function updateEmployee(
   id: string,
@@ -27,27 +23,41 @@ export async function updateEmployee(
   try {
     const session = await auth()
     if (!session?.user?.id) return { success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }
-    if (session.user.role !== 'ADMIN') {
+    if (!session.user.isAdmin) {
       return { success: false, message: 'คุณไม่มีสิทธิ์ดำเนินการนี้' }
     }
 
-    // ── Extract fields ────────────────────────────────────────────────────────
+    // ── Extract fields ────────────────────────────────────────────────────────────────
     const positionId   = (formData.get('positionId')   as string | null)?.trim() || null
     const phone        = (formData.get('phone')        as string | null)?.trim() || null
     const avatarUrl    = (formData.get('avatarUrl')    as string | null)?.trim() || null
-    const role         = (formData.get('role')         as string | null)?.trim() ?? ''
+    const isAdmin      = formData.get('isAdmin') === 'on'
     const departmentId = (formData.get('departmentId') as string | null)?.trim() || null
     const managerId    = (formData.get('managerId')    as string | null)?.trim() || null
     const isProbation  = formData.get('isProbation') === 'on'
     const isActive     = formData.get('isActive') === 'on'
 
+    // ── Guard: cannot remove the last admin ──────────────────────────────────
+    if (!isAdmin) {
+      const currentEmp = await prisma.employee.findUnique({
+        where: { id },
+        select: { isAdmin: true },
+      })
+      if (currentEmp?.isAdmin) {
+        const adminCount = await prisma.employee.count({ where: { isAdmin: true } })
+        if (adminCount <= 1) {
+          return {
+            success: false,
+            errors: { general: 'ไม่สามารถถอดสิทธิ์ Admin ได้ เนื่องจากต้องมี Admin อย่างน้อย 1 คนในระบบ' },
+          }
+        }
+      }
+    }
+
     // ── Validation ────────────────────────────────────────────────────────────
     const errors: UpdateEmployeeState['errors'] = {}
 
     if (!positionId) errors.positionId = 'กรุณาเลือกตำแหน่ง'
-    if (!role || !VALID_ROLES.includes(role as EmployeeRole)) {
-      errors.role = 'กรุณาเลือกบทบาท'
-    }
 
     if (Object.keys(errors).length > 0) {
       return { success: false, errors }
@@ -83,7 +93,7 @@ export async function updateEmployee(
           positionRef: positionId
             ? { connect: { id: positionId } }
             : { disconnect: true },
-          role: role as EmployeeRole,
+          isAdmin,
           isProbation,
           isActive,
           department: departmentId
@@ -101,7 +111,7 @@ export async function updateEmployee(
           action:      'UPDATE_EMPLOYEE',
           entityType:  'Employee',
           entityId:    id,
-          description: `Updated employee ${existing.firstName} ${existing.lastName} (${existing.employeeCode}): role=${role}, position=${position}, isActive=${isActive}`,
+          description: `Updated employee ${existing.firstName} ${existing.lastName} (${existing.employeeCode}): isAdmin=${isAdmin}, position=${position}, isActive=${isActive}`,
         },
       })
     })
@@ -115,7 +125,10 @@ export async function updateEmployee(
     }
   } catch (err) {
     console.error('[updateEmployee]', err)
-    return { success: false, errors: { general: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' } }
+    const msg = process.env.NODE_ENV === 'development' && err instanceof Error
+      ? err.message
+      : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'
+    return { success: false, errors: { general: msg } }
   }
 }
 
@@ -127,7 +140,7 @@ export async function deactivateEmployee(id: string): Promise<DeactivateState> {
   try {
     const session = await auth()
     if (!session?.user?.id) return { success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }
-    if (session.user.role !== 'ADMIN') {
+    if (!session.user.isAdmin) {
       return { success: false, message: 'คุณไม่มีสิทธิ์ดำเนินการนี้' }
     }
 
