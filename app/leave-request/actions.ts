@@ -72,17 +72,23 @@ export async function createLeaveRequest(
   }
   if (Object.keys(errors).length > 0) return { errors }
 
-  const startDate        = new Date(startDateStr)
-  const endDate          = new Date(endDateStr)
+  // Parse YYYY-MM-DD as UTC midnight so getUTCDate/Month/Year are correct in
+  // calculateLeaveDays (which uses UTC methods to avoid timezone-shift bugs)
+  const parseDateUTC = (str: string) => {
+    const [y, m, d] = str.split('-').map(Number)
+    return new Date(Date.UTC(y, m - 1, d))
+  }
+
+  const startDate        = parseDateUTC(startDateStr)
+  const endDate          = parseDateUTC(endDateStr)
   const startDurationType = startDurationTypeRaw as LeaveDurationType
   const endDurationType   = endDurationTypeRaw   as LeaveDurationType
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  startDate.setHours(0, 0, 0, 0)
-  endDate.setHours(0, 0, 0, 0)
+  // Build today in UTC using local date components so the comparison is correct
+  const now = new Date()
+  const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
 
-  if (startDate < today) {
+  if (startDate < todayUTC) {
     return { errors: { startDate: 'วันที่เริ่มต้นต้องไม่เป็นวันที่ผ่านมาแล้ว' } }
   }
 
@@ -241,27 +247,15 @@ export async function updateLeaveRequest(
   }
   if (Object.keys(errors).length > 0) return { errors }
 
-  const startDate        = new Date(startDateStr)
-  const endDate          = new Date(endDateStr)
+  const parseDateUTC = (str: string) => {
+    const [y, m, d] = str.split('-').map(Number)
+    return new Date(Date.UTC(y, m - 1, d))
+  }
+
+  const startDate        = parseDateUTC(startDateStr)
+  const endDate          = parseDateUTC(endDateStr)
   const startDurationType = startDurationTypeRaw as LeaveDurationType
   const endDurationType   = endDurationTypeRaw   as LeaveDurationType
-
-  startDate.setHours(0, 0, 0, 0)
-  endDate.setHours(0, 0, 0, 0)
-
-  // ── Check for overlapping leave requests (exclude the current one) ────────
-  const overlappingUpdate = await prisma.leaveRequest.findFirst({
-    where: {
-      id:     { not: leaveId },
-      userId: session.user.id,
-      status: { notIn: ['REJECTED', 'CANCELLED'] },
-      startDate: { lte: endDate },
-      endDate:   { gte: startDate },
-    },
-  })
-  if (overlappingUpdate) {
-    return { errors: { general: 'คุณมีคำขอลาในช่วงวันที่ดังกล่าวอยู่แล้ว กรุณาตรวจสอบอีกครั้ง' } }
-  }
 
   // ── Server-side recalculation — skips weekends + public holidays ──────────
   const calc = await calculateLeaveDaysServer(startDate, endDate, startDurationType, endDurationType)

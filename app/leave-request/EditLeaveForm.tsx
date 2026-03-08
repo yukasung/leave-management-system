@@ -13,7 +13,8 @@
 
 import { useActionState, useState, useEffect, useRef, useTransition, useCallback } from 'react'
 import Link from 'next/link'
-import { updateLeaveRequest, type FormState } from './actions'
+import { useRouter } from 'next/navigation'
+import { updateLeaveRequest, submitLeaveRequest, type FormState } from './actions'
 import { calculateLeaveDays, type LeaveDurationType } from '@/lib/leave-calc'
 import { buildPolicySummary, type LeaveTypePolicy } from '@/lib/leave-policy-utils'
 import { formatDate } from '@/lib/format-date'
@@ -76,6 +77,22 @@ export default function EditLeaveForm({
   // Bind leaveId into the action
   const boundAction = updateLeaveRequest.bind(null, leaveId)
   const [state, formAction, pending] = useActionState<FormState, FormData>(boundAction, {})
+  const router = useRouter()
+  const [submitting, startSubmitTransition] = useTransition()
+  const [submitError, setSubmitError] = useState('')
+
+  function handleSubmit() {
+    setSubmitError('')
+    startSubmitTransition(async () => {
+      const result = await submitLeaveRequest(leaveId)
+      if (result.success) {
+        router.push('/leave-request')
+        router.refresh()
+      } else {
+        setSubmitError(result.error ?? 'เกิดข้อผิดพลาด')
+      }
+    })
+  }
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -201,13 +218,27 @@ export default function EditLeaveForm({
           </svg>
         </div>
         <h2 className="text-xl font-bold text-foreground mb-2">อัปเดตคำขอลาเรียบร้อยแล้ว</h2>
-        <p className="text-sm text-muted-foreground mb-6">{state.message}</p>
-        <Link
-          href="/my-leaves"
-          className="inline-block px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition"
-        >
-          กลับประวัติการลา
-        </Link>
+        <p className="text-sm text-muted-foreground mb-4">{state.message}</p>
+        {submitError && (
+          <p className="mb-4 text-sm text-red-500">{submitError}</p>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          {existing.status === 'DRAFT' && (
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition disabled:opacity-60"
+            >
+              {submitting ? 'กำลังส่ง…' : 'ส่งคำขอลา'}
+            </button>
+          )}
+          <Link
+            href="/leave-request"
+            className="inline-block px-6 py-2.5 border border-border bg-background hover:bg-muted text-foreground font-semibold rounded-lg transition"
+          >
+            กลับหน้ายื่นคำขอ
+          </Link>
+        </div>
       </div>
     )
   }

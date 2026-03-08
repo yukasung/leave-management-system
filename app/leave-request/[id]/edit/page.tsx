@@ -83,6 +83,15 @@ export default async function EditLeavePage({
     where: { id: session.user.id },
     select: { avatarUrl: true },
   })
+
+  // Use local date components to avoid UTC-offset shifting the date by one day
+  const toLocalDate = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
   const user = {
     name:      session.user.name ?? '',
     email:     session.user.email ?? '',
@@ -97,8 +106,8 @@ export default async function EditLeavePage({
           leaveId={leave.id}
           existing={{
             leaveTypeId:       leave.leaveTypeId,
-            startDate:         leave.startDate.toISOString().split('T')[0],
-            endDate:           leave.endDate.toISOString().split('T')[0],
+            startDate:         toLocalDate(leave.startDate),
+            endDate:           toLocalDate(leave.endDate),
             startDurationType: leave.startDurationType as 'FULL_DAY' | 'HALF_DAY_MORNING' | 'HALF_DAY_AFTERNOON',
             endDurationType:   leave.endDurationType as 'FULL_DAY' | 'HALF_DAY_MORNING' | 'HALF_DAY_AFTERNOON',
             totalDays:         leave.totalDays,

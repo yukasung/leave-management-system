@@ -59,7 +59,7 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   // Build locale-prefixed href for links
   const href = (path: string) => locale ? `/${locale}${path}` : path
 
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
 
   const NAV_ITEMS = isAdmin ? ADMIN_NAV_ITEMS : USER_NAV_ITEMS
   const isSettingsActive = pathname === '/admin/settings' || pathname.startsWith('/admin/settings/')

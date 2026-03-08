@@ -5,6 +5,9 @@ import { durationLabel, type LeaveDurationType } from '@/lib/leave-calc'
 import { formatDate } from '@/lib/format-date'
 import LeaveActionsCell from './LeaveActionsCell'
 import AdminLayout from '@/components/admin-layout'
+import Link from 'next/link'
+
+const PAGE_SIZE = 14
 
 const STATUS_BADGE: Record<string, string> = {
   DRAFT:            'bg-muted text-muted-foreground border-border',
@@ -26,14 +29,24 @@ const STATUS_LABEL: Record<string, string> = {
   CANCEL_REQUESTED: 'ขอยกเลิก (รอ HR)',
 }
 
-export default async function MyLeaveHistoryPage() {
+export default async function MyLeaveHistoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  const [requests, dbUser] = await Promise.all([
+  const { page: pageStr } = (await searchParams) ?? {}
+  const page = Math.max(1, parseInt(pageStr ?? '1', 10) || 1)
+
+  const [total, requests, dbUser] = await Promise.all([
+    prisma.leaveRequest.count({ where: { userId: session.user.id } }),
     prisma.leaveRequest.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: { leaveType: { select: { name: true } } },
     }),
     prisma.user.findUnique({
@@ -41,6 +54,8 @@ export default async function MyLeaveHistoryPage() {
       select: { avatarUrl: true },
     }),
   ])
+
+  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   const user = {
     name:      session.user.name ?? '',
@@ -55,7 +70,7 @@ export default async function MyLeaveHistoryPage() {
         {/* Header */}
         <div>
           <h2 className="text-lg font-semibold text-foreground">ประวัติการลาของฉัน</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">ทั้งหมด {requests.length} รายการ</p>
+          <p className="text-sm text-muted-foreground mt-0.5">ทั้งหมด {total} รายการ</p>
         </div>
 
         {requests.length === 0 ? (
@@ -122,6 +137,47 @@ export default async function MyLeaveHistoryPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-1 pt-2">
+            <Link
+              href={`?page=${page - 1}`}
+              className={`px-3 py-1.5 rounded-lg text-sm border transition ${
+                page <= 1
+                  ? 'pointer-events-none opacity-40 border-border text-muted-foreground'
+                  : 'border-border text-foreground hover:bg-muted'
+              }`}
+            >
+              ← ก่อนหน้า
+            </Link>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <Link
+                key={p}
+                href={`?page=${p}`}
+                className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm border transition ${
+                  p === page
+                    ? 'bg-primary text-primary-foreground border-primary font-semibold'
+                    : 'border-border text-foreground hover:bg-muted'
+                }`}
+              >
+                {p}
+              </Link>
+            ))}
+
+            <Link
+              href={`?page=${page + 1}`}
+              className={`px-3 py-1.5 rounded-lg text-sm border transition ${
+                page >= totalPages
+                  ? 'pointer-events-none opacity-40 border-border text-muted-foreground'
+                  : 'border-border text-foreground hover:bg-muted'
+              }`}
+            >
+              ถัดไป →
+            </Link>
           </div>
         )}
       </div>

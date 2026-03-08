@@ -33,7 +33,11 @@ async function fetchHolidaySet(startDate: Date, endDate: Date): Promise<Set<stri
   })
 
   return new Set(
-    holidays.map((h) => h.date.toISOString().slice(0, 10)) // "YYYY-MM-DD"
+    holidays.map((h) => {
+      // Use UTC methods — Prisma stores dates as UTC midnight, matching how
+      // calculateLeaveDays builds its cursor with Date.UTC()
+      return h.date.toISOString().slice(0, 10) // "YYYY-MM-DD" in UTC
+    })
   )
 }
 
