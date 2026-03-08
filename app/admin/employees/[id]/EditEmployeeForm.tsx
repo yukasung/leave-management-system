@@ -109,9 +109,9 @@ export default function EditEmployeeForm({
       <form action={formAction} className="space-y-6">
 
         {/* Employee identity header — avatar editable at top */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
           <div className="px-6 pt-5 pb-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-5">ข้อมูลพนักงาน</p>
+            <p className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wide mb-5">ข้อมูลพนักงาน</p>
             <div className="flex items-center gap-6">
               {/* Avatar — compact circle only */}
               <div className="shrink-0 flex flex-col items-center gap-2">
@@ -121,32 +121,32 @@ export default function EditEmployeeForm({
                   defaultUrl={employee.avatarUrl}
                   initials={`${employee.firstName}${employee.lastName}`}
                 />
-                <span className="text-[10px] text-gray-400">คลิกเพื่อเปลี่ยนรูป</span>
+                <span className="text-[10px] text-muted-foreground/60">คลิกเพื่อเปลี่ยนรูป</span>
               </div>
 
               {/* Info grid */}
               <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">รหัสพนักงาน</p>
-                  <p className="font-mono font-semibold text-gray-700">{employee.employeeCode}</p>
+                  <p className="text-xs text-muted-foreground/60 mb-0.5">รหัสพนักงาน</p>
+                  <p className="font-mono font-semibold text-foreground">{employee.employeeCode}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">ชื่อ-นามสกุล</p>
-                  <p className="font-semibold text-gray-800">{employee.firstName} {employee.lastName}</p>
+                  <p className="text-xs text-muted-foreground/60 mb-0.5">ชื่อ-นามสกุล</p>
+                  <p className="font-semibold text-foreground">{employee.firstName} {employee.lastName}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">อีเมล</p>
-                  <p className="text-gray-600 truncate">{employee.email}</p>
+                  <p className="text-xs text-muted-foreground/60 mb-0.5">อีเมล</p>
+                  <p className="text-muted-foreground truncate">{employee.email}</p>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-0.5" htmlFor="emp-phone">เบอร์โทรศัพท์</label>
+                  <label className="block text-xs text-muted-foreground/60 mb-0.5" htmlFor="emp-phone">เบอร์โทรศัพท์</label>
                   <input
                     id="emp-phone"
                     type="tel"
                     name="phone"
                     defaultValue={employee.phone ?? ''}
                     placeholder="081-234-5678"
-                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-2.5 py-1.5 text-sm border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
               </div>
@@ -166,13 +166,13 @@ export default function EditEmployeeForm({
         )}
 
         {/* Position & Organisation */}
-        <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
-          <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5">
+        <fieldset className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-5">
+          <legend className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
             ตำแหน่งและองค์กร
           </legend>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">แผนก</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">แผนก</label>
             <select
               name="departmentId"
               value={selectedDeptId}
@@ -189,7 +189,7 @@ export default function EditEmployeeForm({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-foreground mb-1.5">
                 ตำแหน่งงาน <Required />
               </label>
               <select
@@ -207,7 +207,7 @@ export default function EditEmployeeForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-foreground mb-1.5">
               ผู้จัดการสายงาน
             </label>
             <select
@@ -237,8 +237,8 @@ export default function EditEmployeeForm({
         </fieldset>
 
         {/* System Permissions */}
-        <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-          <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5">
+        <fieldset className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-4">
+          <legend className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
             สิทธิ์ระบบ
           </legend>
 
@@ -254,14 +254,14 @@ export default function EditEmployeeForm({
         <div className="flex items-center justify-end gap-3 pt-1 pb-2">
           <a
             href="/admin/employees"
-            className="px-5 py-2.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            className="px-5 py-2.5 text-sm font-medium text-muted-foreground border border-border rounded-lg hover:bg-muted/40 transition"
           >
             ยกเลิก
           </a>
           <button
             type="submit"
             disabled={pending || state.success}
-            className="px-6 py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg transition"
+            className="px-6 py-2.5 text-sm font-semibold bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-primary-foreground rounded-lg transition"
           >
             {pending ? 'กำลังบันทึก…' : 'บันทึกการเปลี่ยนแปลง'}
           </button>
@@ -269,12 +269,12 @@ export default function EditEmployeeForm({
       </form>
 
       {/* Danger zone */}
-      <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-6">
+      <div className="bg-card rounded-2xl border border-red-200 shadow-sm p-6">
         <p className="text-sm font-semibold text-red-600 mb-1">Danger Zone</p>
 
         {employee.isActive ? (
           <>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               การระงับบัญชีจะซ่อนพนักงานออกจากระบบ แต่ไม่ลบข้อมูล สามารถเปิดใช้งานใหม่ได้ในภายหลัง
             </p>
             {!confirmDeactivate ? (
@@ -292,13 +292,13 @@ export default function EditEmployeeForm({
                 <button
                   onClick={handleDeactivate}
                   disabled={deactivating}
-                  className="px-4 py-2 text-sm font-semibold bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white rounded-lg transition"
+                  className="px-4 py-2 text-sm font-semibold bg-red-600 hover:bg-red-700 disabled:opacity-60 text-primary-foreground rounded-lg transition"
                 >
                   {deactivating ? 'กำลังดำเนินการ…' : 'ยืนยัน ระงับบัญชี'}
                 </button>
                 <button
                   onClick={() => setConfirmDeactivate(false)}
-                  className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                  className="px-4 py-2 text-sm text-muted-foreground border border-border rounded-lg hover:bg-muted/40 transition"
                 >
                   ยกเลิก
                 </button>
@@ -307,7 +307,7 @@ export default function EditEmployeeForm({
           </>
         ) : (
           <>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               บัญชีนี้ถูกระงับการใช้งานอยู่ กดปุ่มด้านล่างเพื่อเปิดใช้งานใหม่
             </p>
             <button
@@ -333,15 +333,15 @@ function inputCls(hasError: boolean) {
   return `${baseInput} ${
     hasError
       ? 'border-red-400 focus:ring-red-400 bg-red-50'
-      : 'border-gray-300 focus:ring-blue-500'
+      : 'border-input bg-background text-foreground focus:ring-primary'
   }`
 }
 
 function selectCls(hasError: boolean) {
-  return `${baseInput} bg-white ${
+  return `${baseInput} bg-background text-foreground ${
     hasError
-      ? 'border-red-400 focus:ring-red-400 bg-red-50'
-      : 'border-gray-300 focus:ring-blue-500'
+      ? 'border-red-400 focus:ring-red-400'
+      : 'border-input focus:ring-primary'
   }`
 }
 
@@ -371,14 +371,14 @@ function CheckboxField({
         type="checkbox"
         name={name}
         defaultChecked={defaultChecked}
-        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-primary"
       />
       <span>
-        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+        <span className="text-sm font-medium text-foreground group-hover:text-foreground">
           {label}
         </span>
         <br />
-        <span className="text-xs text-gray-400">{hint}</span>
+        <span className="text-xs text-muted-foreground/60">{hint}</span>
       </span>
     </label>
   )

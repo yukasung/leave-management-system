@@ -56,7 +56,7 @@ function ActionButtons({ id }: { id: string }) {
 export default function LeaveRequestTable({ requests }: { requests: LeaveRequest[] }) {
   if (requests.length === 0) {
     return (
-      <div className="mt-10 text-center text-gray-500 py-16 bg-white rounded-2xl shadow-sm">
+      <div className="mt-10 text-center text-muted-foreground py-16 bg-card rounded-2xl shadow-sm">
         ไม่มีคำขอลาที่รอการอนุมัติ
       </div>
     )
@@ -64,9 +64,9 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
 
   return (
     <div className="overflow-x-auto rounded-2xl shadow-sm">
-      <table className="w-full bg-white text-sm">
+      <table className="w-full bg-card text-sm">
         <thead>
-          <tr className="bg-gray-50 border-b border-gray-200 text-left text-gray-600 font-semibold">
+          <tr className="bg-muted/40 border-b border-border text-left text-muted-foreground font-semibold">
             <th className="px-5 py-3">พนักงาน</th>
             <th className="px-5 py-3">ประเภทการลา</th>
             <th className="px-5 py-3">วันที่</th>
@@ -77,32 +77,32 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
             <th className="px-5 py-3">การดำเนินการ</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-border">
           {requests.map((req) => (
-            <tr key={req.id} className="hover:bg-gray-50 transition">
+            <tr key={req.id} className="hover:bg-muted/40 transition">
               <td className="px-5 py-4">
-                <p className="font-medium text-gray-900">{req.user.name}</p>
-                <p className="text-xs text-gray-400">{req.user.email}</p>
+                <p className="font-medium text-foreground">{req.user.name}</p>
+                <p className="text-xs text-muted-foreground/60">{req.user.email}</p>
               </td>
-              <td className="px-5 py-4 text-gray-700">{req.leaveType.name}</td>
-              <td className="px-5 py-4 text-gray-700 whitespace-nowrap">
+              <td className="px-5 py-4 text-foreground">{req.leaveType.name}</td>
+              <td className="px-5 py-4 text-foreground whitespace-nowrap">
                 {formatDate(req.startDate)}
                 {' — '}
                 {formatDate(req.endDate)}
               </td>
-              <td className="px-5 py-4 text-center font-semibold text-gray-900">
+              <td className="px-5 py-4 text-center font-semibold text-foreground">
                 {req.totalDays} วัน
               </td>
-              <td className="px-5 py-4 text-xs text-gray-600">
+              <td className="px-5 py-4 text-xs text-muted-foreground">
                 {req.startDurationType === req.endDurationType
                   ? durationLabel(req.startDurationType as LeaveDurationType)
                   : `เริ่ม: ${durationLabel(req.startDurationType as LeaveDurationType)} / สิ้นสุด: ${durationLabel(req.endDurationType as LeaveDurationType)}`
                 }
               </td>
-              <td className="px-5 py-4 text-gray-600 max-w-xs truncate">
-                {req.reason || <span className="text-gray-400">—</span>}
+              <td className="px-5 py-4 text-muted-foreground max-w-xs truncate">
+                {req.reason || <span className="text-muted-foreground/60">—</span>}
               </td>
-              <td className="px-5 py-4 text-gray-500 whitespace-nowrap">
+              <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
                 {formatDate(req.createdAt)}
               </td>
               <td className="px-5 py-4">

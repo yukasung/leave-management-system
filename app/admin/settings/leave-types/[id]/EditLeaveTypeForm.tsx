@@ -65,7 +65,7 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
 
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             ชื่อประเภทการลา <span className="text-red-500">*</span>
           </label>
           <input
@@ -73,7 +73,7 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
             type="text"
             required
             defaultValue={leaveType.name}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
           {state.errors?.name && <p className="text-xs text-red-500 mt-1">{state.errors.name}</p>}
         </div>
@@ -81,7 +81,7 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
         {/* Max days */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">วันสูงสุดต่อปี</label>
+            <label className="block text-sm font-medium text-foreground mb-1">วันสูงสุดต่อปี</label>
             <input
               name="maxDaysPerYear"
               type="number"
@@ -89,11 +89,11 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
               step="0.5"
               defaultValue={leaveType.maxDaysPerYear ?? ''}
               placeholder="ไม่จำกัด"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">วันสูงสุดต่อครั้ง</label>
+            <label className="block text-sm font-medium text-foreground mb-1">วันสูงสุดต่อครั้ง</label>
             <input
               name="maxDaysPerRequest"
               type="number"
@@ -101,14 +101,14 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
               step="0.5"
               defaultValue={leaveType.maxDaysPerRequest ?? ''}
               placeholder="ไม่จำกัด"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
         </div>
 
         {/* Toggles */}
         <fieldset className="space-y-3">
-          <legend className="text-sm font-medium text-gray-700 mb-2">การตั้งค่าเพิ่มเติม</legend>
+          <legend className="text-sm font-medium text-foreground mb-2">การตั้งค่าเพิ่มเติม</legend>
           <ToggleField
             name="requiresAttachment"
             label="ต้องแนบเอกสารประกอบ"
@@ -130,18 +130,18 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
           <button
             type="submit"
             disabled={pending || state.success}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+            className="bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium px-5 py-2 rounded-lg transition-colors"
           >
             {pending ? 'กำลังบันทึก…' : 'บันทึก'}
           </button>
-          <a href="/admin/settings" className="text-sm text-gray-500 hover:text-gray-700 underline">
+          <a href="/admin/settings/leave-types" className="text-sm text-muted-foreground hover:text-foreground underline">
             ยกเลิก
           </a>
         </div>
       </form>
 
       {/* Danger Zone */}
-      <div className="border border-red-200 rounded-xl p-5 bg-red-50">
+      <div className="border border-red-200 rounded-xl p-5 bg-red-950/10 dark:bg-red-950/20">
         <h3 className="text-sm font-semibold text-red-700 mb-1">Danger Zone</h3>
         <p className="text-xs text-red-600 mb-4">
           การลบประเภทการลาจะไม่สามารถยกเลิกได้ หากมีคำขอลาอยู่จะไม่สามารถลบได้
@@ -167,7 +167,7 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
           <button
             type="button"
             onClick={() => setDeleteConfirm(true)}
-            className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="bg-red-600 hover:bg-red-700 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             ลบประเภทการลานี้
           </button>
@@ -178,14 +178,14 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
               type="button"
               onClick={handleDelete}
               disabled={deleting || deleteState?.success}
-              className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               {deleting ? 'กำลังลบ…' : 'ยืนยัน ลบเลย'}
             </button>
             <button
               type="button"
               onClick={() => setDeleteConfirm(false)}
-              className="text-sm text-gray-600 hover:text-gray-800 underline"
+              className="text-sm text-muted-foreground hover:text-foreground underline"
             >
               ยกเลิก
             </button>
@@ -210,12 +210,12 @@ function ToggleField({
       <select
         name={name}
         defaultValue={defaultValue ? 'true' : 'false'}
-        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="border border-input bg-background text-foreground rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
       >
         <option value="true">ใช่</option>
         <option value="false">ไม่</option>
       </select>
-      <span className="text-sm text-gray-700">{label}</span>
+      <span className="text-sm text-foreground">{label}</span>
     </label>
   )
 }

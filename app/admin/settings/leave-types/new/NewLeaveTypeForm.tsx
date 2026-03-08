@@ -34,7 +34,7 @@ export default function NewLeaveTypeForm() {
 
       {/* Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           ชื่อประเภทการลา <span className="text-red-500">*</span>
         </label>
         <input
@@ -42,7 +42,7 @@ export default function NewLeaveTypeForm() {
           type="text"
           required
           placeholder="เช่น ลาป่วย, ลากิจ, ลาพักร้อน"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         />
         {state.errors?.name && <p className="text-xs text-red-500 mt-1">{state.errors.name}</p>}
       </div>
@@ -50,7 +50,7 @@ export default function NewLeaveTypeForm() {
       {/* Max days */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             วันสูงสุดต่อปี
           </label>
           <input
@@ -59,11 +59,11 @@ export default function NewLeaveTypeForm() {
             min="0"
             step="0.5"
             placeholder="ไม่จำกัด"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             วันสูงสุดต่อครั้ง
           </label>
           <input
@@ -72,14 +72,14 @@ export default function NewLeaveTypeForm() {
             min="0"
             step="0.5"
             placeholder="ไม่จำกัด"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
       </div>
 
       {/* Toggles */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-medium text-gray-700 mb-2">การตั้งค่าเพิ่มเติม</legend>
+        <legend className="text-sm font-medium text-foreground mb-2">การตั้งค่าเพิ่มเติม</legend>
 
         <ToggleField
           name="requiresAttachment"
@@ -102,11 +102,11 @@ export default function NewLeaveTypeForm() {
         <button
           type="submit"
           disabled={pending || state.success}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+          className="bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium px-5 py-2 rounded-lg transition-colors"
         >
           {pending ? 'กำลังบันทึก…' : 'บันทึก'}
         </button>
-        <a href="/admin/settings" className="text-sm text-gray-500 hover:text-gray-700 underline">
+        <a href="/admin/settings/leave-types" className="text-sm text-muted-foreground hover:text-foreground underline">
           ยกเลิก
         </a>
       </div>
@@ -128,12 +128,12 @@ function ToggleField({
       <select
         name={name}
         defaultValue={defaultValue ? 'true' : 'false'}
-        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="border border-input bg-background text-foreground rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
       >
         <option value="true">ใช่</option>
         <option value="false">ไม่</option>
       </select>
-      <span className="text-sm text-gray-700">{label}</span>
+      <span className="text-sm text-foreground">{label}</span>
     </label>
   )
 }

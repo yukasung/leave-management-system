@@ -51,7 +51,6 @@ async function main() {
         lastName:     emp.lastName,
         email:        emp.email,
         position:     emp.position,
-        role:         'EMPLOYEE',
         isProbation:  false,
         isActive:     true,
         departmentId: deptId,

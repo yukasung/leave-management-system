@@ -16,26 +16,44 @@ import {
   CalendarCheck,
   ClipboardList,
   Briefcase,
+  Building2,
+  Umbrella,
+  CalendarPlus,
+  Wallet,
+  Bell,
+  UserCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const NAV_ITEMS = [
-  { href: '/dashboard',         icon: LayoutDashboard, label: 'Dashboard'      },
-  { href: '/leave-requests',    icon: CalendarDays,    label: 'Leave Requests' },
-  { href: '/employees',         icon: Users,           label: 'Employees'      },
-  { href: '/leave-types',       icon: Tags,            label: 'Leave Types'    },
-  { href: '/hr/leave-requests', icon: BarChart2,       label: 'Reports'        },
+const ADMIN_NAV_ITEMS = [
+  { href: '/dashboard',          icon: LayoutDashboard, label: 'Dashboard'      },
+  { href: '/leave-requests',     icon: CalendarDays,    label: 'Leave Requests' },
+  { href: '/admin/employees',    icon: Users,           label: 'Employees'      },
+  { href: '/admin/departments',  icon: Building2,       label: 'Departments'    },
+  { href: '/leave-types',        icon: Tags,            label: 'Leave Types'    },
+  { href: '/hr/leave-requests',  icon: BarChart2,       label: 'Reports'        },
+]
+
+const USER_NAV_ITEMS = [
+  { href: '/dashboard-user',  icon: LayoutDashboard, label: 'หน้าหลัก'       },
+  { href: '/leave-request',   icon: CalendarPlus,    label: 'ขอลา'           },
+  { href: '/my-leaves',       icon: CalendarDays,    label: 'การลาของฉัน'   },
+  { href: '/leave-balance',   icon: Wallet,          label: 'ยอดวันลา'      },
+  { href: '/notifications',   icon: Bell,            label: 'การแจ้งเตือน'  },
+  { href: '/profile',         icon: UserCircle,      label: 'โปรไฟล์'        },
 ]
 
 const SETTINGS_SUB_ITEMS = [
+  { href: '/admin/holiday-management',   icon: Umbrella,      label: 'วันหยุด'       },
   { href: '/admin/settings/leave-types', icon: ClipboardList, label: 'ประเภทการลา' },
   { href: '/admin/settings/positions',   icon: Briefcase,     label: 'ตำแหน่งงาน'  },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
 
+  const NAV_ITEMS = isAdmin ? ADMIN_NAV_ITEMS : USER_NAV_ITEMS
   const isSettingsActive = pathname === '/admin/settings' || pathname.startsWith('/admin/settings/')
   const [settingsOpen, setSettingsOpen] = useState(isSettingsActive)
 
@@ -62,7 +80,7 @@ export default function Sidebar() {
             <span className="text-[0.8rem] font-bold tracking-tight text-sidebar-foreground truncate">
               Leave Manager
             </span>
-            <span className="text-[10px] text-sidebar-foreground/40 truncate">Admin Portal</span>
+            <span className="text-[10px] text-sidebar-foreground/40 truncate">{isAdmin ? 'Admin Portal' : 'Employee Portal'}</span>
           </div>
         )}
       </div>
@@ -104,8 +122,8 @@ export default function Sidebar() {
           )
         })}
 
-        {/* Settings group */}
-        <div>
+        {/* Settings group — admin only */}
+        {isAdmin && <div>
           <button
             type="button"
             title={collapsed ? 'Settings' : undefined}
@@ -167,7 +185,7 @@ export default function Sidebar() {
               })}
             </div>
           )}
-        </div>
+        </div>}
       </nav>
 
       {/* Footer */}

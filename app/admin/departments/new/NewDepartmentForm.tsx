@@ -4,7 +4,7 @@ import { useActionState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createDepartment, type DepartmentFormState } from './actions'
 
-type Manager = { id: string; name: string; role: string }
+type Manager = { id: string; name: string }
 
 const initial: DepartmentFormState = { success: false, message: '' }
 
@@ -37,7 +37,7 @@ export default function NewDepartmentForm({ managers }: { managers: Manager[] })
 
       {/* Department Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           ชื่อแผนก <span className="text-red-500">*</span>
         </label>
         <input
@@ -45,7 +45,7 @@ export default function NewDepartmentForm({ managers }: { managers: Manager[] })
           type="text"
           required
           placeholder="เช่น ฝ่ายบุคคล, ฝ่ายไอที"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         />
         {state.errors?.name && (
           <p className="text-xs text-red-500 mt-1">{state.errors.name}</p>
@@ -54,17 +54,17 @@ export default function NewDepartmentForm({ managers }: { managers: Manager[] })
 
       {/* Manager */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           ผู้จัดการแผนก
         </label>
         <select
           name="managerId"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="">— ไม่ระบุ —</option>
           {managers.map((m) => (
             <option key={m.id} value={m.id}>
-              {m.name} ({m.role})
+              {m.name}
             </option>
           ))}
         </select>
@@ -75,13 +75,13 @@ export default function NewDepartmentForm({ managers }: { managers: Manager[] })
         <button
           type="submit"
           disabled={pending || state.success}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+          className="bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium px-5 py-2 rounded-lg transition-colors"
         >
           {pending ? 'กำลังบันทึก…' : 'บันทึก'}
         </button>
         <a
           href="/admin/departments"
-          className="text-sm text-gray-500 hover:text-gray-700 underline"
+          className="text-sm text-muted-foreground hover:text-foreground underline"
         >
           ยกเลิก
         </a>

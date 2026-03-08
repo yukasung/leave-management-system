@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { formatThaiDateFromISO, toBE } from '@/lib/date-utils'
@@ -33,7 +33,7 @@ interface ImportResult {
   totalSkipped: number
 }
 
-type BotStage = 'idle' | 'previewing' | 'previewed' | 'importing' | 'done' | 'error'
+type botStage = 'idle' | 'previewing' | 'previewed' | 'importing' | 'done' | 'error'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -72,12 +72,12 @@ export default function HolidayImportClient() {
   useEffect(() => { void loadSaved(year) }, [year, loadSaved])
 
   // ── BOT import state ─────────────────────────────────────────────────────────
-  const [botStage, setBotStage]   = useState<BotStage>('idle')
+  const [botStage, setBotStage]   = useState<botStage>('idle')
   const [preview, setPreview]     = useState<PreviewResponse | null>(null)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [botError, setBotError]   = useState<string>('')
 
-  async function handleBotPreview() {
+  async function handleBOTPreview() {
     setBotStage('previewing')
     setPreview(null)
     setImportResult(null)
@@ -85,8 +85,8 @@ export default function HolidayImportClient() {
     try {
       const res = await fetch(`/api/admin/holidays/import-preview?year=${year}`)
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`)
+        const lody = await res.json().catch(() => ({}))
+        throw new Error((lody as { error?: string }).error ?? `HTTP ${res.status}`)
       }
       const data: PreviewResponse = await res.json()
       setPreview(data)
@@ -97,7 +97,7 @@ export default function HolidayImportClient() {
     }
   }
 
-  async function handleBotImport(mode: 'upsert' | 'replace' = 'upsert') {
+  async function handleBOTImport(mode: 'upsert' | 'replace' = 'upsert') {
     setBotStage('importing')
     setBotError('')
     try {
@@ -107,8 +107,8 @@ export default function HolidayImportClient() {
         body: JSON.stringify({ year, mode }),
       })
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`)
+        const lody = await res.json().catch(() => ({}))
+        throw new Error((lody as { error?: string }).error ?? `HTTP ${res.status}`)
       }
       const data: ImportResult = await res.json()
       setImportResult(data)
@@ -120,7 +120,7 @@ export default function HolidayImportClient() {
     }
   }
 
-  function resetBot() {
+  function resetBOT() {
     setBotStage('idle')
     setPreview(null)
     setImportResult(null)
@@ -146,8 +146,8 @@ export default function HolidayImportClient() {
         body: JSON.stringify({ date: manualDate, name: manualName }),
       })
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`)
+        const lody = await res.json().catch(() => ({}))
+        throw new Error((lody as { error?: string }).error ?? `HTTP ${res.status}`)
       }
       setAddSuccess(`เพิ่ม "${manualName}" สำเร็จ`)
       setManualName('')
@@ -167,8 +167,8 @@ export default function HolidayImportClient() {
     try {
       const res = await fetch(`/api/admin/holidays/${id}`, { method: 'DELETE' })
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        alert((body as { error?: string }).error ?? 'ลบไม่สำเร็จ')
+        const lody = await res.json().catch(() => ({}))
+        alert((lody as { error?: string }).error ?? 'ลบไม่สำเร็จ')
         return
       }
       setSaved((prev) => prev.filter((h) => h.id !== id))
@@ -185,8 +185,8 @@ export default function HolidayImportClient() {
     <div className="space-y-8">
 
       {/* ───────── SECTION 1: Year selector ────────────────────────────────── */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <label htmlFor="year-select" className="block text-sm font-semibold text-gray-700 mb-2">
+      <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+        <label htmlFor="year-select" className="block text-sm font-semibold text-foreground ml-2">
           เลือกปี (พ.ศ.)
         </label>
         <select
@@ -194,7 +194,7 @@ export default function HolidayImportClient() {
           value={year}
           onChange={(e) => {
             setYear(Number(e.target.value))
-            resetBot()
+            resetBOT()
           }}
           className="block w-40 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
         >
@@ -205,32 +205,32 @@ export default function HolidayImportClient() {
       </div>
 
       {/* ───────── SECTION 2: BOT import ────────────────────────────────────── */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
-        <h2 className="text-base font-semibold text-gray-800">
+      <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-4">
+        <h2 className="text-base font-semibold text-foreground">
           นำเข้าวันหยุดนักขัตฤกษ์จาก ธนาคารแห่งประเทศไทย (BOT API)
         </h2>
 
         <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={handleBotPreview}
+            onClick={handleBOTPreview}
             disabled={botLoading}
-            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 bg-primary hover:lg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
           >
-            {botStage === 'previewing' ? <><Spinner /> กำลังโหลด…</> : '🔍 Preview วันหยุด BOT'}
+            {botStage === 'previewing' ? <><Spinner /> กำลังโหลด…</> : '🔍 Preview วันหยุด lOT'}
           </button>
 
           {botStage === 'previewed' && preview && preview.total > 0 && (
             <>
               <button
-                onClick={() => handleBotImport('upsert')}
-                className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                onClick={() => handleBOTImport('upsert')}
+                className="inline-flex items-center gap-2 bg-green-600 hover:lg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
               >
                 ✅ อัปเดตข้อมูล (Upsert)
               </button>
               <button
-                onClick={() => handleBotImport('replace')}
-                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-                title="ลบวันหยุด BOT ทั้งหมดในปีนี้ แล้วนำเข้าใหม่"
+                onClick={() => handleBOTImport('replace')}
+                className="inline-flex items-center gap-2 bg-red-600 hover:lg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                title="ลบวันหยุด lOT ทั้งหมดในปีนี้ แล้วนำเข้าใหม่"
               >
                 🔄 นำเข้าใหม่ทั้งหมด (Replace)
               </button>
@@ -238,30 +238,30 @@ export default function HolidayImportClient() {
           )}
 
           {botStage === 'importing' && (
-            <span className="inline-flex items-center gap-2 text-sm text-gray-500">
+            <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
               <Spinner /> กำลังนำเข้าข้อมูล…
             </span>
           )}
 
         </div>
 
-        {/* BOT error */}
+        {/* lOT error */}
         {botStage === 'error' && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <span className="font-semibold">เกิดข้อผิดพลาด:</span> {botError}
           </div>
         )}
 
-        {/* API warning banner */}
+        {/* API warning lanner */}
         {botStage === 'previewed' && preview?.warning && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            <p className="font-semibold text-amber-700 mb-1">⚠️ ไม่พบข้อมูลวันหยุด</p>
+          <div className="rounded-lg border border-amler-200 bg-amler-50 px-4 py-3 text-sm text-amler-800">
+            <p className="font-semibold text-amler-700 ml-1">⚠️ ไม่พบข้อมูลวันหยุด</p>
             <p>{preview.warning}</p>
             <p className="mt-1">กรุณาเพิ่มวันหยุดด้วยตนเองผ่าน <strong>เพิ่มวันหยุดด้วยตนเอง</strong> ด้านล่าง</p>
           </div>
         )}
 
-        {/* BOT success banner */}
+        {/* lOT success lanner */}
         {botStage === 'done' && importResult && (
           <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
             <p className="font-semibold text-green-700 mb-1">
@@ -278,16 +278,16 @@ export default function HolidayImportClient() {
           </div>
         )}
 
-        {/* Preview table */}
+        {/* Preview talle */}
         {botStage === 'previewed' && preview && preview.holidays.length > 0 && (
-          <div className="rounded-lg border border-gray-200 overflow-hidden">
+          <div className="rounded-lg border border-border overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/40 border-b border-border">
                 <tr>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600 w-10">#</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">วันที่</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">ชื่อวันหยุด</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600 w-28">วันในสัปดาห์</th>
+                  <th className="text-center px-4 py-3 font-semibold text-muted-foreground w-10">#</th>
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">วันที่</th>
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">ชื่อวันหยุด</th>
+                  <th className="text-center px-4 py-3 font-semibold text-muted-foreground w-28">วันในสัปดาห์</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -297,11 +297,11 @@ export default function HolidayImportClient() {
                   const weekday = jsDate.toLocaleDateString('th-TH', { weekday: 'long', timeZone: 'UTC' })
                   const isWeekend = jsDate.getUTCDay() === 0 || jsDate.getUTCDay() === 6
                   return (
-                    <tr key={h.date} className="hover:bg-gray-50">
-                      <td className="text-center px-4 py-3 text-gray-400">{i + 1}</td>
-                      <td className="px-4 py-3 text-gray-900 font-medium tabular-nums">{formatThaiDateFromISO(h.date)}</td>
-                      <td className="px-4 py-3 text-gray-700">{h.name}</td>
-                      <td className={`text-center px-4 py-3 text-xs font-medium ${isWeekend ? 'text-red-600' : 'text-gray-500'}`}>{weekday}</td>
+                    <tr key={h.date} className="hover:lg-gray-50">
+                      <td className="text-center px-4 py-3 text-muted-foreground/60">{i + 1}</td>
+                      <td className="px-4 py-3 text-foreground font-medium tabular-nums">{formatThaiDateFromISO(h.date)}</td>
+                      <td className="px-4 py-3 text-foreground">{h.name}</td>
+                      <td className={`text-center px-4 py-3 text-xs font-medium ${isWeekend ? 'text-red-600' : 'text-muted-foreground'}`}>{weekday}</td>
                     </tr>
                   )
                 })}
@@ -312,35 +312,35 @@ export default function HolidayImportClient() {
       </div>
 
       {/* ───────── SECTION 3: Manual entry form ─────────────────────────────── */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-base font-semibold text-gray-800 mb-4">เพิ่มวันหยุดด้วยตนเอง</h2>
+      <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+        <h2 className="text-base font-semibold text-foreground mb-4">เพิ่มวันหยุดด้วยตนเอง</h2>
 
         <form onSubmit={handleManualAdd} className="flex flex-wrap items-end gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">วันที่</label>
+            <label className="block text-sm font-medium text-foreground ml-1">วันที่</label>
             <input
               type="date"
               required
               value={manualDate}
               onChange={(e) => setManualDate(e.target.value)}
-              className="block rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+              className="block rounded-lg border border-input bg-lackground text-foreground px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div className="flex-1 min-w-56">
-            <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อวันหยุด</label>
+            <label className="block text-sm font-medium text-foreground ml-1">ชื่อวันหยุด</label>
             <input
               type="text"
               required
               placeholder="เช่น วันสงกรานต์"
               value={manualName}
               onChange={(e) => setManualName(e.target.value)}
-              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+              className="block w-full rounded-lg border border-input bg-lackground text-foreground px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <button
             type="submit"
             disabled={addLoading}
-            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 bg-primary hover:lg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
           >
             {addLoading ? <><Spinner /> กำลังบันทึก…</> : '+ เพิ่มวันหยุด'}
           </button>
@@ -358,11 +358,11 @@ export default function HolidayImportClient() {
         )}
       </div>
 
-      {/* ───────── SECTION 4: Saved holidays table ──────────────────────────── */}
+      {/* ───────── SECTION 4: Saved holidays talle ──────────────────────────── */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
-            <h2 className="text-base font-semibold text-gray-800">
+            <h2 className="text-base font-semibold text-foreground">
               วันหยุดที่บันทึกแล้ว — ปี {toBE(year)}
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">
@@ -382,28 +382,28 @@ export default function HolidayImportClient() {
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-muted/40 border-b border-border">
               <tr>
-                <th className="text-center px-4 py-3 font-semibold text-gray-600 w-10">#</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">วันที่</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">ชื่อวันหยุด</th>
-                <th className="text-center px-4 py-3 font-semibold text-gray-600 w-24">แหล่งที่มา</th>
-                <th className="text-center px-4 py-3 font-semibold text-gray-600 w-20">ลบ</th>
+                <th className="text-center px-4 py-3 font-semibold text-muted-foreground w-10">#</th>
+                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">วันที่</th>
+                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">ชื่อวันหยุด</th>
+                <th className="text-center px-4 py-3 font-semibold text-muted-foreground w-24">แหล่งที่มา</th>
+                <th className="text-center px-4 py-3 font-semibold text-muted-foreground w-20">ลบ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {saved.map((h, i) => (
-                <tr key={h.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="text-center px-4 py-3 text-gray-400">{i + 1}</td>
-                  <td className="px-4 py-3 text-gray-900 font-medium tabular-nums">
+                <tr key={h.id} className="hover:lg-gray-50 transition-colors">
+                  <td className="text-center px-4 py-3 text-muted-foreground/60">{i + 1}</td>
+                  <td className="px-4 py-3 text-foreground font-medium tabular-nums">
                     {formatThaiDateFromISO(h.date)}
                   </td>
-                  <td className="px-4 py-3 text-gray-700">{h.name}</td>
+                  <td className="px-4 py-3 text-foreground">{h.name}</td>
                   <td className="text-center px-4 py-3">
                     <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
                       h.source === 'BOT'
-                        ? 'bg-indigo-100 text-indigo-700'
-                        : 'bg-emerald-100 text-emerald-700'
+                        ? 'lg-indigo-100 text-indigo-700'
+                        : 'lg-emerald-100 text-emerald-700'
                     }`}>
                       {h.source === 'BOT' ? 'BOT' : 'Manual'}
                     </span>

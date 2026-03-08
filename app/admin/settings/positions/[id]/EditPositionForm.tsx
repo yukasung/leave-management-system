@@ -39,7 +39,7 @@ export default function EditPositionForm({ position }: { position: PositionData 
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             ชื่อตำแหน่ง <span className="text-red-500">*</span>
           </label>
           <input
@@ -47,22 +47,22 @@ export default function EditPositionForm({ position }: { position: PositionData 
             type="text"
             required
             defaultValue={position.name}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
           {state.errors?.name && <p className="text-xs text-red-500 mt-1">{state.errors.name}</p>}
         </div>
 
         <div className="flex items-center gap-3 pt-2">
           <button type="submit" disabled={pending || state.success}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+            className="bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium px-5 py-2 rounded-lg transition-colors">
             {pending ? 'กำลังบันทึก…' : 'บันทึก'}
           </button>
-          <a href="/admin/settings" className="text-sm text-gray-500 hover:text-gray-700 underline">ยกเลิก</a>
+          <a href="/admin/settings/positions" className="text-sm text-muted-foreground hover:text-foreground underline">ยกเลิก</a>
         </div>
       </form>
 
       {/* Danger Zone */}
-      <div className="border border-red-200 rounded-xl p-5 bg-red-50">
+      <div className="border border-red-200 rounded-xl p-5 bg-red-950/10 dark:bg-red-950/20">
         <h3 className="text-sm font-semibold text-red-700 mb-1">Danger Zone</h3>
         <p className="text-xs text-red-600 mb-4">ลบตำแหน่งนี้ออกจากระบบ — ไม่สามารถลบได้ถ้ายังมีพนักงานใช้ตำแหน่งนี้</p>
 
@@ -83,10 +83,10 @@ export default function EditPositionForm({ position }: { position: PositionData 
           <div className="flex items-center gap-3">
             <span className="text-sm text-red-700 font-medium">ยืนยันการลบ?</span>
             <button type="button" onClick={handleDelete} disabled={deleting || deleteState?.success}
-              className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+              className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors">
               {deleting ? 'กำลังลบ…' : 'ยืนยัน ลบเลย'}
             </button>
-            <button type="button" onClick={() => setDeleteConfirm(false)} className="text-sm text-gray-600 hover:text-gray-800 underline">ยกเลิก</button>
+            <button type="button" onClick={() => setDeleteConfirm(false)} className="text-sm text-muted-foreground hover:text-foreground underline">ยกเลิก</button>
           </div>
         )}
       </div>

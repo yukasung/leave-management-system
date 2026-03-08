@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useActionState, useState, useEffect, useRef, useTransition, useCallback } from 'react'
 import { createLeaveRequest, submitLeaveRequest, type FormState } from './actions'
@@ -218,9 +218,9 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   if (phase === 'confirm' && snapshot) {
     const isSameDay = snapshot.startDate === snapshot.endDate
     return (
-      <div className="max-w-xl mx-auto mt-10 bg-white rounded-2xl shadow-md p-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">ยืนยันการส่งคำขอลา</h1>
-        <p className="text-sm text-gray-500 mb-6">ตรวจสอบรายละเอียดก่อนส่งคำขอ</p>
+      <div className="max-w-xl mx-auto mt-10 bg-card rounded-2xl shadow-md p-8">
+        <h1 className="text-2xl font-bold text-foreground mb-1">ยืนยันการส่งคำขอลา</h1>
+        <p className="text-sm text-muted-foreground mb-6">ตรวจสอบรายละเอียดก่อนส่งคำขอ</p>
 
         {submitError && (
           <div className="mb-5 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
@@ -229,7 +229,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
         )}
 
         {/* Summary card */}
-        <div className="rounded-xl border border-gray-200 bg-gray-50 divide-y divide-gray-100 mb-6 text-sm">
+        <div className="rounded-xl border border-border bg-muted/40 divide-y divide-border mb-6 text-sm">
           <Row label="ประเภทการลา" value={snapshot.leaveTypeName} />
           <Row
             label="วันที่"
@@ -246,7 +246,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
           <Row
             label="จำนวนวันลา"
             value={
-              <span className="font-semibold text-base text-gray-900">
+              <span className="font-semibold text-base text-foreground">
                 {snapshot.totalDays} วันทำการ
               </span>
             }
@@ -260,7 +260,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             type="button"
             onClick={handleStartOver}
             disabled={submitPending}
-            className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+            className="flex-1 py-2.5 border border-border text-foreground font-semibold rounded-lg hover:bg-muted/40 transition disabled:opacity-50"
           >
             กรอกใหม่
           </button>
@@ -268,7 +268,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             type="button"
             onClick={handleConfirmSubmit}
             disabled={submitPending}
-            className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold rounded-lg transition"
+            className="flex-1 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground font-semibold rounded-lg transition"
           >
             {submitPending ? (
               <span className="flex items-center justify-center gap-2">
@@ -292,18 +292,18 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   // ════════════════════════════════════════════════════════════════════════════
   if (phase === 'done') {
     return (
-      <div className="max-w-xl mx-auto mt-10 bg-white rounded-2xl shadow-md p-8 text-center">
+      <div className="max-w-xl mx-auto mt-10 bg-card rounded-2xl shadow-md p-8 text-center">
         <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
           <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-gray-800 mb-2">ส่งคำขอลาเรียบร้อยแล้ว</h2>
-        <p className="text-sm text-gray-500 mb-6">{submitMessage}</p>
+        <h2 className="text-xl font-bold text-foreground mb-2">ส่งคำขอลาเรียบร้อยแล้ว</h2>
+        <p className="text-sm text-muted-foreground mb-6">{submitMessage}</p>
         <button
           type="button"
           onClick={handleStartOver}
-          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
+          className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition"
         >
           ยื่นคำขอลาใหม่
         </button>
@@ -315,9 +315,9 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   // Phase: Form
   // ════════════════════════════════════════════════════════════════════════════
   return (
-    <div className="max-w-xl mx-auto mt-10 bg-white rounded-2xl shadow-md p-8">
-      <h1 className="text-2xl font-bold text-gray-800 mb-1">แบบฟอร์มขอลา</h1>
-      <p className="text-sm text-gray-500 mb-6">กรอกข้อมูลการลาและกดบันทึกร่าง จากนั้นยืนยันเพื่อส่งคำขอ</p>
+    <div className="max-w-xl mx-auto mt-10 bg-card rounded-2xl shadow-md p-8">
+      <h1 className="text-2xl font-bold text-foreground mb-1">แบบฟอร์มขอลา</h1>
+      <p className="text-sm text-muted-foreground mb-6">กรอกข้อมูลการลาและกดบันทึกร่าง จากนั้นยืนยันเพื่อส่งคำขอ</p>
 
       {state.errors?.general && (
         <div className="mb-5 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
@@ -328,7 +328,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
       <form action={handleFormAction} className="space-y-5">
         {/* Leave Type */}
         <div>
-          <label htmlFor="leaveTypeId" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="leaveTypeId" className="block text-sm font-medium text-foreground mb-1">
             ประเภทการลา <span className="text-red-500">*</span>
           </label>
           <select
@@ -336,7 +336,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             name="leaveTypeId"
             value={leaveTypeId}
             onChange={(e) => setLeaveTypeId(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="" disabled>-- เลือกประเภทการลา --</option>
             {leaveTypes.map((lt) => (
@@ -369,7 +369,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
         {/* Date row */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="startDate" className="block text-sm font-medium text-foreground mb-1">
               วันที่เริ่มต้น <span className="text-red-500">*</span>
             </label>
             <HolidayDatePicker
@@ -385,7 +385,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
           </div>
 
           <div>
-            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="endDate" className="block text-sm font-medium text-foreground mb-1">
               วันที่สิ้นสุด <span className="text-red-500">*</span>
             </label>
             <HolidayDatePicker
@@ -404,7 +404,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
         {/* Duration type — separate for start and end */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="startDurationType" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="startDurationType" className="block text-sm font-medium text-foreground mb-1">
               ช่วงเวลาวันแรก
             </label>
             <select
@@ -412,7 +412,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
               name="startDurationType"
               value={startDurationType}
               onChange={(e) => setStartDurationType(e.target.value as LeaveDurationType)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             >
               {DURATION_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -421,7 +421,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
           </div>
           {isMultiDay && (
           <div>
-            <label htmlFor="endDurationType" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="endDurationType" className="block text-sm font-medium text-foreground mb-1">
               ช่วงเวลาวันสุดท้าย
             </label>
             <select
@@ -429,7 +429,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
               name="endDurationType"
               value={endDurationType}
               onChange={(e) => setEndDurationType(e.target.value as LeaveDurationType)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             >
               {DURATION_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -444,7 +444,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
 
         {/* Total Leave Days — read-only display */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             จำนวนวันลาทั้งหมด
           </label>
           {preview?.error ? (
@@ -453,18 +453,18 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
               <span>{preview.error}</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 cursor-not-allowed select-none">
-              <svg className="h-4 w-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-muted border border-border rounded-lg text-sm text-foreground cursor-not-allowed select-none">
+              <svg className="h-4 w-4 text-muted-foreground/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               {preview ? (
                 <span>
-                  <strong className="text-base text-gray-900">{preview.totalDays}</strong>{' '}
+                  <strong className="text-base text-foreground">{preview.totalDays}</strong>{' '}
                   วันทำการ
                 </span>
               ) : (
-                <span className="text-gray-400">— เลือกวันที่เพื่อคำนวณ —</span>
+                <span className="text-muted-foreground/60">— เลือกวันที่เพื่อคำนวณ —</span>
               )}
             </div>
           )}
@@ -472,7 +472,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
 
         {/* Attachment */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             เอกสารแนบ {needsAttachment && <span className="text-red-500">*</span>}
           </label>
 
@@ -499,7 +499,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="w-full flex flex-col items-center gap-2 px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex flex-col items-center gap-2 px-4 py-6 border-2 border-dashed border-input rounded-lg hover:border-primary hover:bg-primary/5 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? (
                 <svg className="h-6 w-6 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -507,15 +507,15 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                 </svg>
               ) : (
-                <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-6 w-6 text-muted-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
               )}
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 {uploading ? 'กำลังอัปโหลด…' : 'คลิกเพื่อแนบไฟล์'}
               </span>
-              <span className="text-xs text-gray-400">PDF, JPG, PNG, DOCX · ไม่เกิน 10 MB</span>
+              <span className="text-xs text-muted-foreground/60">PDF, JPG, PNG, DOCX · ไม่เกิน 10 MB</span>
             </button>
           )}
 
@@ -538,7 +538,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
 
         {/* Reason */}
         <div>
-          <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="reason" className="block text-sm font-medium text-foreground mb-1">
             เหตุผล
           </label>
           <textarea
@@ -546,7 +546,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             name="reason"
             rows={3}
             placeholder="ระบุเหตุผลในการลา (ถ้ามี)"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
           />
           {state.errors?.reason && (
             <p className="mt-1 text-xs text-red-500">{state.errors.reason}</p>
@@ -556,7 +556,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {pending ? (
             <span className="flex items-center justify-center gap-2">
@@ -580,7 +580,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3 px-4 py-3">
-      <span className="w-36 shrink-0 text-gray-500">{label}</span>
-      <span className="text-gray-900 font-medium">{value}</span>    </div>
+      <span className="w-36 shrink-0 text-muted-foreground">{label}</span>
+      <span className="text-foreground font-medium">{value}</span>    </div>
   )
 }

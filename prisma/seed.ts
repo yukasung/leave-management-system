@@ -101,7 +101,6 @@ async function main() {
       email: 'admin@company.com',
       name: 'Admin',
       password: hashedPassword,
-      role: 'ADMIN',
     },
   })
 
@@ -113,7 +112,6 @@ async function main() {
       email: 'manager@company.com',
       name: 'Manager',
       password: hashedPassword,
-      role: 'MANAGER',
     },
   })
 
@@ -145,7 +143,6 @@ async function main() {
       email: 'employee@company.com',
       name: 'Employee',
       password: hashedPassword,
-      role: 'EMPLOYEE',
       departmentId: department.id,
     },
   })

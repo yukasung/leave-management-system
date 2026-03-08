@@ -60,8 +60,8 @@ export default function NewEmployeeForm({
       )}
 
       {/* ── Section: Basic Info ── */}
-      <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
-        <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5">
+      <fieldset className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-5">
+        <legend className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
           ข้อมูลพื้นฐาน
         </legend>
 
@@ -70,7 +70,7 @@ export default function NewEmployeeForm({
 
         {/* Row: Employee Code */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-foreground mb-1.5">
             รหัสพนักงาน <Required />
           </label>
           <input
@@ -86,7 +86,7 @@ export default function NewEmployeeForm({
         {/* Row: First / Last name */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-foreground mb-1.5">
               ชื่อ <Required />
             </label>
             <input
@@ -100,7 +100,7 @@ export default function NewEmployeeForm({
             <FieldError msg={e.firstName} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-foreground mb-1.5">
               นามสกุล <Required />
             </label>
             <input
@@ -117,7 +117,7 @@ export default function NewEmployeeForm({
 
         {/* Email */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-foreground mb-1.5">
             อีเมล <Required />
           </label>
           <input
@@ -132,7 +132,7 @@ export default function NewEmployeeForm({
 
         {/* Phone */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-foreground mb-1.5">
             เบอร์โทรศัพท์
           </label>
           <input
@@ -145,14 +145,14 @@ export default function NewEmployeeForm({
       </fieldset>
 
       {/* ── Section: Position & Role ── */}
-      <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
-        <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5">
+      <fieldset className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-5">
+        <legend className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
           ตำแหน่งและบทบาท
         </legend>
 
         {/* Department */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-foreground mb-1.5">
             แผนก
           </label>
           <select
@@ -174,7 +174,7 @@ export default function NewEmployeeForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Position */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-foreground mb-1.5">
               ตำแหน่งงาน <Required />
             </label>
             <select
@@ -193,7 +193,7 @@ export default function NewEmployeeForm({
 
         {/* Manager */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-foreground mb-1.5">
             ผู้จัดการสายงาน
           </label>
           <select
@@ -217,14 +217,14 @@ export default function NewEmployeeForm({
             <input
               type="checkbox"
               name="isProbation"
-              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-primary"
             />
             <span>
-              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+              <span className="text-sm font-medium text-foreground group-hover:text-foreground">
                 อยู่ระหว่างทดลองงาน (Probation)
               </span>
               <br />
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground/60">
                 พนักงานทดลองงานอาจไม่สามารถลาบางประเภทได้ตามนโยบาย เช่น วันลาพักร้อน
               </span>
             </span>
@@ -233,8 +233,8 @@ export default function NewEmployeeForm({
       </fieldset>
 
       {/* ── Section: System Permissions ── */}
-      <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5 mb-4">
+      <fieldset className="bg-card rounded-2xl border border-border shadow-sm p-6">
+        <legend className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-0.5 mb-4">
           สิทธิ์ระบบ
         </legend>
         <div className="space-y-4">
@@ -242,14 +242,14 @@ export default function NewEmployeeForm({
             <input
               type="checkbox"
               name="isAdmin"
-              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-primary"
             />
             <span>
-              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+              <span className="text-sm font-medium text-foreground group-hover:text-foreground">
                 ผู้ดูแลระบบ (System Admin)
               </span>
               <br />
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground/60">
                 สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้จัดการสายงาน
               </span>
             </span>
@@ -261,14 +261,14 @@ export default function NewEmployeeForm({
       <div className="flex items-center justify-end gap-3 pt-1 pb-4">
         <a
           href="/admin/employees"
-          className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+          className="px-5 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg hover:bg-muted/40 transition"
         >
           ยกเลิก
         </a>
         <button
           type="submit"
           disabled={pending || state.success}
-          className="px-6 py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg transition"
+          className="px-6 py-2.5 text-sm font-semibold bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-primary-foreground rounded-lg transition"
         >
           {pending ? 'กำลังบันทึก…' : 'บันทึกข้อมูล'}
         </button>
@@ -286,15 +286,15 @@ function inputCls(hasError: boolean) {
   return `${baseInput} ${
     hasError
       ? 'border-red-400 focus:ring-red-400 bg-red-50'
-      : 'border-gray-300 focus:ring-blue-500'
+      : 'border-input bg-background text-foreground focus:ring-primary'
   }`
 }
 
 function selectCls(hasError: boolean) {
-  return `${baseInput} bg-white ${
+  return `${baseInput} bg-background text-foreground ${
     hasError
-      ? 'border-red-400 focus:ring-red-400 bg-red-50'
-      : 'border-gray-300 focus:ring-blue-500'
+      ? 'border-red-400 focus:ring-red-400'
+      : 'border-input focus:ring-primary'
   }`
 }
 

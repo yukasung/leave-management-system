@@ -113,6 +113,9 @@
   * {
     border-color: var(--border);
   }
+  a, button, [role="button"], [role="menuitem"], label[for] {
+    cursor: pointer;
+  }
   html {
     color-scheme: light;
   }

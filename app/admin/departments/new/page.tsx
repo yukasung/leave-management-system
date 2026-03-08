@@ -12,9 +12,8 @@ export default async function NewDepartmentPage() {
 
   const [managers, dbUser] = await Promise.all([
     prisma.user.findMany({
-      where: { role: { in: ['HR', 'ADMIN'] } },
       orderBy: { name: 'asc' },
-      select: { id: true, name: true, role: true },
+      select: { id: true, name: true },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },

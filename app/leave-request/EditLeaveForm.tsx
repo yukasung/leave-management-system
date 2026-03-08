@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 /**
  * EditLeaveForm — pre-populated form for editing an existing leave request.
@@ -58,7 +58,7 @@ const STATUS_BANNER: Record<string, { text: string; cls: string }> = {
   IN_REVIEW:        { text: 'คำขอลานี้อยู่ระหว่างพิจารณา — ไม่สามารถแก้ไขได้',  cls: 'bg-blue-50 border-blue-300 text-blue-800' },
   APPROVED:         { text: 'คำขอลานี้ได้รับการอนุมัติแล้ว — ฟิลด์ถูกปิดใช้งาน', cls: 'bg-green-50 border-green-300 text-green-800' },
   REJECTED:         { text: 'คำขอลานี้ถูกปฏิเสธแล้ว — ไม่สามารถแก้ไขได้',       cls: 'bg-red-50 border-red-300 text-red-700' },
-  CANCELLED:        { text: 'คำขอลานี้ถูกยกเลิกแล้ว — ไม่สามารถแก้ไขได้',       cls: 'bg-gray-100 border-gray-300 text-gray-600' },
+  CANCELLED:        { text: 'คำขอลานี้ถูกยกเลิกแล้ว — ไม่สามารถแก้ไขได้',       cls: 'bg-muted border-border text-muted-foreground' },
   CANCEL_REQUESTED: { text: 'คำขอยกเลิกอยู่ระหว่างรอ HR — ไม่สามารถแก้ไขได้',   cls: 'bg-orange-50 border-orange-300 text-orange-800' },
 }
 
@@ -194,17 +194,17 @@ export default function EditLeaveForm({
   // ── Success screen ─────────────────────────────────────────────────────────
   if (state.success) {
     return (
-      <div className="max-w-xl mx-auto mt-10 bg-white rounded-2xl shadow-md p-8 text-center">
+      <div className="max-w-xl mx-auto mt-10 bg-card rounded-2xl shadow-md p-8 text-center">
         <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
           <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-gray-800 mb-2">อัปเดตคำขอลาเรียบร้อยแล้ว</h2>
-        <p className="text-sm text-gray-500 mb-6">{state.message}</p>
+        <h2 className="text-xl font-bold text-foreground mb-2">อัปเดตคำขอลาเรียบร้อยแล้ว</h2>
+        <p className="text-sm text-muted-foreground mb-6">{state.message}</p>
         <Link
           href="/my-leaves"
-          className="inline-block px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
+          className="inline-block px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition"
         >
           กลับประวัติการลา
         </Link>
@@ -222,17 +222,17 @@ export default function EditLeaveForm({
     : null
 
   return (
-    <div className="max-w-xl mx-auto mt-10 bg-white rounded-2xl shadow-md p-8">
+    <div className="max-w-xl mx-auto mt-10 bg-card rounded-2xl shadow-md p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-2xl font-bold text-gray-800">
+        <h1 className="text-2xl font-bold text-foreground">
           {isEditable ? 'แก้ไขคำขอลา' : 'รายละเอียดคำขอลา'}
         </h1>
-        <Link href="/my-leaves" className="text-sm text-blue-600 hover:underline">
+        <Link href="/my-leaves" className="text-sm text-primary hover:underline">
           ← ย้อนกลับ
         </Link>
       </div>
-      <p className="text-sm text-gray-500 mb-5">
+      <p className="text-sm text-muted-foreground mb-5">
         {isEditable ? 'แก้ไขรายละเอียดการลาและกดบันทึก' : 'คำขอลานี้ไม่สามารถแก้ไขได้ในขณะนี้'}
       </p>
 
@@ -253,7 +253,7 @@ export default function EditLeaveForm({
       <form action={formAction} className="space-y-5">
         {/* Leave Type */}
         <div>
-          <label htmlFor="leaveTypeId" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="leaveTypeId" className="block text-sm font-medium text-foreground mb-1">
             ประเภทการลา <span className="text-red-500">*</span>
           </label>
           <select
@@ -262,7 +262,7 @@ export default function EditLeaveForm({
             value={leaveTypeId}
             onChange={(e) => setLeaveTypeId(e.target.value)}
             disabled={disabled}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
           >
             <option value="" disabled>-- เลือกประเภทการลา --</option>
             {leaveTypes.map((lt) => (
@@ -291,7 +291,7 @@ export default function EditLeaveForm({
         {/* Date row */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="startDate" className="block text-sm font-medium text-foreground mb-1">
               วันที่เริ่มต้น <span className="text-red-500">*</span>
             </label>
             <HolidayDatePicker
@@ -307,7 +307,7 @@ export default function EditLeaveForm({
             )}
           </div>
           <div>
-            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="endDate" className="block text-sm font-medium text-foreground mb-1">
               วันที่สิ้นสุด <span className="text-red-500">*</span>
             </label>
             <HolidayDatePicker
@@ -327,7 +327,7 @@ export default function EditLeaveForm({
         {/* Duration types */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="startDurationType" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="startDurationType" className="block text-sm font-medium text-foreground mb-1">
               ช่วงเวลาวันแรก
             </label>
             <select
@@ -336,7 +336,7 @@ export default function EditLeaveForm({
               value={startDurationType}
               onChange={(e) => setStartDurationType(e.target.value as LeaveDurationType)}
               disabled={disabled}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
             >
               {DURATION_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -345,7 +345,7 @@ export default function EditLeaveForm({
           </div>
           {isMultiDay ? (
             <div>
-              <label htmlFor="endDurationType" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="endDurationType" className="block text-sm font-medium text-foreground mb-1">
                 ช่วงเวลาวันสุดท้าย
               </label>
               <select
@@ -354,7 +354,7 @@ export default function EditLeaveForm({
                 value={endDurationType}
                 onChange={(e) => setEndDurationType(e.target.value as LeaveDurationType)}
                 disabled={disabled}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
               >
                 {DURATION_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -368,7 +368,7 @@ export default function EditLeaveForm({
 
         {/* Days preview */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             จำนวนวันลาทั้งหมด
           </label>
           {preview?.error ? (
@@ -376,15 +376,15 @@ export default function EditLeaveForm({
               <span>⚠</span><span>{preview.error}</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 cursor-not-allowed select-none">
-              <svg className="h-4 w-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-muted border border-border rounded-lg text-sm text-foreground cursor-not-allowed select-none">
+              <svg className="h-4 w-4 text-muted-foreground/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               {preview ? (
-                <span><strong className="text-base text-gray-900">{preview.totalDays}</strong> วันทำการ</span>
+                <span><strong className="text-base text-foreground">{preview.totalDays}</strong> วันทำการ</span>
               ) : (
-                <span className="text-gray-400">— เลือกวันที่เพื่อคำนวณ —</span>
+                <span className="text-muted-foreground/60">— เลือกวันที่เพื่อคำนวณ —</span>
               )}
             </div>
           )}
@@ -392,7 +392,7 @@ export default function EditLeaveForm({
 
         {/* Attachment */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             เอกสารแนบ {needsAttachment && <span className="text-red-500">*</span>}
           </label>
 
@@ -419,7 +419,7 @@ export default function EditLeaveForm({
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="w-full flex flex-col items-center gap-2 px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex flex-col items-center gap-2 px-4 py-6 border-2 border-dashed border-input rounded-lg hover:border-primary hover:bg-primary/5 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? (
                 <svg className="h-6 w-6 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -427,18 +427,18 @@ export default function EditLeaveForm({
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                 </svg>
               ) : (
-                <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-6 w-6 text-muted-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
               )}
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 {uploading ? 'กำลังอัปโหลด…' : 'คลิกเพื่อแนบไฟล์'}
               </span>
-              <span className="text-xs text-gray-400">PDF, JPG, PNG, DOCX · ไม่เกิน 10 MB</span>
+              <span className="text-xs text-muted-foreground/60">PDF, JPG, PNG, DOCX · ไม่เกิน 10 MB</span>
             </button>
           ) : (
-            <div className="px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-400">
+            <div className="px-4 py-2.5 bg-muted border border-border rounded-lg text-sm text-muted-foreground/60">
               ไม่มีเอกสารแนบ
             </div>
           )}
@@ -461,7 +461,7 @@ export default function EditLeaveForm({
 
         {/* Reason */}
         <div>
-          <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="reason" className="block text-sm font-medium text-foreground mb-1">
             เหตุผล
           </label>
           <textarea
@@ -471,7 +471,7 @@ export default function EditLeaveForm({
             placeholder="ระบุเหตุผลในการลา (ถ้ามี)"
             defaultValue={existing.reason}
             disabled={disabled}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
           />
           {state.errors?.reason && (
             <p className="mt-1 text-xs text-red-500">{state.errors.reason}</p>
@@ -482,7 +482,7 @@ export default function EditLeaveForm({
         <div className="flex gap-3 pt-1">
           <Link
             href="/my-leaves"
-            className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
+            className="flex-1 py-2.5 border border-border text-foreground font-semibold rounded-lg hover:bg-muted/40 transition text-center"
           >
             ยกเลิก
           </Link>
@@ -490,7 +490,7 @@ export default function EditLeaveForm({
             <button
               type="submit"
               disabled={!canSave}
-              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex-1 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {pending ? (
                 <span className="flex items-center justify-center gap-2">

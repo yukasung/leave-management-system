@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 /**
  * HolidayDatePicker
@@ -166,38 +166,38 @@ export default function HolidayDatePicker({
         className={[
           'w-full px-3 py-2.5 border rounded-lg text-left text-sm transition-colors',
           disabled
-            ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300'
-            : 'bg-white border-gray-300 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500',
+            ? 'bg-muted text-muted-foreground cursor-not-allowed border-input'
+            : 'bg-background border-input hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary',
           className ?? '',
         ].join(' ')}
       >
         {value
-          ? <span className="text-gray-900">{formatThaiDateFromISO(value)}</span>
+          ? <span className="text-foreground">{formatThaiDateFromISO(value)}</span>
           : <span className="text-gray-400">เลือกวันที่</span>
         }
-        <span className="float-right text-gray-400 mt-0.5">📅</span>
+        <span className="float-right text-muted-foreground/60 mt-0.5">📅</span>
       </button>
 
       {/* Calendar dropdown */}
       {open && (
-        <div className="absolute z-50 mt-1 bg-white rounded-xl shadow-xl border border-gray-200 p-3 w-72">
+        <div className="absolute z-50 mt-1 bg-card rounded-xl shadow-xl border border-border p-3 w-72">
 
           {/* Month / Year navigation */}
           <div className="flex items-center justify-between mb-3">
             <button
               type="button"
               onClick={prevMonth}
-              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 text-lg leading-none"
+              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted/40 text-muted-foreground text-lg leading-none"
             >
               ‹
             </button>
-            <span className="text-sm font-semibold text-gray-800">
+            <span className="text-sm font-semibold text-foreground">
               {MONTH_TH[viewMonth]} {toBE(viewYear)}
             </span>
             <button
               type="button"
               onClick={nextMonth}
-              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 text-lg leading-none"
+              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted/40 text-muted-foreground text-lg leading-none"
             >
               ›
             </button>
@@ -234,15 +234,15 @@ export default function HolidayDatePicker({
               let cls = 'relative text-center text-sm rounded-lg py-1.5 w-full transition-colors '
 
               if (isSelected) {
-                cls += 'bg-blue-600 text-white font-semibold shadow-sm'
+                cls += 'bg-primary text-primary-foreground font-semibold shadow-sm'
               } else if (isDisabled) {
-                cls += 'text-gray-300 cursor-not-allowed'
+                cls += 'text-muted-foreground/30 cursor-not-allowed'
               } else if (isHoliday) {
                 cls += 'text-red-600 font-semibold hover:bg-red-50 cursor-pointer'
               } else if (isWeekend) {
                 cls += 'text-red-400 hover:bg-red-50 cursor-pointer'
               } else {
-                cls += 'text-gray-700 hover:bg-blue-50 cursor-pointer'
+                cls += 'text-foreground hover:bg-primary/5 cursor-pointer'
               }
 
               if (isToday && !isSelected) {
@@ -269,7 +269,7 @@ export default function HolidayDatePicker({
           </div>
 
           {/* Legend */}
-          <div className="mt-3 pt-2 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+          <div className="mt-3 pt-2 border-t border-border flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <span className="w-2.5 h-2.5 rounded-sm bg-red-100 border border-red-400 inline-block" />
               วันหยุดนักขัตฤกษ์

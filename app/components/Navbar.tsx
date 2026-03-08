@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
@@ -23,6 +23,7 @@ const SIDEBAR_ROUTES = [
   '/leave-balance',
   '/my-leaves',
   '/leave-request',
+  '/dashboard-user',
 ]
 
 export type CurrentUser = {
@@ -136,7 +137,7 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
   return (
     <nav
       aria-label="Main navigation"
-      className="w-full bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40"
+      className="w-full bg-card border-b border-border shadow-sm sticky top-0 z-40"
     >
       {/* ── Top bar ── */}
       <div className="px-4 md:px-6 h-14 flex items-center justify-between gap-3">
@@ -150,11 +151,11 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
           >
             <span
               aria-hidden
-              className="h-7 w-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-bold select-none group-hover:bg-blue-700 transition"
+              className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold select-none group-hover:bg-primary/90 transition"
             >
               LM
             </span>
-            <span className="hidden sm:block font-semibold text-gray-800 text-sm tracking-tight">
+            <span className="hidden sm:block font-semibold text-foreground text-sm tracking-tight">
               Leave Management
             </span>
           </Link>
@@ -171,8 +172,8 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
                     aria-current={isActive(pathname, link.href) ? 'page' : undefined}
                     className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
                       isActive(pathname, link.href)
-                        ? 'bg-blue-50 text-blue-700 font-medium'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                     }`}
                   >
                     {link.label}
@@ -203,7 +204,7 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
             </span>
           )}
 
-          <span className="hidden md:block text-sm font-medium text-gray-700 max-w-30 truncate">
+          <span className="hidden md:block text-sm font-medium text-foreground max-w-30 truncate">
             {name}
           </span>
 
@@ -224,7 +225,7 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
             aria-expanded={open}
             aria-label={open ? 'ปิดเมนู' : 'เปิดเมนู'}
             onClick={() => setOpen((o) => !o)}
-            className="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="lg:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             {/* Animated bars → X */}
             <span aria-hidden className="block w-5 h-5 relative">
@@ -258,10 +259,10 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
           open ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
         }`}
       >
-        <div className="border-t border-gray-100 bg-white px-4 pb-4">
+        <div className="border-t border-border bg-card px-4 pb-4">
 
           {/* User row */}
-          <div className="flex items-center justify-between py-3 border-b border-gray-100 mb-2">
+          <div className="flex items-center justify-between py-3 border-b border-border mb-2">
             <div className="flex items-center gap-2 min-w-0">
               {/* Avatar */}
               <Link href="/profile" className="shrink-0 h-8 w-8 rounded-full overflow-hidden ring-2 ring-gray-200">
@@ -279,7 +280,7 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
                   Admin
                 </span>
               )}
-              <span className="text-sm font-medium text-gray-700 truncate">{name}</span>
+              <span className="text-sm font-medium text-foreground truncate">{name}</span>
             </div>
             <form action={logout}>
               <button
@@ -294,7 +295,7 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
           {/* Nav groups */}
           {groups.map((group, gi) => (
             <div key={group.label} className={gi > 0 ? 'mt-3' : ''}>
-              <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+              <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
                 {group.label}
               </p>
               {group.links.map((link) => (
@@ -304,13 +305,13 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
                   aria-current={isActive(pathname, link.href) ? 'page' : undefined}
                   className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                     isActive(pathname, link.href)
-                      ? 'bg-blue-50 text-blue-700 font-medium'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-primary/10 text-primary font-medium'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                   }`}
                 >
                   {/* Active indicator dot */}
                   {isActive(pathname, link.href) && (
-                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-blue-600 shrink-0" />
+                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                   )}
                   {link.label}
                 </Link>

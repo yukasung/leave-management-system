@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+﻿import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { durationLabel, type LeaveDurationType } from '@/lib/leave-calc'
@@ -50,7 +50,7 @@ export default async function MyLeaveHistoryPage() {
   }
 
   return (
-    <AdminLayout title="ประวัติการลา" user={user}>
+    <AdminLayout title="การลาของฉัน" user={user}>
       <div className="space-y-4 max-w-6xl mx-auto">
         {/* Header */}
         <div>
@@ -69,14 +69,14 @@ export default async function MyLeaveHistoryPage() {
                 <thead className="bg-muted/40 border-b border-border">
                   <tr>
                     <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ประเภทการลา</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่เริ่มต้น</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่เริ่มลา</th>
                     <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่สิ้นสุด</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">จำนวน</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ช่วงเวลา</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ครึ่งวัน</th>
                     <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">เหตุผล</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">สถานะ</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่ส่ง</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">การดำเนินการ</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่ขอ</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -103,7 +103,7 @@ export default async function MyLeaveHistoryPage() {
                             : `เริ่ม: ${durationLabel(req.startDurationType as LeaveDurationType)} / สิ้นสุด: ${durationLabel(req.endDurationType as LeaveDurationType)}`}
                         </td>
                         <td className="px-5 py-4 text-muted-foreground max-w-xs truncate">
-                          {req.reason || <span className="text-muted-foreground/40">—</span>}
+                          {req.reason || <span className="text-muted-foreground/40"></span>}
                         </td>
                         <td className="px-5 py-4 text-center">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${badgeCls}`}>
@@ -126,92 +126,5 @@ export default async function MyLeaveHistoryPage() {
         )}
       </div>
     </AdminLayout>
-  )
-}
-
-export default async function MyLeaveHistoryPage() {
-  const session = await auth()
-  if (!session?.user?.id) redirect('/login')
-
-  const requests = await prisma.leaveRequest.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      leaveType: { select: { name: true } },
-    },
-  })
-
-  return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">ประวัติการลาของฉัน</h1>
-        <p className="text-sm text-gray-500 mt-1">ทั้งหมด {requests.length} รายการ</p>
-      </div>
-
-      {requests.length === 0 ? (
-        <div className="text-center text-gray-500 py-16 bg-white rounded-2xl shadow-sm">
-          ยังไม่มีประวัติการลา
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-2xl shadow-sm">
-          <table className="w-full bg-white text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200 text-left text-gray-600 font-semibold">
-                <th className="px-5 py-3">ประเภทการลา</th>
-                <th className="px-5 py-3">วันที่เริ่มต้น</th>
-                <th className="px-5 py-3">วันที่สิ้นสุด</th>
-                <th className="px-5 py-3 text-center">จำนวน</th>
-                <th className="px-5 py-3">ช่วงเวลา</th>
-                <th className="px-5 py-3">เหตุผล</th>
-                <th className="px-5 py-3 text-center">สถานะ</th>
-                <th className="px-5 py-3">วันที่ส่งคำขอ</th>
-                <th className="px-5 py-3 text-center">การดำเนินการ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {requests.map((req) => {
-                const status = statusLabel[req.status] ?? { label: req.status, className: 'bg-gray-100 text-gray-600' }
-                return (
-                  <tr key={req.id} className="hover:bg-gray-50 transition">
-                    <td className="px-5 py-4 font-medium text-gray-900">
-                      {req.leaveType.name}
-                    </td>
-                    <td className="px-5 py-4 text-gray-700 whitespace-nowrap">
-                      {formatDate(req.startDate)}
-                    </td>
-                    <td className="px-5 py-4 text-gray-700 whitespace-nowrap">
-                      {formatDate(req.endDate)}
-                    </td>
-                    <td className="px-5 py-4 text-center font-semibold text-gray-900">
-                      {req.totalDays} วัน
-                    </td>
-                    <td className="px-5 py-4 text-gray-600 text-xs">
-                      {req.startDurationType === req.endDurationType
-                        ? durationLabel(req.startDurationType as LeaveDurationType)
-                        : `เริ่ม: ${durationLabel(req.startDurationType as LeaveDurationType)} / สิ้นสุด: ${durationLabel(req.endDurationType as LeaveDurationType)}`
-                      }
-                    </td>
-                    <td className="px-5 py-4 text-gray-600 max-w-xs truncate">
-                      {req.reason || <span className="text-gray-400">—</span>}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${status.className}`}>
-                        {status.label}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-gray-500 whitespace-nowrap">
-                      {formatDate(req.createdAt)}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <LeaveActionsCell leaveId={req.id} status={req.status} />
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
   )
 }

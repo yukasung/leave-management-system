@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useRef, useState, useEffect } from 'react'
 
@@ -132,13 +132,13 @@ export default function AvatarUploader({ name = 'avatarUrl', defaultUrl, initial
         </>
       ) : (
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-700 mb-0.5">รูปโปรไฟล์</p>
-          <p className="text-xs text-gray-400 mb-2">JPG, PNG, WEBP หรือ GIF · ไม่เกิน 5 MB</p>
+          <p className="text-sm font-medium text-foreground mb-0.5">รูปโปรไฟล์</p>
+          <p className="text-xs text-muted-foreground/60 mb-2">JPG, PNG, WEBP หรือ GIF · ไม่เกิน 5 MB</p>
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 transition disabled:opacity-50"
+            className="text-xs px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-muted/40 text-muted-foreground transition disabled:opacity-50"
           >
             {uploading ? 'กำลังอัปโหลด…' : 'เลือกรูป'}
           </button>

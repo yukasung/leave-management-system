@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import { getUsedLeaveDaysThisYear } from '@/lib/leave-policy'
 import EditLeaveForm from '../../EditLeaveForm'
+import AdminLayout from '@/components/admin-layout'
 
 export default async function EditLeavePage({
   params,
@@ -78,25 +79,40 @@ export default async function EditLeavePage({
   const balanceByType: Record<string, { totalDays: number; usedDays: number }> =
     Object.fromEntries(balances.map((b) => [b.leaveTypeId, b]))
 
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { avatarUrl: true },
+  })
+  const user = {
+    name:      session.user.name ?? '',
+    email:     session.user.email ?? '',
+    avatarUrl: dbUser?.avatarUrl ?? null,
+    isAdmin:   session.user.isAdmin,
+  }
+
   return (
-    <EditLeaveForm
-      leaveId={leave.id}
-      existing={{
-        leaveTypeId:       leave.leaveTypeId,
-        startDate:         leave.startDate.toISOString().split('T')[0],
-        endDate:           leave.endDate.toISOString().split('T')[0],
-        startDurationType: leave.startDurationType as 'FULL_DAY' | 'HALF_DAY_MORNING' | 'HALF_DAY_AFTERNOON',
-        endDurationType:   leave.endDurationType as 'FULL_DAY' | 'HALF_DAY_MORNING' | 'HALF_DAY_AFTERNOON',
-        totalDays:         leave.totalDays,
-        reason:            leave.reason ?? '',
-        documentUrl:       leave.documentUrl ?? '',
-        status:            leave.status,
-      }}
-      leaveTypes={leaveTypes}
-      balanceByType={balanceByType}
-      usageByType={usageByType}
-      isEditable={isEditable}
-      isPrivileged={isPrivileged}
-    />
+    <AdminLayout title="แก้ไขคำขอลา" user={user}>
+      <div className="max-w-2xl mx-auto">
+        <EditLeaveForm
+          leaveId={leave.id}
+          existing={{
+            leaveTypeId:       leave.leaveTypeId,
+            startDate:         leave.startDate.toISOString().split('T')[0],
+            endDate:           leave.endDate.toISOString().split('T')[0],
+            startDurationType: leave.startDurationType as 'FULL_DAY' | 'HALF_DAY_MORNING' | 'HALF_DAY_AFTERNOON',
+            endDurationType:   leave.endDurationType as 'FULL_DAY' | 'HALF_DAY_MORNING' | 'HALF_DAY_AFTERNOON',
+            totalDays:         leave.totalDays,
+            reason:            leave.reason ?? '',
+            documentUrl:       leave.documentUrl ?? '',
+            status:            leave.status,
+          }}
+          leaveTypes={leaveTypes}
+          balanceByType={balanceByType}
+          usageByType={usageByType}
+          isEditable={isEditable}
+          isPrivileged={isPrivileged}
+        />
+      </div>
+    </AdminLayout>
   )
 }

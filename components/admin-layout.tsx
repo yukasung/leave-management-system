@@ -12,7 +12,7 @@ export default function AdminLayout({
 }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar />
+      <Sidebar isAdmin={user?.isAdmin ?? false} />
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         <Navbar title={title} user={user} />
         <main className="flex-1 overflow-y-auto px-6 py-5">
