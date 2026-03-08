@@ -5,6 +5,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
 
+// These routes use the new sidebar admin layout — hide the legacy top Navbar
+const SIDEBAR_ROUTES = ['/dashboard', '/leave-requests', '/employees', '/leave-types']
+
 export type CurrentUser = {
   id:        string
   name:      string
@@ -105,6 +108,9 @@ export default function Navbar({ currentUser }: { currentUser: CurrentUser | nul
   }, [open])
 
   if (!currentUser) return null
+
+  // New pages use a self-contained sidebar + topbar — suppress the legacy navbar
+  if (SIDEBAR_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'))) return null
 
   const { name, isAdmin } = currentUser
   const initials = name.trim().split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
