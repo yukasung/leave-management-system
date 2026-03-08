@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useParams } from 'next/navigation'
 import { useState } from 'react'
 import {
   LayoutDashboard,
@@ -50,7 +50,15 @@ const SETTINGS_SUB_ITEMS = [
 ]
 
 export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
-  const pathname = usePathname()
+  const rawPathname = usePathname()
+  const params = useParams()
+  const locale = (params?.locale as string) || ''
+  // Strip locale prefix so active detection works regardless of /th/ or /en/ prefix
+  const pathname = locale ? rawPathname.replace(new RegExp(`^/${locale}`), '') || '/' : rawPathname
+
+  // Build locale-prefixed href for links
+  const href = (path: string) => locale ? `/${locale}${path}` : path
+
   const [collapsed, setCollapsed] = useState(false)
 
   const NAV_ITEMS = isAdmin ? ADMIN_NAV_ITEMS : USER_NAV_ITEMS
@@ -87,12 +95,12 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
 
       {/* Nav links */}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
-        {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
-          const active = pathname === href || pathname.startsWith(href + '/')
+        {NAV_ITEMS.map(({ href: itemPath, icon: Icon, label }) => {
+          const active = pathname === itemPath || pathname.startsWith(itemPath + '/')
           return (
             <Link
-              key={href}
-              href={href}
+              key={itemPath}
+              href={href(itemPath)}
               title={collapsed ? label : undefined}
               className={cn(
                 'group relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
@@ -165,12 +173,12 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
           {/* Sub-items */}
           {!collapsed && settingsOpen && (
             <div className="mt-0.5 ml-4 pl-3 border-l border-sidebar-border space-y-0.5">
-              {SETTINGS_SUB_ITEMS.map(({ href, icon: Icon, label }) => {
-                const active = pathname === href || pathname.startsWith(href + '/')
+              {SETTINGS_SUB_ITEMS.map(({ href: itemPath, icon: Icon, label }) => {
+                const active = pathname === itemPath || pathname.startsWith(itemPath + '/')
                 return (
                   <Link
-                    key={href}
-                    href={href}
+                    key={itemPath}
+                    href={href(itemPath)}
                     className={cn(
                       'group flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all duration-150',
                       active

@@ -88,7 +88,7 @@ function getNavGroups(currentUser: CurrentUser): NavGroup[] {
 // ── Component ─────────────────────────────────────────────────────────────────
 const MENU_ID = 'mobile-nav-menu'
 
-export default function Navbar({ currentUser }: { currentUser: CurrentUser | null }) {
+export default function Navbar({ currentUser, locale: _locale }: { currentUser: CurrentUser | null; locale?: string }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const menuRef   = useRef<HTMLDivElement>(null)

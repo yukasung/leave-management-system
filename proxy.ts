@@ -1,14 +1,19 @@
 import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
+import createIntlMiddleware from 'next-intl/middleware'
+import { routing } from './i18n/routing'
 
 // ── Admin-only route protection ───────────────────────────────────────────────
 const ADMIN_ROUTES = ['/admin', '/hr']
+
+const intlMiddleware = createIntlMiddleware(routing)
 
 export default auth((req) => {
   const { nextUrl, auth: session } = req
   const isLoggedIn = !!session
 
   const isAuthPage = nextUrl.pathname.startsWith('/login')
+    || nextUrl.pathname.match(/^\/(th|en)\/login/) !== null
   const isApiAuth  = nextUrl.pathname.startsWith('/api/auth')
 
   if (isApiAuth) return NextResponse.next()
@@ -33,10 +38,11 @@ export default auth((req) => {
     }
   }
 
-  return NextResponse.next()
+  // Apply next-intl locale routing
+  return intlMiddleware(req)
 })
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)'],
 }
 

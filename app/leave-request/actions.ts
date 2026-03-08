@@ -2,6 +2,7 @@
 
 import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { prisma } from '@/lib/prisma'
 import { type LeaveDurationType } from '@/lib/leave-calc'
 import { calculateLeaveDaysServer } from '@/lib/leave-calc-server'
 import {
@@ -83,6 +84,19 @@ export async function createLeaveRequest(
 
   if (startDate < today) {
     return { errors: { startDate: 'วันที่เริ่มต้นต้องไม่เป็นวันที่ผ่านมาแล้ว' } }
+  }
+
+  // ── Check for overlapping leave requests ─────────────────────────────────
+  const overlapping = await prisma.leaveRequest.findFirst({
+    where: {
+      userId: session.user.id,
+      status: { notIn: ['REJECTED', 'CANCELLED'] },
+      startDate: { lte: endDate },
+      endDate:   { gte: startDate },
+    },
+  })
+  if (overlapping) {
+    return { errors: { general: 'คุณมีคำขอลาในช่วงวันที่ดังกล่าวอยู่แล้ว กรุณาตรวจสอบอีกครั้ง' } }
   }
 
   // ── Server-side recalculation — skips weekends + public holidays ──────────
@@ -234,6 +248,20 @@ export async function updateLeaveRequest(
 
   startDate.setHours(0, 0, 0, 0)
   endDate.setHours(0, 0, 0, 0)
+
+  // ── Check for overlapping leave requests (exclude the current one) ────────
+  const overlappingUpdate = await prisma.leaveRequest.findFirst({
+    where: {
+      id:     { not: leaveId },
+      userId: session.user.id,
+      status: { notIn: ['REJECTED', 'CANCELLED'] },
+      startDate: { lte: endDate },
+      endDate:   { gte: startDate },
+    },
+  })
+  if (overlappingUpdate) {
+    return { errors: { general: 'คุณมีคำขอลาในช่วงวันที่ดังกล่าวอยู่แล้ว กรุณาตรวจสอบอีกครั้ง' } }
+  }
 
   // ── Server-side recalculation — skips weekends + public holidays ──────────
   const calc = await calculateLeaveDaysServer(startDate, endDate, startDurationType, endDurationType)

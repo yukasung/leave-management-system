@@ -1,7 +1,6 @@
 'use client'
 
-import Link from 'next/link'
-import { Bell } from 'lucide-react'
+import { Bell, Languages } from 'lucide-react'
 import { buttonVariants } from '@/lib/button-variants'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -14,12 +13,51 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { logout } from '@/app/actions/auth'
 import { ThemeToggle } from '@/components/theme-toggle'
+import Link from 'next/link'
+import { usePathname, useParams, useRouter } from 'next/navigation'
 
 export type AdminUser = {
   name: string
   email: string
   avatarUrl?: string | null
   isAdmin: boolean
+}
+
+function LanguageSwitcher() {
+  const params = useParams()
+  const locale = (params?.locale as string) || 'th'
+  const rawPathname = usePathname()
+  const router = useRouter()
+
+  const switchLocale = (next: string) => {
+    const pathWithoutLocale = rawPathname.replace(new RegExp(`^/${locale}`), '') || '/'
+    router.push(`/${next}${pathWithoutLocale}`)
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-8 w-8')}
+        title="Switch language"
+      >
+        <Languages className="h-4 w-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-36">
+        <DropdownMenuItem
+          onClick={() => switchLocale('th')}
+          className={locale === 'th' ? 'font-semibold text-primary' : ''}
+        >
+          🇹🇭 ภาษาไทย
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => switchLocale('en')}
+          className={locale === 'en' ? 'font-semibold text-primary' : ''}
+        >
+          🇬🇧 English
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 }
 
 export default function Navbar({
@@ -29,6 +67,10 @@ export default function Navbar({
   title: string
   user: AdminUser | null
 }) {
+  const params = useParams()
+  const locale = (params?.locale as string) || 'th'
+  const lp = (path: string) => `/${locale}${path}`
+
   const initials = user?.name
     ? user.name.trim().split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
     : '?'
@@ -41,9 +83,12 @@ export default function Navbar({
       {/* Theme toggle */}
       <ThemeToggle />
 
+      {/* Language switcher */}
+      <LanguageSwitcher />
+
       {/* Notifications */}
       <Link
-        href="/notifications"
+        href={lp('/notifications')}
         aria-label="Notifications"
         className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'relative h-8 w-8')}
       >
@@ -73,13 +118,13 @@ export default function Navbar({
             </p>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <Link href="/profile" className="w-full">
+              <Link href={lp('/profile')} className="w-full">
                 Profile
               </Link>
             </DropdownMenuItem>
             {user.isAdmin && (
               <DropdownMenuItem>
-                <Link href="/admin/settings" className="w-full">
+                <Link href={lp('/admin/settings')} className="w-full">
                   Settings
                 </Link>
               </DropdownMenuItem>
