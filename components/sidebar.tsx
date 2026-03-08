@@ -12,7 +12,10 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   CalendarCheck,
+  ClipboardList,
+  Briefcase,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -22,12 +25,19 @@ const NAV_ITEMS = [
   { href: '/employees',         icon: Users,           label: 'Employees'      },
   { href: '/leave-types',       icon: Tags,            label: 'Leave Types'    },
   { href: '/hr/leave-requests', icon: BarChart2,       label: 'Reports'        },
-  { href: '/admin/settings',    icon: Settings,        label: 'Settings'       },
+]
+
+const SETTINGS_SUB_ITEMS = [
+  { href: '/admin/settings/leave-types', icon: ClipboardList, label: 'ประเภทการลา' },
+  { href: '/admin/settings/positions',   icon: Briefcase,     label: 'ตำแหน่งงาน'  },
 ]
 
 export default function Sidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+
+  const isSettingsActive = pathname === '/admin/settings' || pathname.startsWith('/admin/settings/')
+  const [settingsOpen, setSettingsOpen] = useState(isSettingsActive)
 
   return (
     <aside
@@ -93,6 +103,71 @@ export default function Sidebar() {
             </Link>
           )
         })}
+
+        {/* Settings group */}
+        <div>
+          <button
+            type="button"
+            title={collapsed ? 'Settings' : undefined}
+            onClick={() => !collapsed && setSettingsOpen((o) => !o)}
+            className={cn(
+              'group relative w-full flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
+              'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+              isSettingsActive
+                ? 'bg-primary/10 text-primary'
+                : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              collapsed ? 'justify-center px-2' : 'px-2.5',
+            )}
+          >
+            {isSettingsActive && !collapsed && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary" />
+            )}
+            <Settings
+              className={cn(
+                'h-4 w-4 shrink-0 transition-colors',
+                isSettingsActive
+                  ? 'text-primary'
+                  : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground',
+              )}
+            />
+            {!collapsed && (
+              <>
+                <span className="truncate flex-1 text-left">Settings</span>
+                <ChevronDown
+                  className={cn(
+                    'h-3.5 w-3.5 shrink-0 transition-transform duration-200',
+                    settingsOpen ? 'rotate-180' : '',
+                    isSettingsActive ? 'text-primary' : 'text-sidebar-foreground/40',
+                  )}
+                />
+              </>
+            )}
+          </button>
+
+          {/* Sub-items */}
+          {!collapsed && settingsOpen && (
+            <div className="mt-0.5 ml-4 pl-3 border-l border-sidebar-border space-y-0.5">
+              {SETTINGS_SUB_ITEMS.map(({ href, icon: Icon, label }) => {
+                const active = pathname === href || pathname.startsWith(href + '/')
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      'group flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all duration-150',
+                      active
+                        ? 'text-primary font-medium'
+                        : 'text-sidebar-foreground/50 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent',
+                    )}
+                  >
+                    <Icon className={cn('h-3.5 w-3.5 shrink-0', active ? 'text-primary' : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground')} />
+                    <span className="truncate">{label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </nav>
 
       {/* Footer */}

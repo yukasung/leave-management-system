@@ -1,24 +1,40 @@
 import { auth } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import NewPositionForm from './NewPositionForm'
+import AdminLayout from '@/components/admin-layout'
+import { prisma } from '@/lib/prisma'
 
 export default async function NewPositionPage() {
   const session = await auth()
-  if (!session || !session.user.isAdmin) {
-    return <div className="flex items-center justify-center min-h-screen"><p className="text-red-500 font-semibold">Unauthorized</p></div>
+  if (!session?.user?.id) redirect('/login')
+  if (!session.user.isAdmin) redirect('/dashboard')
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { avatarUrl: true },
+  })
+
+  const user = {
+    name:      session.user.name ?? '',
+    email:     session.user.email ?? '',
+    avatarUrl: dbUser?.avatarUrl ?? null,
+    isAdmin:   true,
   }
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-8">
-      <nav className="text-sm text-gray-500 mb-6 flex items-center gap-2">
-        <Link href="/admin/settings" className="hover:text-indigo-600">ตั้งค่าระบบ</Link>
-        <span>/</span>
-        <span className="text-gray-900 font-medium">เพิ่มตำแหน่งใหม่</span>
-      </nav>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">เพิ่มตำแหน่งงานใหม่</h1>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <NewPositionForm />
+    <AdminLayout title="เพิ่มตำแหน่ง" user={user}>
+      <div className="max-w-xl mx-auto space-y-5">
+        <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Link href="/admin/settings" className="hover:text-foreground transition">ตั้งค่าระบบ</Link>
+          <span>/</span>
+          <span className="text-foreground font-medium">เพิ่มตำแหน่งใหม่</span>
+        </nav>
+        <h2 className="text-lg font-semibold text-foreground">เพิ่มตำแหน่งงานใหม่</h2>
+        <div className="rounded-xl border border-border bg-card shadow-sm p-6">
+          <NewPositionForm />
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   )
 }

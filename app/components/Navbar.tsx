@@ -6,7 +6,24 @@ import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
 
 // These routes use the new sidebar admin layout — hide the legacy top Navbar
-const SIDEBAR_ROUTES = ['/dashboard', '/leave-requests', '/employees', '/leave-types']
+const SIDEBAR_ROUTES = [
+  '/dashboard',
+  '/leave-requests',
+  '/employees',
+  '/leave-types',
+  '/hr/leave-requests',
+  '/hr/audit-logs',
+  '/admin/settings',
+  '/admin/departments',
+  '/admin/employees',
+  '/admin/holiday-management',
+  '/manager',
+  '/notifications',
+  '/profile',
+  '/leave-balance',
+  '/my-leaves',
+  '/leave-request',
+]
 
 export type CurrentUser = {
   id:        string

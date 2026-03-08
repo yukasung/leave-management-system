@@ -197,13 +197,13 @@ export default async function EmployeesPage({
                                 'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium',
                                 emp.isActive
                                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : 'bg-gray-100 text-gray-500 border-gray-200',
+                                  : 'bg-muted text-muted-foreground border-border',
                               )}
                             >
                               {emp.isActive ? 'Active' : 'Inactive'}
                             </span>
                             {emp.isAdmin && (
-                              <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                              <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 dark:border-violet-800/50">
                                 Admin
                               </span>
                             )}

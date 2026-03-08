@@ -1,8 +1,10 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import EditDepartmentForm from './EditDepartmentForm'
+import AdminLayout from '@/components/admin-layout'
 
 export default async function EditDepartmentPage({
   params,
@@ -10,18 +12,12 @@ export default async function EditDepartmentPage({
   params: Promise<{ id: string }>
 }) {
   const session = await auth()
-
-  if (!session || !session.user.isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-red-500 font-semibold">Unauthorized</p>
-      </div>
-    )
-  }
+  if (!session?.user?.id) redirect('/login')
+  if (!session.user.isAdmin) redirect('/dashboard')
 
   const { id } = await params
 
-  const [department, managers] = await Promise.all([
+  const [department, managers, dbUser] = await Promise.all([
     prisma.department.findUnique({
       where: { id },
       include: { _count: { select: { employees: true } } },
@@ -31,24 +27,34 @@ export default async function EditDepartmentPage({
       orderBy: { name: 'asc' },
       select: { id: true, name: true, role: true },
     }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { avatarUrl: true },
+    }),
   ])
 
   if (!department) notFound()
 
+  const user = {
+    name:      session.user.name ?? '',
+    email:     session.user.email ?? '',
+    avatarUrl: dbUser?.avatarUrl ?? null,
+    isAdmin:   true,
+  }
+
   return (
-    <div className="max-w-xl mx-auto px-4 py-8">
-      {/* Breadcrumb */}
-      <nav className="text-sm text-gray-500 mb-6 flex items-center gap-2">
-        <Link href="/admin/departments" className="hover:text-indigo-600">จัดการแผนก</Link>
-        <span>/</span>
-        <span className="text-gray-900 font-medium">{department.name}</span>
-      </nav>
-
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">แก้ไขแผนก</h1>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <EditDepartmentForm department={department} managers={managers} />
+    <AdminLayout title="แก้ไขแผนก" user={user}>
+      <div className="max-w-xl mx-auto space-y-5">
+        <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Link href="/admin/departments" className="hover:text-foreground transition">จัดการแผนก</Link>
+          <span>/</span>
+          <span className="text-foreground font-medium">{department.name}</span>
+        </nav>
+        <h2 className="text-lg font-semibold text-foreground">แก้ไขแผนก</h2>
+        <div className="rounded-xl border border-border bg-card shadow-sm p-6">
+          <EditDepartmentForm department={department} managers={managers} />
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   )
 }
