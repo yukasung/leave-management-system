@@ -221,7 +221,7 @@ export default function NewEmployeeForm({
             />
             <span>
               <span className="text-sm font-medium text-foreground group-hover:text-foreground">
-                อยู่ระหว่างทดลองงาน (Probation)
+                อยู่ระหว่างทดลองงาน
               </span>
               <br />
               <span className="text-xs text-muted-foreground/60">
@@ -246,7 +246,7 @@ export default function NewEmployeeForm({
             />
             <span>
               <span className="text-sm font-medium text-foreground group-hover:text-foreground">
-                ผู้ดูแลระบบ (System Admin)
+                ผู้ดูแลระบบ
               </span>
               <br />
               <span className="text-xs text-muted-foreground/60">

@@ -63,7 +63,7 @@ export default function EditPositionForm({ position }: { position: PositionData 
 
       {/* Danger Zone */}
       <div className="border border-red-200 rounded-xl p-5 bg-red-950/10 dark:bg-red-950/20">
-        <h3 className="text-sm font-semibold text-red-700 mb-1">Danger Zone</h3>
+        <h3 className="text-sm font-semibold text-red-700 mb-1">โซนอันตราย</h3>
         <p className="text-xs text-red-600 mb-4">ลบตำแหน่งนี้ออกจากระบบ — ไม่สามารถลบได้ถ้ายังมีพนักงานใช้ตำแหน่งนี้</p>
 
         {deleteState?.message && (

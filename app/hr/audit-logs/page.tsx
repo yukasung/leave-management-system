@@ -35,12 +35,12 @@ export default async function AuditLogPage() {
   }
 
   return (
-    <AdminLayout title="Audit Log" user={user}>
+    <AdminLayout title="บันทึกการตรวจสอบ" user={user}>
       <div className="space-y-4 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Audit Log</h2>
+            <h2 className="text-lg font-semibold text-foreground">บันทึกการตรวจสอบ</h2>
             <p className="text-sm text-muted-foreground mt-0.5">{logs.length} รายการทั้งหมด</p>
           </div>
         </div>
@@ -57,10 +57,10 @@ export default async function AuditLogPage() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ผู้ดำเนินการ</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Action</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Entity Type</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Entity ID</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Description</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">การดำเนินการ</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ประเภทข้อมูล</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">รหัสข้อมูล</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">คำอธิบาย</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่</th>
                   </tr>
                 </thead>

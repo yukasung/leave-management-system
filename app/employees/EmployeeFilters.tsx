@@ -39,7 +39,7 @@ export default function EmployeeFilters({
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
         <Input
           type="search"
-          placeholder="Search name or email…"
+          placeholder="ค้นหาชื่อหรืออีเมล…"
           defaultValue={search}
           onChange={(e) => update('search', e.target.value)}
           className="pl-8 h-8 text-sm w-full"
@@ -52,7 +52,7 @@ export default function EmployeeFilters({
         onChange={(e) => update('department', e.target.value)}
         className="h-8 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
       >
-        <option value="">All Departments</option>
+        <option value="">ทุกแผนก</option>
         {departments.map((d) => (
           <option key={d.id} value={d.id}>
             {d.name}
@@ -71,7 +71,7 @@ export default function EmployeeFilters({
           }}
         >
           <X className="h-3.5 w-3.5 mr-1" />
-          Clear
+          ล้าง
         </Button>
       )}
     </div>

@@ -23,12 +23,13 @@ export type LeaveRow = {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  DRAFT:     'Draft',
-  PENDING:   'Pending',
-  IN_REVIEW: 'In Review',
-  APPROVED:  'Approved',
-  REJECTED:  'Rejected',
-  CANCELLED: 'Cancelled',
+  DRAFT:     'ร่าง',
+  PENDING:   'รออนุมัติ',
+  IN_REVIEW: 'กำลังพิจารณา',
+  APPROVED:  'อนุมัติแล้ว',
+  REJECTED:  'ไม่อนุมัติ',
+  CANCELLED: 'ยกเลิกแล้ว',
+  CANCEL_REQUESTED: 'ขอยกเลิก',
 }
 
 const STATUS_CLASS: Record<string, string> = {
@@ -65,8 +66,8 @@ export function LeaveTable({
               d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
-        <p className="text-sm font-medium text-foreground">No leave requests</p>
-        <p className="mt-1 text-xs text-muted-foreground">No records match the current filter.</p>
+        <p className="text-sm font-medium text-foreground">ไม่มีคำขอลา</p>
+        <p className="mt-1 text-xs text-muted-foreground">ไม่มีข้อมูลตรงกับตัวกรองปัจจุบัน</p>
       </div>
     )
   }
@@ -77,26 +78,26 @@ export function LeaveTable({
         <TableHeader>
           <TableRow className="bg-muted/40 hover:bg-muted/40">
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Employee
+              พนักงาน
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Leave Type
+              ประเภทการลา
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Start Date
+              วันที่เริ่ม
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              End Date
+              วันที่สิ้นสุด
             </TableHead>
             <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Days
+              จำนวนวัน
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Status
+              สถานะ
             </TableHead>
             {showActions && (
               <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Actions
+                จัดการ
               </TableHead>
             )}
           </TableRow>
@@ -151,7 +152,7 @@ export function LeaveTable({
                       href={`/hr/leave-requests?highlight=${row.id}`}
                       className={buttonVariants({ variant: 'ghost', size: 'xs' })}
                     >
-                      View
+                      ดู
                     </Link>
                   </div>
                 </TableCell>

@@ -89,19 +89,19 @@ export default async function LeaveRequestsPage({
   }
 
   return (
-    <AdminLayout title="Leave Requests" user={user}>
+    <AdminLayout title="คำขอลาทั้งหมด" user={user}>
       <div className="space-y-5 max-w-7xl mx-auto">
 
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Leave Requests</h2>
+            <h2 className="text-lg font-semibold text-foreground">คำขอลาทั้งหมด</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {total} total request{total !== 1 ? 's' : ''}
+              ทั้งหมด {total} รายการ
             </p>
           </div>
           <Link href="/hr/leave-requests" className={buttonVariants()}>
-            Manage in HR View
+            จัดการมุมมอง HR
           </Link>
         </div>
 
@@ -121,7 +121,7 @@ export default async function LeaveRequestsPage({
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              Showing {skip + 1}–{Math.min(skip + PAGE_SIZE, total)} of {total}
+              แสดง {skip + 1}–{Math.min(skip + PAGE_SIZE, total)} จาก {total} รายการ
             </p>
             <div className="flex items-center gap-1">
               {currentPage > 1 ? (

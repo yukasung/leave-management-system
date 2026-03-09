@@ -45,7 +45,7 @@ export default async function ManagerLeaveRequestsPage() {
             <p className="text-sm text-muted-foreground mt-0.5">จำนวน {requests.length} รายการ</p>
           </div>
           <span className="px-3 py-1 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 text-sm font-medium rounded-full border border-amber-200 dark:border-amber-800/50">
-            PENDING
+            รออนุมัติ
           </span>
         </div>
 

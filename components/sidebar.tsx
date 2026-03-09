@@ -26,12 +26,12 @@ import {
 import { cn } from '@/lib/utils'
 
 const ADMIN_NAV_ITEMS = [
-  { href: '/dashboard',          icon: LayoutDashboard, label: 'Dashboard'      },
-  { href: '/leave-requests',     icon: CalendarDays,    label: 'Leave Requests' },
-  { href: '/admin/employees',    icon: Users,           label: 'Employees'      },
-  { href: '/admin/departments',  icon: Building2,       label: 'Departments'    },
-  { href: '/leave-types',        icon: Tags,            label: 'Leave Types'    },
-  { href: '/hr/leave-requests',  icon: BarChart2,       label: 'Reports'        },
+  { href: '/dashboard',          icon: LayoutDashboard, label: 'แดชบอร์ด'      },
+  { href: '/leave-requests',     icon: CalendarDays,    label: 'คำขอลา' },
+  { href: '/admin/employees',    icon: Users,           label: 'พนักงาน'      },
+  { href: '/admin/departments',  icon: Building2,       label: 'แผนก'    },
+  { href: '/leave-types',        icon: Tags,            label: 'ประเภทการลา'    },
+  { href: '/hr/leave-requests',  icon: BarChart2,       label: 'รายงาน'        },
 ]
 
 const USER_NAV_ITEMS = [
@@ -86,9 +86,9 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
         {!collapsed && (
           <div className="flex flex-col min-w-0">
             <span className="text-[0.8rem] font-bold tracking-tight text-sidebar-foreground truncate">
-              Leave Manager
+              จัดการวันลา
             </span>
-            <span className="text-[10px] text-sidebar-foreground/40 truncate">{isAdmin ? 'Admin Portal' : 'Employee Portal'}</span>
+            <span className="text-[10px] text-sidebar-foreground/40 truncate">{isAdmin ? 'พอร์ทัลผู้ดูแลระบบ' : 'พอร์ทัลพนักงาน'}</span>
           </div>
         )}
       </div>
@@ -158,7 +158,7 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
             />
             {!collapsed && (
               <>
-                <span className="truncate flex-1 text-left">Settings</span>
+                <span className="truncate flex-1 text-left">ตั้งค่า</span>
                 <ChevronDown
                   className={cn(
                     'h-3.5 w-3.5 shrink-0 transition-transform duration-200',
@@ -201,9 +201,9 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
         {!collapsed ? (
           <div className="px-2.5 py-2 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
-              Leave Management
+              ระบบจัดการวันลา
             </p>
-            <p className="text-[10px] text-sidebar-foreground/30 mt-0.5">System v1.0</p>
+            <p className="text-[10px] text-sidebar-foreground/30 mt-0.5">เวอร์ชัน 1.0</p>
           </div>
         ) : (
           <div className="flex justify-center">

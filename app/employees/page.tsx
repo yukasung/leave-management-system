@@ -91,20 +91,20 @@ export default async function EmployeesPage({
   }
 
   return (
-    <AdminLayout title="Employees" user={user}>
+    <AdminLayout title="พนักงาน" user={user}>
       <div className="space-y-5 max-w-7xl mx-auto">
 
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Employees</h2>
+            <h2 className="text-lg font-semibold text-foreground">พนักงาน</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {total} employee{total !== 1 ? 's' : ''} total
+              พนักงานทั้งหมด {total} คน
             </p>
           </div>
           <Link href="/admin/employees/new" className={buttonVariants()}>
               <UserPlus className="h-4 w-4 mr-1.5" />
-              Add Employee
+              เพิ่มพนักงาน
             </Link>
         </div>
 
@@ -129,8 +129,8 @@ export default async function EmployeesPage({
                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
-              <p className="text-sm font-medium text-foreground">No employees found</p>
-              <p className="mt-1 text-xs text-muted-foreground">Try adjusting your filters.</p>
+              <p className="text-sm font-medium text-foreground">ไม่พบพนักงาน</p>
+              <p className="mt-1 text-xs text-muted-foreground">ลองปรับตัวกรองหรือคำค้นหา</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -138,19 +138,19 @@ export default async function EmployeesPage({
                 <TableHeader>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
                     <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Employee
+                      พนักงาน
                     </TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Department
+                      แผนก
                     </TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Position
+                      ตำแหน่ง
                     </TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Status
+                      สถานะ
                     </TableHead>
                     <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Actions
+                      จัดการ
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -200,16 +200,16 @@ export default async function EmployeesPage({
                                   : 'bg-muted text-muted-foreground border-border',
                               )}
                             >
-                              {emp.isActive ? 'Active' : 'Inactive'}
+                              {emp.isActive ? 'ทำงานอยู่' : 'ไม่ทำงาน'}
                             </span>
                             {emp.isAdmin && (
                               <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 dark:border-violet-800/50">
-                                Admin
+                                ผู้ดูแล
                               </span>
                             )}
                             {emp.isProbation && (
                               <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                                Probation
+                                ทดลองงาน
                               </span>
                             )}
                           </div>

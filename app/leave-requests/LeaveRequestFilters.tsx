@@ -7,12 +7,12 @@ import { useTransition, useCallback } from 'react'
 import { Search, X } from 'lucide-react'
 
 const STATUSES = [
-  { value: '',          label: 'All Statuses'  },
-  { value: 'PENDING',   label: 'Pending'       },
-  { value: 'IN_REVIEW', label: 'In Review'     },
-  { value: 'APPROVED',  label: 'Approved'      },
-  { value: 'REJECTED',  label: 'Rejected'      },
-  { value: 'CANCELLED', label: 'Cancelled'     },
+  { value: '',          label: 'ทุกสถานะ'  },
+  { value: 'PENDING',   label: 'รออนุมัติ'       },
+  { value: 'IN_REVIEW', label: 'กำลังพิจารณา'     },
+  { value: 'APPROVED',  label: 'อนุมัติแล้ว'      },
+  { value: 'REJECTED',  label: 'ไม่อนุมัติ'      },
+  { value: 'CANCELLED', label: 'ยกเลิกแล้ว'     },
 ]
 
 export default function LeaveRequestFilters({
@@ -47,7 +47,7 @@ export default function LeaveRequestFilters({
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
         <Input
           type="search"
-          placeholder="Search employee…"
+          placeholder="ค้นหาพนักงาน…"
           defaultValue={search}
           onChange={(e) => update('search', e.target.value)}
           className="pl-8 h-8 text-sm w-full"
@@ -79,7 +79,7 @@ export default function LeaveRequestFilters({
           }}
         >
           <X className="h-3.5 w-3.5 mr-1" />
-          Clear
+          ล้าง
         </Button>
       )}
     </div>

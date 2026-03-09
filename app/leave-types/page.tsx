@@ -48,20 +48,20 @@ export default async function LeaveTypesPage() {
   }
 
   return (
-    <AdminLayout title="Leave Types" user={user}>
+    <AdminLayout title="ประเภทการลา" user={user}>
       <div className="space-y-5 max-w-5xl mx-auto">
 
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Leave Types</h2>
+            <h2 className="text-lg font-semibold text-foreground">ประเภทการลา</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {leaveTypes.length} type{leaveTypes.length !== 1 ? 's' : ''} configured
+              {leaveTypes.length} ประเภท
             </p>
           </div>
           <Link href="/admin/settings/leave-types/new" className={buttonVariants()}>
               <Plus className="h-4 w-4 mr-1.5" />
-              New Leave Type
+              เพิ่มประเภทการลา
             </Link>
         </div>
 
@@ -75,21 +75,21 @@ export default async function LeaveTypesPage() {
               <div className="flex items-start justify-between">
                 <p className="text-sm font-semibold text-foreground">{lt.name}</p>
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                  {lt._count.leaveRequests} requests
+                  {lt._count.leaveRequests} คำขอ
                 </span>
               </div>
               <p className="mt-2 text-2xl font-bold text-foreground">
                 {lt.maxDaysPerYear ?? '∞'}
-                <span className="ml-1 text-xs font-normal text-muted-foreground">days / year</span>
+                <span className="ml-1 text-xs font-normal text-muted-foreground">วัน/ปี</span>
               </p>
               <div className="mt-3 flex items-center gap-3">
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <BoolIcon value={lt.requiresAttachment} />
-                  Attachment
+                  เอกสารแนบ
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <BoolIcon value={lt.deductFromBalance} />
-                  Deduct bal.
+                  หักยอด
                 </div>
               </div>
             </div>
@@ -100,9 +100,9 @@ export default async function LeaveTypesPage() {
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
           {leaveTypes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm font-medium text-foreground">No leave types defined</p>
+              <p className="text-sm font-medium text-foreground">ยังไม่มีประเภทการลา</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Create your first leave type to get started.
+                สร้างประเภทการลาแรกเพื่อเริ่มต้น
               </p>
             </div>
           ) : (
@@ -111,28 +111,28 @@ export default async function LeaveTypesPage() {
                 <TableHeader>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
                     <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Name
+                      ชื่อ
                     </TableHead>
                     <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Days / Year
+                      วัน/ปี
                     </TableHead>
                     <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Max / Request
+                      สูงสุด/ครั้ง
                     </TableHead>
                     <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Attachment
+                      เอกสารแนบ
                     </TableHead>
                     <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Deduct Balance
+                      หักยอดวันลา
                     </TableHead>
                     <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Allow Probation
+                      อนุญาตช่วงทดลองงาน
                     </TableHead>
                     <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Requests
+                      คำขอ
                     </TableHead>
                     <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Actions
+                      จัดการ
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -172,7 +172,7 @@ export default async function LeaveTypesPage() {
                             href={`/admin/settings/leave-types/${lt.id}`}
                             className={buttonVariants({ variant: 'ghost', size: 'xs' })}
                           >
-                            Edit
+                            แก้ไข
                           </Link>
                         </div>
                       </TableCell>

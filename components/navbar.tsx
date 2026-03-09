@@ -108,7 +108,7 @@ export default function Navbar({
             <div className="hidden md:block text-left leading-none">
               <p className="text-xs font-medium text-foreground">{user.name}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                {user.isAdmin ? 'Admin' : 'User'}
+                {user.isAdmin ? 'ผู้ดูแลระบบ' : 'ผู้ใช้'}
               </p>
             </div>
           </DropdownMenuTrigger>
@@ -119,13 +119,13 @@ export default function Navbar({
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <Link href={lp('/profile')} className="w-full">
-                Profile
+                โปรไฟล์
               </Link>
             </DropdownMenuItem>
             {user.isAdmin && (
               <DropdownMenuItem>
                 <Link href={lp('/admin/settings')} className="w-full">
-                  Settings
+                  ตั้งค่า
                 </Link>
               </DropdownMenuItem>
             )}
@@ -133,7 +133,7 @@ export default function Navbar({
             <DropdownMenuItem variant="destructive">
               <form action={logout} className="w-full">
                 <button type="submit" className="w-full text-left">
-                  Sign out
+                  ออกจากระบบ
                 </button>
               </form>
             </DropdownMenuItem>

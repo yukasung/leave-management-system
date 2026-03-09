@@ -138,7 +138,7 @@ export default function EditEmployeeForm({
                   : 'bg-red-50 text-red-500 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/50'
               }`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${employee.isActive ? 'bg-emerald-500' : 'bg-red-400'}`} />
-                {employee.isActive ? 'Active' : 'Inactive'}
+                {employee.isActive ? 'ทำงานอยู่' : 'ไม่ทำงาน'}
               </span>
             </div>
 
@@ -232,7 +232,7 @@ export default function EditEmployeeForm({
                 <CheckboxField
                   name="isProbation"
                   defaultChecked={employee.isProbation}
-                  label="อยู่ระหว่างทดลองงาน (Probation)"
+                  label="อยู่ระหว่างทดลองงาน"
                   hint="พนักงานทดลองงานอาจไม่สามารถลาบางประเภทได้ตามนโยบาย เช่น วันลาพักร้อน"
                 />
               </div>
@@ -247,7 +247,7 @@ export default function EditEmployeeForm({
               <CheckboxField
                 name="isAdmin"
                 defaultChecked={employee.isAdmin}
-                label="ผู้ดูแลระบบ (System Admin)"
+                label="ผู้ดูแลระบบ"
                 hint="สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้จัดการสายงาน"
               />
             </div>
@@ -276,7 +276,7 @@ export default function EditEmployeeForm({
       <div className="bg-card rounded-2xl border border-red-200 dark:border-red-900/50 shadow-sm p-6">
         <div className="flex items-start gap-3">
           <div className="flex-1">
-            <p className="text-sm font-semibold text-red-600 dark:text-red-400">Danger Zone</p>
+            <p className="text-sm font-semibold text-red-600 dark:text-red-400">โซนอันตราย</p>
             {employee.isActive ? (
               <p className="text-sm text-muted-foreground mt-1">
                 การระงับบัญชีจะซ่อนพนักงานออกจากระบบ แต่ไม่ลบข้อมูล สามารถเปิดใช้งานใหม่ได้ในภายหลัง

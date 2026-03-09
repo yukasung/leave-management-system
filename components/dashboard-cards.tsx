@@ -93,30 +93,30 @@ export function DashboardCards({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard
-        label="Total Employees"
+        label="พนักงานทั้งหมด"
         value={totalEmployees}
-        sub="Active in the system"
+        sub="กำลังใช้งานในระบบ"
         accent="blue"
         icon={<Users className="h-4 w-4" />}
       />
       <StatCard
-        label="Pending Approvals"
+        label="รออนุมัติ"
         value={pendingApprovals}
-        sub="Awaiting review"
+        sub="รอการพิจารณา"
         accent="yellow"
         icon={<Clock className="h-4 w-4" />}
       />
       <StatCard
-        label="Requests Today"
+        label="คำขอวันนี้"
         value={todayRequests}
-        sub="New submissions"
+        sub="ส่งมาใหม่วันนี้"
         accent="indigo"
         icon={<CalendarDays className="h-4 w-4" />}
       />
       <StatCard
-        label="Approved This Month"
+        label="อนุมัติเดือนนี้"
         value={approvedThisMonth}
-        sub="Month-to-date"
+        sub="สะสมเดือนนี้"
         accent="green"
         icon={<CheckCircle2 className="h-4 w-4" />}
       />

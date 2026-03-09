@@ -118,7 +118,7 @@ export default function EditDepartmentForm({
 
       {/* Danger Zone */}
       <div className="border border-red-200 rounded-xl p-5 bg-red-950/10 dark:bg-red-950/20">
-        <h3 className="text-sm font-semibold text-red-700 mb-1">Danger Zone</h3>
+        <h3 className="text-sm font-semibold text-red-700 mb-1">โซนอันตราย</h3>
         <p className="text-xs text-red-600 mb-4">
           การลบแผนกจะไม่สามารถยกเลิกได้ หากแผนกมีพนักงานอยู่จะไม่สามารถลบได้
         </p>
