@@ -130,7 +130,7 @@ export function LeaveTable({
               </TableCell>
               {/* Days */}
               <TableCell className="text-center text-sm font-medium text-foreground">
-                {row.totalDays}
+                {Number.isInteger(row.totalDays) ? row.totalDays : parseFloat(row.totalDays.toFixed(2))}
               </TableCell>
               {/* Status */}
               <TableCell>
