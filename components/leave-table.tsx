@@ -16,8 +16,8 @@ export type LeaveRow = {
   id: string
   employee: { name: string; avatarUrl?: string | null }
   leaveType: string
-  startDate: Date
-  endDate: Date
+  leaveStartDateTime: Date
+  leaveEndDateTime: Date
   totalDays: number
   status: string
 }
@@ -121,11 +121,11 @@ export function LeaveTable({
               </TableCell>
               {/* Start Date */}
               <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                {formatThaiDateShort(new Date(row.startDate))}
+                {formatThaiDateShort(new Date(row.leaveStartDateTime))}
               </TableCell>
               {/* End Date */}
               <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                {formatThaiDateShort(new Date(row.endDate))}
+                {formatThaiDateShort(new Date(row.leaveEndDateTime))}
               </TableCell>
               {/* Days */}
               <TableCell className="text-center text-sm font-medium text-foreground">

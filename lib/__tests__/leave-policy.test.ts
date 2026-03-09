@@ -72,8 +72,8 @@ describe('getUsedLeaveDaysThisYear', () => {
 
     const call = mockAggregate.mock.calls[0][0]
     const currentYear = new Date().getFullYear()
-    expect(call.where.startDate.gte.getFullYear()).toBe(currentYear)
-    expect(call.where.startDate.lte.getFullYear()).toBe(currentYear)
+    expect(call.where.leaveStartDateTime.gte.getFullYear()).toBe(currentYear)
+    expect(call.where.leaveStartDateTime.lte.getFullYear()).toBe(currentYear)
   })
 
   it('sums the totalDays field', async () => {

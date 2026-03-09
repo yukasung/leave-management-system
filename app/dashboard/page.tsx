@@ -57,8 +57,8 @@ export default async function DashboardPage() {
     id:         r.id,
     employee:   { name: r.user.name, avatarUrl: r.user.avatarUrl },
     leaveType:  r.leaveType.name,
-    startDate:  r.startDate,
-    endDate:    r.endDate,
+    leaveStartDateTime: r.leaveStartDateTime,
+    leaveEndDateTime:   r.leaveEndDateTime,
     totalDays:  r.totalDays,
     status:     r.status,
   }))

@@ -6,7 +6,7 @@ import 'server-only'
 
 import { prisma } from './prisma'
 import { getUsedLeaveDaysThisYear } from './leave-policy'
-import type { LeaveDurationType } from './leave-calc'
+
 import { Prisma, LeaveStatus, ApprovalStatus } from '@prisma/client'
 import { isPrivileged } from './role-guard'
 import { logLeaveFieldChanges, leaveFieldChange } from './leave-audit-log.service'
@@ -24,15 +24,13 @@ export class LeaveServiceError extends Error {
 }
 
 export type CreateLeaveInput = {
-  userId:             string
-  leaveTypeId:        string
-  startDate:          Date
-  endDate:            Date
-  startDurationType:  LeaveDurationType
-  endDurationType:    LeaveDurationType
-  totalDays:          number
-  reason:             string | null
-  documentUrl:        string | null
+  userId:              string
+  leaveTypeId:         string
+  leaveStartDateTime:  Date
+  leaveEndDateTime:    Date
+  totalDays:           number
+  reason:              string | null
+  documentUrl:         string | null
 }
 
 export type CreateLeaveResult = {
@@ -40,14 +38,12 @@ export type CreateLeaveResult = {
 }
 
 export type UpdateLeaveInput = {
-  leaveTypeId:        string
-  startDate:          Date
-  endDate:            Date
-  startDurationType:  LeaveDurationType
-  endDurationType:    LeaveDurationType
-  totalDays:          number
-  reason:             string | null
-  documentUrl:        string | null
+  leaveTypeId:         string
+  leaveStartDateTime:  Date
+  leaveEndDateTime:    Date
+  totalDays:           number
+  reason:              string | null
+  documentUrl:         string | null
 }
 
 // ── Private helpers ──────────────────────────────────────────────────────────
@@ -115,9 +111,8 @@ export async function createDraft(
   input: CreateLeaveInput
 ): Promise<CreateLeaveResult> {
   const {
-    userId, leaveTypeId, startDate, endDate,
-    startDurationType, endDurationType, totalDays,
-    reason, documentUrl,
+    userId, leaveTypeId, leaveStartDateTime, leaveEndDateTime,
+    totalDays, reason, documentUrl,
   } = input
 
   // ── Load leave type ───────────────────────────────────────────────────────
@@ -171,7 +166,7 @@ export async function createDraft(
 
   // ── Transaction: balance check + create DRAFT ─────────────────────────────
   const leaveRequest = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const year = startDate.getFullYear()
+    const year = leaveStartDateTime.getUTCFullYear() || leaveStartDateTime.getFullYear()
 
     if (leaveType.deductFromBalance) {
       const balance = await tx.leaveBalance.findUnique({
@@ -189,10 +184,8 @@ export async function createDraft(
       data: {
         userId,
         leaveTypeId,
-        startDate,
-        endDate,
-        startDurationType,
-        endDurationType,
+        leaveStartDateTime,
+        leaveEndDateTime,
         totalDays,
         reason: reason || null,
         documentUrl: documentUrl || null,
@@ -206,15 +199,15 @@ export async function createDraft(
         action: 'CREATE_LEAVE_DRAFT',
         entityType: 'LeaveRequest',
         entityId: req.id,
-        description: `Leave draft created: ${leaveType.name} — ${totalDays} day(s) [start:${startDurationType} end:${endDurationType}]`,
+        description: `Leave draft created: ${leaveType.name} — ${totalDays} day(s)`,
       },
     })
 
     await logLeaveFieldChanges(tx, req.id, userId, [
       leaveFieldChange.status(null, 'DRAFT'),
       leaveFieldChange.leaveTypeId(null, leaveTypeId),
-      leaveFieldChange.startDate(null, startDate),
-      leaveFieldChange.endDate(null, endDate),
+      leaveFieldChange.leaveStartDateTime(null, leaveStartDateTime),
+      leaveFieldChange.leaveEndDateTime(null, leaveEndDateTime),
     ])
 
     return req
@@ -244,9 +237,8 @@ export async function updateLeave(
   input: UpdateLeaveInput
 ): Promise<void> {
   const {
-    leaveTypeId, startDate, endDate,
-    startDurationType, endDurationType, totalDays,
-    reason, documentUrl,
+    leaveTypeId, leaveStartDateTime, leaveEndDateTime,
+    totalDays, reason, documentUrl,
   } = input
 
   const callerIsPrivileged = isPrivileged(callerIsAdmin)
@@ -255,12 +247,12 @@ export async function updateLeave(
   const leave = await prisma.leaveRequest.findUnique({
     where: { id: leaveId },
     select: {
-      userId:      true,
-      status:      true,
-      startDate:   true,
-      endDate:     true,
-      leaveTypeId: true,
-      totalDays:   true,
+      userId:              true,
+      status:              true,
+      leaveStartDateTime:  true,
+      leaveEndDateTime:    true,
+      leaveTypeId:         true,
+      totalDays:           true,
       leaveType: {
         select: { name: true, deductFromBalance: true },
       },
@@ -297,7 +289,7 @@ export async function updateLeave(
   // ── Past-date gate: only HR/ADMIN may touch past leave ────────────────────
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const leaveStart = new Date(leave.startDate)
+  const leaveStart = new Date(leave.leaveStartDateTime)
   leaveStart.setHours(0, 0, 0, 0)
 
   if (leaveStart < today && !callerIsPrivileged) {
@@ -322,8 +314,8 @@ export async function updateLeave(
     const oldTotalDays    = leave.totalDays
     const oldDeducts      = leave.leaveType.deductFromBalance
     const newDeducts      = newLeaveType.deductFromBalance
-    const oldYear         = new Date(leave.startDate).getFullYear()
-    const newYear         = startDate.getFullYear()
+    const oldYear         = new Date(leave.leaveStartDateTime).getFullYear()
+    const newYear         = leaveStartDateTime.getFullYear()
 
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Restore balance for the old approved leave
@@ -339,10 +331,8 @@ export async function updateLeave(
         where: { id: leaveId },
         data:  {
           leaveTypeId,
-          startDate,
-          endDate,
-          startDurationType,
-          endDurationType,
+          leaveStartDateTime,
+          leaveEndDateTime,
           totalDays,
           reason:      reason || null,
           documentUrl: documentUrl || null,
@@ -368,8 +358,7 @@ export async function updateLeave(
           description:
             `[Admin OVERRIDE] Edited approved leave: ` +
             `${leave.leaveType.name} → ${newLeaveType.name}, ` +
-            `${oldTotalDays} → ${totalDays} day(s) ` +
-            `[start:${startDurationType} end:${endDurationType}]` +
+            `${oldTotalDays} → ${totalDays} day(s)` +
             (oldDeducts || newDeducts ? ` | balance adjusted` : ''),
         },
       })
@@ -377,8 +366,8 @@ export async function updateLeave(
       // 5. Field-level change log
       await logLeaveFieldChanges(tx, leaveId, callerId, [
         leaveFieldChange.leaveTypeId(oldLeaveTypeId, leaveTypeId),
-        leaveFieldChange.startDate(leave.startDate, startDate),
-        leaveFieldChange.endDate(leave.endDate, endDate),
+        leaveFieldChange.leaveStartDateTime(leave.leaveStartDateTime, leaveStartDateTime),
+        leaveFieldChange.leaveEndDateTime(leave.leaveEndDateTime, leaveEndDateTime),
       ])
 
       // 6. Notify leave owner of the HR correction
@@ -430,7 +419,7 @@ export async function updateLeave(
 
   // ── Transaction: balance check + update ──────────────────────────────────
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const year = startDate.getFullYear()
+    const year = leaveStartDateTime.getFullYear()
 
     if (leaveType.deductFromBalance) {
       const balance = await tx.leaveBalance.findUnique({
@@ -448,10 +437,8 @@ export async function updateLeave(
       where: { id: leaveId },
       data: {
         leaveTypeId,
-        startDate,
-        endDate,
-        startDurationType,
-        endDurationType,
+        leaveStartDateTime,
+        leaveEndDateTime,
         totalDays,
         reason:      reason || null,
         documentUrl: documentUrl || null,
@@ -464,14 +451,14 @@ export async function updateLeave(
         action:      'UPDATE_LEAVE_DRAFT',
         entityType:  'LeaveRequest',
         entityId:    leaveId,
-        description: `Leave draft updated by ${callerIsPrivileged ? 'Admin' : 'owner'}: ${leaveType.name} — ${totalDays} day(s) [start:${startDurationType} end:${endDurationType}]`,
+        description: `Leave draft updated by ${callerIsPrivileged ? 'Admin' : 'owner'}: ${leaveType.name} — ${totalDays} day(s)`,
       },
     })
 
     await logLeaveFieldChanges(tx, leaveId, callerId, [
       leaveFieldChange.leaveTypeId(leave.leaveTypeId, leaveTypeId),
-      leaveFieldChange.startDate(leave.startDate, startDate),
-      leaveFieldChange.endDate(leave.endDate, endDate),
+      leaveFieldChange.leaveStartDateTime(leave.leaveStartDateTime, leaveStartDateTime),
+      leaveFieldChange.leaveEndDateTime(leave.leaveEndDateTime, leaveEndDateTime),
     ])
   })
 }
@@ -560,6 +547,31 @@ export async function submitLeave(
   })
 }
 /**
+ * Hard-delete a DRAFT leave request.
+ * Only the owner may do this. Removes LeaveAuditLog and Approval children first
+ * (no cascade in schema), then deletes the LeaveRequest itself.
+ */
+export async function deleteDraftLeave(
+  callerId: string,
+  leaveId: string
+): Promise<void> {
+  const leave = await prisma.leaveRequest.findUnique({
+    where: { id: leaveId },
+    select: { userId: true, status: true },
+  })
+
+  if (!leave) throw new LeaveServiceError('ไม่พบคำขอลา')
+  if (leave.userId !== callerId) throw new LeaveServiceError('คุณไม่มีสิทธิ์ลบคำขอลานี้')
+  if (leave.status !== LeaveStatus.DRAFT) throw new LeaveServiceError('ลบได้เฉพาะร่างเท่านั้น')
+
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await tx.leaveAuditLog.deleteMany({ where: { leaveId } })
+    await tx.approval.deleteMany({ where: { leaveRequestId: leaveId } })
+    await tx.leaveRequest.delete({ where: { id: leaveId } })
+  })
+}
+
+/**
  * Cancel a leave request.
  *
  * Status transition rules:
@@ -593,10 +605,10 @@ export async function cancelLeave(
     where: { id: leaveId },
     select: {
       userId:      true,
-      status:      true,
-      totalDays:   true,
-      startDate:   true,
-      leaveTypeId: true,
+      status:              true,
+      totalDays:            true,
+      leaveStartDateTime:   true,
+      leaveTypeId:          true,
       leaveType: {
         select: {
           name:             true,
@@ -643,7 +655,7 @@ export async function cancelLeave(
       })
 
       if (leave.leaveType.deductFromBalance) {
-        await restoreBalance(tx, leave.userId, leave.leaveTypeId, leave.startDate, leave.totalDays)
+        await restoreBalance(tx, leave.userId, leave.leaveTypeId, leave.leaveStartDateTime, leave.totalDays)
       }
 
       await tx.auditLog.create({
@@ -729,7 +741,7 @@ export async function cancelLeave(
     })
 
     if (needsBalanceRestore) {
-      await restoreBalance(tx, leave.userId, leave.leaveTypeId, leave.startDate, leave.totalDays)
+      await restoreBalance(tx, leave.userId, leave.leaveTypeId, leave.leaveStartDateTime, leave.totalDays)
     }
 
     await tx.auditLog.create({
@@ -772,10 +784,10 @@ async function restoreBalance(
   tx: Prisma.TransactionClient,
   userId: string,
   leaveTypeId: string,
-  startDate: Date,
+  leaveStartDateTime: Date,
   totalDays: number
 ): Promise<void> {
-  const year = new Date(startDate).getFullYear()
+  const year = new Date(leaveStartDateTime).getFullYear()
   await tx.leaveBalance.updateMany({
     where: {
       userId,

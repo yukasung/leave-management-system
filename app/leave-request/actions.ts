@@ -3,13 +3,13 @@
 import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
-import { type LeaveDurationType } from '@/lib/leave-calc'
-import { calculateLeaveDaysServer } from '@/lib/leave-calc-server'
+import { calculateLeaveDurationServer } from '@/lib/leave-calc-server'
 import {
   createDraft,
   submitLeave,
   updateLeave,
   cancelLeave,
+  deleteDraftLeave,
   LeaveServiceError,
 } from '@/lib/leave-request.service'
 
@@ -21,10 +21,8 @@ export type FormState = {
   leaveRequestId?: string
   errors?: {
     leaveTypeId?: string
-    startDate?: string
-    endDate?: string
-    startDurationType?: string
-    endDurationType?: string
+    leaveStartDateTime?: string
+    leaveEndDateTime?: string
     documentUrl?: string
     reason?: string
     general?: string
@@ -33,11 +31,13 @@ export type FormState = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const VALID_DURATION_TYPES: LeaveDurationType[] = [
-  'FULL_DAY',
-  'HALF_DAY_MORNING',
-  'HALF_DAY_AFTERNOON',
-]
+/** Parse "YYYY-MM-DDTHH:mm" (local form value) into a UTC Date. */
+function parseDateTimeLocal(str: string): Date | null {
+  // HTML datetime-local gives "YYYY-MM-DDTHH:mm"
+  if (!str) return null
+  const d = new Date(str)
+  return isNaN(d.getTime()) ? null : d
+}
 
 // ── Action: save form as DRAFT ────────────────────────────────────────────────
 
@@ -51,45 +51,31 @@ export async function createLeaveRequest(
   }
 
   // ── Parse raw fields ──────────────────────────────────────────────────────
-  const leaveTypeId          = formData.get('leaveTypeId')          as string
-  const startDateStr         = formData.get('startDate')            as string
-  const endDateStr           = formData.get('endDate')              as string
-  const startDurationTypeRaw = (formData.get('startDurationType')   as string) || 'FULL_DAY'
-  const endDurationTypeRaw   = (formData.get('endDurationType')     as string) || 'FULL_DAY'
-  const reason               = formData.get('reason')               as string | null
-  const documentUrl          = (formData.get('documentUrl')         as string) || null
+  const leaveTypeId      = formData.get('leaveTypeId')           as string
+  const startStr         = formData.get('leaveStartDateTime')    as string
+  const endStr           = formData.get('leaveEndDateTime')      as string
+  const reason           = formData.get('reason')                as string | null
+  const documentUrl      = (formData.get('documentUrl')          as string) || null
 
   // ── Presence validation ───────────────────────────────────────────────────
   const errors: FormState['errors'] = {}
-  if (!leaveTypeId) errors.leaveTypeId = 'กรุณาเลือกประเภทการลา'
-  if (!startDateStr) errors.startDate  = 'กรุณาเลือกวันที่เริ่มต้น'
-  if (!endDateStr)   errors.endDate    = 'กรุณาเลือกวันที่สิ้นสุด'
-  if (!VALID_DURATION_TYPES.includes(startDurationTypeRaw as LeaveDurationType)) {
-    errors.startDurationType = 'ประเภทช่วงเวลาวันแรกไม่ถูกต้อง'
-  }
-  if (!VALID_DURATION_TYPES.includes(endDurationTypeRaw as LeaveDurationType)) {
-    errors.endDurationType = 'ประเภทช่วงเวลาวันสุดท้ายไม่ถูกต้อง'
-  }
+  if (!leaveTypeId)  errors.leaveTypeId         = 'กรุณาเลือกประเภทการลา'
+  if (!startStr)     errors.leaveStartDateTime  = 'กรุณาระบุวันและเวลาเริ่มต้น'
+  if (!endStr)       errors.leaveEndDateTime    = 'กรุณาระบุวันและเวลาสิ้นสุด'
   if (Object.keys(errors).length > 0) return { errors }
 
-  // Parse YYYY-MM-DD as UTC midnight so getUTCDate/Month/Year are correct in
-  // calculateLeaveDays (which uses UTC methods to avoid timezone-shift bugs)
-  const parseDateUTC = (str: string) => {
-    const [y, m, d] = str.split('-').map(Number)
-    return new Date(Date.UTC(y, m - 1, d))
-  }
+  const leaveStartDateTime = parseDateTimeLocal(startStr)
+  const leaveEndDateTime   = parseDateTimeLocal(endStr)
 
-  const startDate        = parseDateUTC(startDateStr)
-  const endDate          = parseDateUTC(endDateStr)
-  const startDurationType = startDurationTypeRaw as LeaveDurationType
-  const endDurationType   = endDurationTypeRaw   as LeaveDurationType
+  if (!leaveStartDateTime) return { errors: { leaveStartDateTime: 'รูปแบบวันที่/เวลาไม่ถูกต้อง' } }
+  if (!leaveEndDateTime)   return { errors: { leaveEndDateTime:   'รูปแบบวันที่/เวลาไม่ถูกต้อง' } }
 
-  // Build today in UTC using local date components so the comparison is correct
+  // Must be in the future (start date must be today or later)
   const now = new Date()
-  const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
-
-  if (startDate < todayUTC) {
-    return { errors: { startDate: 'วันที่เริ่มต้นต้องไม่เป็นวันที่ผ่านมาแล้ว' } }
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const startDay = new Date(leaveStartDateTime.getFullYear(), leaveStartDateTime.getMonth(), leaveStartDateTime.getDate())
+  if (startDay < todayMidnight) {
+    return { errors: { leaveStartDateTime: 'วันที่เริ่มต้นต้องไม่เป็นวันที่ผ่านมาแล้ว' } }
   }
 
   // ── Check for overlapping leave requests ─────────────────────────────────
@@ -97,16 +83,16 @@ export async function createLeaveRequest(
     where: {
       userId: session.user.id,
       status: { notIn: ['REJECTED', 'CANCELLED'] },
-      startDate: { lte: endDate },
-      endDate:   { gte: startDate },
+      leaveStartDateTime: { lte: leaveEndDateTime },
+      leaveEndDateTime:   { gte: leaveStartDateTime },
     },
   })
   if (overlapping) {
-    return { errors: { general: 'คุณมีคำขอลาในช่วงวันที่ดังกล่าวอยู่แล้ว กรุณาตรวจสอบอีกครั้ง' } }
+    return { errors: { general: 'คุณมีคำขอลาในช่วงเวลาดังกล่าวอยู่แล้ว กรุณาตรวจสอบอีกครั้ง' } }
   }
 
   // ── Server-side recalculation — skips weekends + public holidays ──────────
-  const calc = await calculateLeaveDaysServer(startDate, endDate, startDurationType, endDurationType)
+  const calc = await calculateLeaveDurationServer(leaveStartDateTime, leaveEndDateTime)
   if (calc.error) {
     return { errors: { general: calc.error } }
   }
@@ -116,10 +102,8 @@ export async function createLeaveRequest(
     const { leaveRequestId } = await createDraft({
       userId: session.user.id,
       leaveTypeId,
-      startDate,
-      endDate,
-      startDurationType,
-      endDurationType,
+      leaveStartDateTime,
+      leaveEndDateTime,
       totalDays: calc.totalDays,
       reason: reason || null,
       documentUrl,
@@ -142,6 +126,29 @@ export async function createLeaveRequest(
     }
     const message = e instanceof Error ? e.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'
     return { errors: { general: message } }
+  }
+}
+
+// ── Action: hard-delete a DRAFT leave request ────────────────────────────────
+
+export type DeleteDraftState = {
+  success?: boolean
+  message?: string
+  error?: string
+}
+
+export async function deleteDraftLeaveRequest(leaveId: string): Promise<DeleteDraftState> {
+  const session = await auth()
+  if (!session?.user?.id) return { error: 'กรุณาเข้าสู่ระบบก่อน' }
+
+  try {
+    await deleteDraftLeave(session.user.id, leaveId)
+    revalidatePath('/leave-request')
+    revalidatePath('/my-leaves')
+    return { success: true, message: 'ลบร่างเรียบร้อยแล้ว' }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'
+    return { error: message }
   }
 }
 
@@ -206,7 +213,7 @@ export async function submitLeaveRequest(leaveId: string): Promise<SubmitState> 
     revalidatePath('/leave-request')
     revalidatePath('/my-leaves')
 
-    return { success: true, message: 'ส่งคำขอลาเรียบร้อยแล้ว อยู่ระหว่างรอการอนุมัติ' }
+    return { success: true, message: 'ส่งคำขอแล้ว รอการอนุมัติ' }
   } catch (e) {
     const message = e instanceof Error ? e.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'
     return { error: message }
@@ -226,39 +233,27 @@ export async function updateLeaveRequest(
   }
 
   // ── Parse raw fields ──────────────────────────────────────────────────────
-  const leaveTypeId          = formData.get('leaveTypeId')          as string
-  const startDateStr         = formData.get('startDate')            as string
-  const endDateStr           = formData.get('endDate')              as string
-  const startDurationTypeRaw = (formData.get('startDurationType')   as string) || 'FULL_DAY'
-  const endDurationTypeRaw   = (formData.get('endDurationType')     as string) || 'FULL_DAY'
-  const reason               = formData.get('reason')               as string | null
-  const documentUrl          = (formData.get('documentUrl')         as string) || null
+  const leaveTypeId  = formData.get('leaveTypeId')           as string
+  const startStr     = formData.get('leaveStartDateTime')    as string
+  const endStr       = formData.get('leaveEndDateTime')      as string
+  const reason       = formData.get('reason')                as string | null
+  const documentUrl  = (formData.get('documentUrl')          as string) || null
 
   // ── Presence validation ───────────────────────────────────────────────────
   const errors: FormState['errors'] = {}
-  if (!leaveTypeId) errors.leaveTypeId = 'กรุณาเลือกประเภทการลา'
-  if (!startDateStr) errors.startDate  = 'กรุณาเลือกวันที่เริ่มต้น'
-  if (!endDateStr)   errors.endDate    = 'กรุณาเลือกวันที่สิ้นสุด'
-  if (!VALID_DURATION_TYPES.includes(startDurationTypeRaw as LeaveDurationType)) {
-    errors.startDurationType = 'ประเภทช่วงเวลาวันแรกไม่ถูกต้อง'
-  }
-  if (!VALID_DURATION_TYPES.includes(endDurationTypeRaw as LeaveDurationType)) {
-    errors.endDurationType = 'ประเภทช่วงเวลาวันสุดท้ายไม่ถูกต้อง'
-  }
+  if (!leaveTypeId)  errors.leaveTypeId         = 'กรุณาเลือกประเภทการลา'
+  if (!startStr)     errors.leaveStartDateTime  = 'กรุณาระบุวันและเวลาเริ่มต้น'
+  if (!endStr)       errors.leaveEndDateTime    = 'กรุณาระบุวันและเวลาสิ้นสุด'
   if (Object.keys(errors).length > 0) return { errors }
 
-  const parseDateUTC = (str: string) => {
-    const [y, m, d] = str.split('-').map(Number)
-    return new Date(Date.UTC(y, m - 1, d))
-  }
+  const leaveStartDateTime = parseDateTimeLocal(startStr)
+  const leaveEndDateTime   = parseDateTimeLocal(endStr)
 
-  const startDate        = parseDateUTC(startDateStr)
-  const endDate          = parseDateUTC(endDateStr)
-  const startDurationType = startDurationTypeRaw as LeaveDurationType
-  const endDurationType   = endDurationTypeRaw   as LeaveDurationType
+  if (!leaveStartDateTime) return { errors: { leaveStartDateTime: 'รูปแบบวันที่/เวลาไม่ถูกต้อง' } }
+  if (!leaveEndDateTime)   return { errors: { leaveEndDateTime:   'รูปแบบวันที่/เวลาไม่ถูกต้อง' } }
 
   // ── Server-side recalculation — skips weekends + public holidays ──────────
-  const calc = await calculateLeaveDaysServer(startDate, endDate, startDurationType, endDurationType)
+  const calc = await calculateLeaveDurationServer(leaveStartDateTime, leaveEndDateTime)
   if (calc.error) {
     return { errors: { general: calc.error } }
   }
@@ -271,10 +266,8 @@ export async function updateLeaveRequest(
       leaveId,
       {
         leaveTypeId,
-        startDate,
-        endDate,
-        startDurationType,
-        endDurationType,
+        leaveStartDateTime,
+        leaveEndDateTime,
         totalDays: calc.totalDays,
         reason: reason || null,
         documentUrl,

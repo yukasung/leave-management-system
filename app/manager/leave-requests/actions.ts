@@ -47,15 +47,13 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
         select: {
           userId: true,
           leaveTypeId: true,
-          startDate: true,
+          leaveStartDateTime: true,
           totalDays: true,
-          startDurationType: true,
-          endDurationType: true,
           leaveType: { select: { deductFromBalance: true } },
         },
       })
 
-      const year = new Date(request.startDate).getFullYear()
+      const year = new Date(request.leaveStartDateTime).getFullYear()
 
       if (request.leaveType.deductFromBalance) {
         await tx.leaveBalance.updateMany({
@@ -70,7 +68,7 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
           action: 'APPROVE_LEAVE',
           entityType: 'LeaveRequest',
           entityId: id,
-          description: `Approved leave request: ${request.totalDays} day(s) [start:${request.startDurationType} end:${request.endDurationType}]`,
+          description: `Approved leave request: ${request.totalDays} day(s)`,
         },
       })
 

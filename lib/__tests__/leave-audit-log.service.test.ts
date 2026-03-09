@@ -104,29 +104,29 @@ describe('leaveFieldChange.leaveTypeId', () => {
   })
 })
 
-describe('leaveFieldChange.startDate', () => {
-  it('sets fieldChanged to "startDate"', () => {
-    expect(leaveFieldChange.startDate(D1, D2).fieldChanged).toBe('startDate')
+describe('leaveFieldChange.leaveStartDateTime', () => {
+  it('sets fieldChanged to "leaveStartDateTime"', () => {
+    expect(leaveFieldChange.leaveStartDateTime(D1, D2).fieldChanged).toBe('leaveStartDateTime')
   })
 
   it('serialises Date values to ISO strings', () => {
-    const c = leaveFieldChange.startDate(D1, D2)
+    const c = leaveFieldChange.leaveStartDateTime(D1, D2)
     expect(c.oldValue).toBe(D1.toISOString())
     expect(c.newValue).toBe(D2.toISOString())
   })
 
   it('accepts null oldValue', () => {
-    expect(leaveFieldChange.startDate(null, D2).oldValue).toBeNull()
+    expect(leaveFieldChange.leaveStartDateTime(null, D2).oldValue).toBeNull()
   })
 })
 
-describe('leaveFieldChange.endDate', () => {
-  it('sets fieldChanged to "endDate"', () => {
-    expect(leaveFieldChange.endDate(D1, D2).fieldChanged).toBe('endDate')
+describe('leaveFieldChange.leaveEndDateTime', () => {
+  it('sets fieldChanged to "leaveEndDateTime"', () => {
+    expect(leaveFieldChange.leaveEndDateTime(D1, D2).fieldChanged).toBe('leaveEndDateTime')
   })
 
   it('serialises Date values to ISO strings', () => {
-    const c = leaveFieldChange.endDate(D1, D2)
+    const c = leaveFieldChange.leaveEndDateTime(D1, D2)
     expect(c.oldValue).toBe(D1.toISOString())
     expect(c.newValue).toBe(D2.toISOString())
   })

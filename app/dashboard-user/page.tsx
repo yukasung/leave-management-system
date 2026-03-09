@@ -283,9 +283,9 @@ export default async function DashboardUserPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{r.leaveType.name}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {formatDate(r.startDate)}
-                      {r.startDate.toDateString() !== r.endDate.toDateString() && (
-                        <> — {formatDate(r.endDate)}</>
+                      {formatDate(r.leaveStartDateTime)}
+                      {r.leaveStartDateTime.toDateString() !== r.leaveEndDateTime.toDateString() && (
+                        <> — {formatDate(r.leaveEndDateTime)}</>
                       )}
                     </p>
                   </div>

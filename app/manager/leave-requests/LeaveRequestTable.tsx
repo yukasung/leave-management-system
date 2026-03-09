@@ -2,15 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { approveLeaveRequest, rejectLeaveRequest } from './actions'
-import { durationLabel, type LeaveDurationType } from '@/lib/leave-calc'
+import { formatLeaveDuration } from '@/lib/leave-calc'
 import { formatDate } from '@/lib/format-date'
 
 type LeaveRequest = {
   id: string
-  startDate: Date
-  endDate: Date
-  startDurationType: string
-  endDurationType: string
+  leaveStartDateTime: Date
+  leaveEndDateTime: Date
   totalDays: number
   reason: string | null
   createdAt: Date
@@ -71,7 +69,6 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
             <th className="px-5 py-3">ประเภทการลา</th>
             <th className="px-5 py-3">วันที่</th>
             <th className="px-5 py-3 text-center">จำนวน</th>
-            <th className="px-5 py-3">ช่วงเวลา</th>
             <th className="px-5 py-3">เหตุผล</th>
             <th className="px-5 py-3">วันที่ส่งคำขอ</th>
             <th className="px-5 py-3">การดำเนินการ</th>
@@ -86,18 +83,12 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
               </td>
               <td className="px-5 py-4 text-foreground">{req.leaveType.name}</td>
               <td className="px-5 py-4 text-foreground whitespace-nowrap">
-                {formatDate(req.startDate)}
+                {formatDate(req.leaveStartDateTime)}
                 {' — '}
-                {formatDate(req.endDate)}
+                {formatDate(req.leaveEndDateTime)}
               </td>
               <td className="px-5 py-4 text-center font-semibold text-foreground">
-                {req.totalDays} วัน
-              </td>
-              <td className="px-5 py-4 text-xs text-muted-foreground">
-                {req.startDurationType === req.endDurationType
-                  ? durationLabel(req.startDurationType as LeaveDurationType)
-                  : `เริ่ม: ${durationLabel(req.startDurationType as LeaveDurationType)} / สิ้นสุด: ${durationLabel(req.endDurationType as LeaveDurationType)}`
-                }
+                {formatLeaveDuration(req.totalDays)}
               </td>
               <td className="px-5 py-4 text-muted-foreground max-w-xs truncate">
                 {req.reason || <span className="text-muted-foreground/60">—</span>}

@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import EditEmployeeForm from './EditEmployeeForm'
-import { formatThaiDate } from '@/lib/date-utils'
 import AdminLayout from '@/components/admin-layout'
 
 export default async function EditEmployeePage({
@@ -65,8 +64,6 @@ export default async function EditEmployeePage({
 
   if (!employee) notFound()
 
-  const createdDate = formatThaiDate(employee.createdAt)
-
   const user = {
     name:      session.user.name ?? '',
     email:     session.user.email ?? '',
@@ -76,7 +73,7 @@ export default async function EditEmployeePage({
 
   return (
     <AdminLayout title="แก้ไขพนักงาน" user={user}>
-      <div className="max-w-3xl mx-auto space-y-5">
+      <div className="max-w-5xl mx-auto space-y-5">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground">
           <Link href="/admin/employees" className="hover:text-foreground transition">
@@ -87,28 +84,6 @@ export default async function EditEmployeePage({
             {employee.firstName} {employee.lastName}
           </span>
         </nav>
-
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              {employee.firstName} {employee.lastName}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {employee.employeeCode} · เพิ่มเมื่อ {createdDate}
-            </p>
-          </div>
-          <span
-            className={`self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-              employee.isActive
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50'
-                : 'bg-red-50 text-red-500 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/50'
-            }`}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${employee.isActive ? 'bg-emerald-500' : 'bg-red-400'}`} />
-            {employee.isActive ? 'Active' : 'Inactive'}
-          </span>
-        </div>
 
         <EditEmployeeForm
           employee={{

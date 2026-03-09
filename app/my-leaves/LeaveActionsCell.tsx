@@ -16,7 +16,7 @@
 import { useTransition, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { cancelLeaveRequest, submitLeaveRequest } from '@/app/leave-request/actions'
+import { cancelLeaveRequest, submitLeaveRequest, deleteDraftLeaveRequest } from '@/app/leave-request/actions'
 
 type Props = {
   leaveId: string
@@ -41,12 +41,23 @@ export default function LeaveActionsCell({ leaveId, status }: Props) {
     })
   }
 
+  function handleDeleteDraft() {
+    setFeedback(null)
+    startTransition(async () => {
+      const result = await deleteDraftLeaveRequest(leaveId)
+      if (result.success) {
+        router.refresh()
+      } else {
+        setFeedback({ ok: false, msg: result.error ?? 'เกิดข้อผิดพลาด' })
+      }
+    })
+  }
+
   function handleCancel() {
     setFeedback(null)
     startTransition(async () => {
       const result = await cancelLeaveRequest(leaveId)
       if (result.success) {
-        setFeedback({ ok: true, msg: result.message ?? 'ดำเนินการเรียบร้อยแล้ว' })
         router.refresh()
       } else {
         setFeedback({ ok: false, msg: result.error ?? 'เกิดข้อผิดพลาด' })
@@ -81,7 +92,7 @@ export default function LeaveActionsCell({ leaveId, status }: Props) {
           แก้ไข
         </Link>
         <button
-          onClick={handleCancel}
+          onClick={handleDeleteDraft}
           disabled={pending}
           className="px-3 py-1 text-xs font-semibold bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition disabled:opacity-50"
         >

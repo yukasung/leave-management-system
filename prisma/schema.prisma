@@ -78,11 +78,9 @@ model LeaveRequest {
   id          String     @id @default(uuid())
   userId      String
   leaveTypeId String
-  startDate         DateTime
-  endDate           DateTime
-  startDurationType LeaveDurationType @default(FULL_DAY)
-  endDurationType   LeaveDurationType @default(FULL_DAY)
-  totalDays         Float
+  leaveStartDateTime DateTime
+  leaveEndDateTime   DateTime
+  totalDays          Float
   reason      String?
   documentUrl String?
   status      LeaveStatus @default(DRAFT)
@@ -108,12 +106,6 @@ model Approval {
 
   leaveRequest  LeaveRequest @relation(fields: [leaveRequestId], references: [id])
   approver      User @relation(fields: [approverId], references: [id])
-}
-
-enum LeaveDurationType {
-  FULL_DAY
-  HALF_DAY_MORNING
-  HALF_DAY_AFTERNOON
 }
 
 enum LeaveStatus {

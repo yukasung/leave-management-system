@@ -79,15 +79,13 @@ const FUTURE = new Date(Date.now() + 7 * 86400_000)  // 7 days from now
 
 function baseInput(overrides: Record<string, unknown> = {}) {
   return {
-    userId:            'user-1',
-    leaveTypeId:       'type-1',
-    startDate:         FUTURE,
-    endDate:           FUTURE,
-    startDurationType: 'FULL_DAY' as const,
-    endDurationType:   'FULL_DAY' as const,
-    totalDays:         1,
-    reason:            null,
-    documentUrl:       null,
+    userId:               'user-1',
+    leaveTypeId:          'type-1',
+    leaveStartDateTime:   FUTURE,
+    leaveEndDateTime:     FUTURE,
+    totalDays:            1,
+    reason:               null,
+    documentUrl:          null,
     ...overrides,
   }
 }
@@ -319,14 +317,12 @@ describe('updateLeave — guard clauses', () => {
   })
 
   const updateInput = {
-    leaveTypeId:        'type-1',
-    startDate:          FUTURE,
-    endDate:            FUTURE,
-    startDurationType:  'FULL_DAY' as const,
-    endDurationType:    'FULL_DAY' as const,
-    totalDays:          1,
-    reason:             null,
-    documentUrl:        null,
+    leaveTypeId:          'type-1',
+    leaveStartDateTime:   FUTURE,
+    leaveEndDateTime:     FUTURE,
+    totalDays:            1,
+    reason:               null,
+    documentUrl:          null,
   }
 
   it('throws when leave request does not exist', async () => {

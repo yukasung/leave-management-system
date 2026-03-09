@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { LeaveStatus } from '@prisma/client'
-import { durationLabel, type LeaveDurationType } from '@/lib/leave-calc'
+import { formatLeaveDuration } from '@/lib/leave-calc'
 import { formatThaiDateShort } from '@/lib/date-utils'
 
 function escapeCSV(value: string | number | null | undefined): string {
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       ...(statusFilter ? { status: statusFilter } : {}),
       ...(yearFilter
         ? {
-            startDate: {
+            leaveStartDateTime: {
               gte: new Date(`${yearFilter}-01-01`),
               lte: new Date(`${yearFilter}-12-31`),
             },
@@ -75,9 +75,7 @@ export async function GET(req: NextRequest) {
     'ประเภทการลา',
     'วันที่เริ่ม',
     'วันที่สิ้นสุด',
-    'จำนวนวัน',
-    'ช่วงเวลาวันแรก',
-    'ช่วงเวลาวันสุดท้าย',
+    'จำนวน',
     'สถานะ',
     'เหตุผล',
     'วันที่ส่งคำขอ',
@@ -89,11 +87,9 @@ export async function GET(req: NextRequest) {
     req.user.email,
     req.user.department?.name ?? '',
     req.leaveType.name,
-    formatThaiDateShort(req.startDate),
-    formatThaiDateShort(req.endDate),
-    req.totalDays,
-    durationLabel(req.startDurationType as LeaveDurationType),
-    durationLabel(req.endDurationType as LeaveDurationType),
+    formatThaiDateShort(req.leaveStartDateTime),
+    formatThaiDateShort(req.leaveEndDateTime),
+    formatLeaveDuration(req.totalDays),
     STATUS_LABELS[req.status] ?? req.status,
     req.reason ?? '',
     formatThaiDateShort(req.createdAt),

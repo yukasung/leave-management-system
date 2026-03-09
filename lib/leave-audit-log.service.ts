@@ -83,14 +83,14 @@ export const leaveFieldChange = {
     newValue:     str(newValue),
   }),
 
-  startDate: (oldValue: Date | null, newValue: Date): LeaveFieldChange => ({
-    fieldChanged: 'startDate',
+  leaveStartDateTime: (oldValue: Date | null, newValue: Date): LeaveFieldChange => ({
+    fieldChanged: 'leaveStartDateTime',
     oldValue:     str(oldValue),
     newValue:     str(newValue),
   }),
 
-  endDate: (oldValue: Date | null, newValue: Date): LeaveFieldChange => ({
-    fieldChanged: 'endDate',
+  leaveEndDateTime: (oldValue: Date | null, newValue: Date): LeaveFieldChange => ({
+    fieldChanged: 'leaveEndDateTime',
     oldValue:     str(oldValue),
     newValue:     str(newValue),
   }),

@@ -21,10 +21,8 @@ export default async function EditLeavePage({
       userId:           true,
       status:           true,
       leaveTypeId:      true,
-      startDate:        true,
-      endDate:          true,
-      startDurationType: true,
-      endDurationType:   true,
+      leaveStartDateTime: true,
+      leaveEndDateTime:   true,
       totalDays:         true,
       reason:            true,
       documentUrl:       true,
@@ -84,12 +82,10 @@ export default async function EditLeavePage({
     select: { avatarUrl: true },
   })
 
-  // Use local date components to avoid UTC-offset shifting the date by one day
-  const toLocalDate = (d: Date) => {
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${y}-${m}-${day}`
+  // Format a Date → "YYYY-MM-DDTHH:mm" for datetime-local inputs
+  const toDateTimeLocal = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
   }
 
   const user = {
@@ -105,15 +101,13 @@ export default async function EditLeavePage({
         <EditLeaveForm
           leaveId={leave.id}
           existing={{
-            leaveTypeId:       leave.leaveTypeId,
-            startDate:         toLocalDate(leave.startDate),
-            endDate:           toLocalDate(leave.endDate),
-            startDurationType: leave.startDurationType as 'FULL_DAY' | 'HALF_DAY_MORNING' | 'HALF_DAY_AFTERNOON',
-            endDurationType:   leave.endDurationType as 'FULL_DAY' | 'HALF_DAY_MORNING' | 'HALF_DAY_AFTERNOON',
-            totalDays:         leave.totalDays,
-            reason:            leave.reason ?? '',
-            documentUrl:       leave.documentUrl ?? '',
-            status:            leave.status,
+            leaveTypeId:        leave.leaveTypeId,
+            leaveStartDateTime: toDateTimeLocal(leave.leaveStartDateTime),
+            leaveEndDateTime:   toDateTimeLocal(leave.leaveEndDateTime),
+            totalDays:          leave.totalDays,
+            reason:             leave.reason ?? '',
+            documentUrl:        leave.documentUrl ?? '',
+            status:             leave.status,
           }}
           leaveTypes={leaveTypes}
           balanceByType={balanceByType}

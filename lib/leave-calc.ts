@@ -1,35 +1,90 @@
 /**
- * Shared leave day calculation logic.
- * Used by both the client-side preview and the server action (never trust the client).
+ * Shared leave duration calculation logic (datetime-based).
+ * Used by both the client-side live preview and the server action.
  *
- * Rules:
- *  - Same day + FULL_DAY                       -> 1
- *  - Same day + half-day (any)                 -> 0.5
- *  - Multi-day: count working days (Mon-Fri), skipping public holidays,
- *    then subtract 0.5 if startDurationType is half-day,
- *    and subtract 0.5 if endDurationType is half-day.
- *    (Allows e.g. 3-day leave starting half-day and ending half-day = 2 days)
+ * Working hours: 08:00 – 17:00 (lunch 12:00 – 13:00 excluded)
+ * Net working hours per day: 8 h
+ *
+ * totalDays is stored as a fraction of a working day (1.0 = 8 h).
+ * Display helpers convert back to human-readable form.
  *
  * Public holidays are supplied as a Set of "YYYY-MM-DD" strings.
- * When the Set is omitted (client preview), only weekends are skipped.
- * The authoritative server-side calculation always passes the Set
- * (see lib/leave-calc-server.ts).
+ * When omitted (client preview), only weekends are skipped.
+ * The server-side calculation always passes the Set.
  */
 
-export type LeaveDurationType = 'FULL_DAY' | 'HALF_DAY_MORNING' | 'HALF_DAY_AFTERNOON'
+// ── Working-hour constants ────────────────────────────────────────────────────
+
+export const WORK_START_HOUR  = 9   // 09:30
+export const WORK_START_MIN   = 30
+export const WORK_END_HOUR    = 17  // 17:30
+export const WORK_END_MIN     = 30
+export const LUNCH_START_HOUR = 12  // 12:00
+export const LUNCH_END_HOUR   = 13  // 13:00
+export const WORK_HOURS_PER_DAY = 7 // effective after lunch deduction (9:30–17:30 = 8 h – 1 h lunch = 7 h)
 
 export interface CalculationResult {
   totalDays: number
+  totalHours: number
+  displayLabel: string
   error?: string
 }
 
-// ── Pure helper ───────────────────────────────────────────────────────────────
+// ── Private helpers ───────────────────────────────────────────────────────────
+
+/** Clamp minutes between 0 and max. */
+function clampMin(value: number) {
+  return value < 0 ? 0 : value
+}
+
+/**
+ * Working minutes for a single calendar day between [dayStart, dayEnd] minutes-since-midnight,
+ * excluding the lunch window [LUNCH_START*60, LUNCH_END*60).
+ */
+function workingMinutesForWindow(startMin: number, endMin: number): number {
+  const workStart  = WORK_START_HOUR * 60 + WORK_START_MIN
+  const workEnd    = WORK_END_HOUR   * 60 + WORK_END_MIN
+  const lunchStart = LUNCH_START_HOUR * 60
+  const lunchEnd   = LUNCH_END_HOUR   * 60
+
+  // Clamp window to working hours
+  const s = Math.max(startMin, workStart)
+  const e = Math.min(endMin,   workEnd)
+  if (e <= s) return 0
+
+  // Subtract lunch overlap
+  const lunchOverlap = clampMin(Math.min(e, lunchEnd) - Math.max(s, lunchStart))
+  return e - s - lunchOverlap
+}
+
+/**
+ * "YYYY-MM-DD" key from a LOCAL-time Date (matches datetime-local form input strings).
+ * Used inside calculateLeaveDuration so that the working-hours window is
+ * computed in the server/browser's local timezone, not UTC.
+ */
+function localDateKey(d: Date): string {
+  const y   = d.getFullYear()
+  const m   = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/**
+ * "YYYY-MM-DD" key from a UTC-based Date cursor.
+ * Used by countWorkingDays (which receives UTC-midnight dates).
+ */
+function utcDateKey(d: Date): string {
+  return d.toISOString().slice(0, 10)
+}
+
+// ── Exported helpers ──────────────────────────────────────────────────────────
 
 /**
  * Count Mon-Fri working days between start and end (inclusive), skipping any
  * dates present in `publicHolidays` (a Set of "YYYY-MM-DD" strings).
  *
  * All comparisons are done in UTC to avoid timezone-shift bugs.
+ * (Kept for backward-compat with other callers.)
  */
 export function countWorkingDays(
   start: Date,
@@ -37,89 +92,112 @@ export function countWorkingDays(
   publicHolidays: Set<string> = new Set()
 ): number {
   let count = 0
-
-  // Normalise to UTC midnight so toISOString() slice matches the holiday Set keys
   const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()))
   const endNorm = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()))
 
   while (cursor <= endNorm) {
-    const dow = cursor.getUTCDay() // 0 = Sun, 6 = Sat
-    if (dow !== 0 && dow !== 6) {
-      const key = cursor.toISOString().slice(0, 10) // "YYYY-MM-DD"
-      if (!publicHolidays.has(key)) {
-        count++
-      }
+    const dow = cursor.getUTCDay()
+    if (dow !== 0 && dow !== 6 && !publicHolidays.has(utcDateKey(cursor))) {
+      count++
     }
     cursor.setUTCDate(cursor.getUTCDate() + 1)
   }
-
   return count
+}
+
+/**
+ * Format a totalDays value (fraction of a working day) as a human-readable string.
+ *
+ * ≥ 1 day  → "X วันทำการ"
+ * < 1 day  → convert to hours → "X ชั่วโมง" (or "X.X ชั่วโมง")
+ */
+export function formatLeaveDuration(totalDays: number): string {
+  if (totalDays >= 1) {
+    // Show as integer or one decimal
+    const rounded = Math.round(totalDays * 10) / 10
+    return `${rounded} วันทำการ`
+  }
+  const hours = totalDays * WORK_HOURS_PER_DAY
+  const roundedH = Math.round(hours * 10) / 10
+  return `${roundedH} ชั่วโมง`
 }
 
 // ── Main export (pure — no DB) ────────────────────────────────────────────────
 
 /**
- * Calculate leave days without DB lookup (used for client-side live preview).
- * For the authoritative server-side calculation that skips public holidays,
- * use `calculateLeaveDaysServer` from `lib/leave-calc-server.ts`.
+ * Calculate leave duration from two datetime values.
+ *
+ * - Iterates each calendar day in the range.
+ * - Skips weekends and public holidays.
+ * - Per day, counts working minutes inside [08:00, 17:00) excluding lunch.
+ * - Returns totalDays (fraction, 1.0 = 8 h), totalHours, and a display label.
+ *
+ * For the authoritative server-side version that also skips CompanyHoliday
+ * rows, use `calculateLeaveDurationServer` from `lib/leave-calc-server.ts`.
  */
-export function calculateLeaveDays(
-  startDate: Date,
-  endDate: Date,
-  startDurationType: LeaveDurationType,
-  endDurationType: LeaveDurationType = startDurationType,
+export function calculateLeaveDuration(
+  startDT: Date,
+  endDT:   Date,
   publicHolidays: Set<string> = new Set()
 ): CalculationResult {
-  // Normalise to UTC midnight
-  const start = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()))
-  const end   = new Date(Date.UTC(endDate.getUTCFullYear(),   endDate.getUTCMonth(),   endDate.getUTCDate()))
-
-  if (end < start) {
-    return { totalDays: 0, error: 'วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่มต้น' }
-  }
-
-  const isSameDay = start.getTime() === end.getTime()
-
-  if (isSameDay) {
-    const dow = start.getUTCDay()
-    if (dow === 0 || dow === 6) {
-      return { totalDays: 0, error: 'ไม่สามารถลาในวันหยุดสุดสัปดาห์ได้' }
+  if (endDT <= startDT) {
+    return {
+      totalDays: 0, totalHours: 0,
+      displayLabel: '',
+      error: 'เวลาสิ้นสุดต้องหลังเวลาเริ่มต้น',
     }
-    const key = start.toISOString().slice(0, 10)
-    if (publicHolidays.has(key)) {
-      return { totalDays: 0, error: 'วันที่เลือกตรงกับวันหยุดนักขัตฤกษ์' }
+  }
+
+  // Calendar-day boundaries using LOCAL time — datetime-local inputs are parsed
+  // as local time by new Date(), so we must NOT use UTC methods here.
+  const startDateLocal = new Date(startDT.getFullYear(), startDT.getMonth(), startDT.getDate())
+  const endDateLocal   = new Date(endDT.getFullYear(),   endDT.getMonth(),   endDT.getDate())
+
+  // Minutes-since-midnight in LOCAL time
+  const startMinOfDay = startDT.getHours() * 60 + startDT.getMinutes()
+  const endMinOfDay   = endDT.getHours()   * 60 + endDT.getMinutes()
+
+  let totalWorkingMinutes = 0
+
+  const cursor = new Date(startDateLocal)
+
+  while (cursor <= endDateLocal) {
+    const dow = cursor.getDay()         // local day-of-week (0 = Sun, 6 = Sat)
+    const key = localDateKey(cursor)    // "YYYY-MM-DD" in local time
+
+    if (dow !== 0 && dow !== 6 && !publicHolidays.has(key)) {
+      const isFirstDay = cursor.getTime() === startDateLocal.getTime()
+      const isLastDay  = cursor.getTime() === endDateLocal.getTime()
+      const isSameDay  = isFirstDay && isLastDay
+
+      const dayStartMin = isFirstDay ? startMinOfDay : WORK_START_HOUR * 60 + WORK_START_MIN
+      const dayEndMin   = isLastDay  ? endMinOfDay   : WORK_END_HOUR   * 60 + WORK_END_MIN
+
+      if (isSameDay) {
+        totalWorkingMinutes += workingMinutesForWindow(startMinOfDay, endMinOfDay)
+      } else {
+        totalWorkingMinutes += workingMinutesForWindow(dayStartMin, dayEndMin)
+      }
     }
-    return { totalDays: startDurationType === 'FULL_DAY' ? 1 : 0.5 }
+
+    cursor.setDate(cursor.getDate() + 1)
   }
 
-  // Count working days (Mon-Fri, skipping public holidays) inclusive
-  const workingDays = countWorkingDays(start, end, publicHolidays)
-
-  if (workingDays === 0) {
-    return { totalDays: 0, error: 'ช่วงวันที่เลือกไม่มีวันทำการ (อาจเป็นวันหยุดหรือวันหยุดนักขัตฤกษ์ทั้งหมด)' }
+  if (totalWorkingMinutes <= 0) {
+    return {
+      totalDays: 0, totalHours: 0,
+      displayLabel: '',
+      error: 'ไม่มีเวลาทำการในช่วงที่เลือก (อาจเป็นวันหยุด, นอกเวลาทำงาน หรือช่วงเวลาพักกลางวัน)',
+    }
   }
 
-  // Adjust for partial start / end days
-  let total = workingDays
-  if (startDurationType !== 'FULL_DAY') total -= 0.5
-  if (endDurationType !== 'FULL_DAY') total -= 0.5
+  const totalHours = totalWorkingMinutes / 60
+  const totalDays  = totalHours / WORK_HOURS_PER_DAY
 
-  if (total <= 0) {
-    return { totalDays: 0, error: 'จำนวนวันลาต้องมากกว่า 0' }
-  }
-
-  return { totalDays: total }
-}
-
-/** Display label for LeaveDurationType */
-export function durationLabel(type: LeaveDurationType): string {
-  switch (type) {
-    case 'FULL_DAY':
-      return 'เต็มวัน'
-    case 'HALF_DAY_MORNING':
-      return 'ครึ่งวันเช้า'
-    case 'HALF_DAY_AFTERNOON':
-      return 'ครึ่งวันบ่าย'
+  return {
+    totalDays,
+    totalHours,
+    displayLabel: formatLeaveDuration(totalDays),
   }
 }
 

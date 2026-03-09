@@ -64,9 +64,23 @@ export default async function LeaveRequestPage({
       where: { id: session.user.id },
       select: { avatarUrl: true },
     }),
-    prisma.leaveRequest.count({ where: { userId: session.user.id } }),
+    prisma.leaveRequest.count({
+      where: {
+        userId: session.user.id,
+        leaveStartDateTime: {
+          gte: new Date(`${year}-01-01T00:00:00`),
+          lt:  new Date(`${year + 1}-01-01T00:00:00`),
+        },
+      },
+    }),
     prisma.leaveRequest.findMany({
-      where: { userId: session.user.id },
+      where: {
+        userId: session.user.id,
+        leaveStartDateTime: {
+          gte: new Date(`${year}-01-01T00:00:00`),
+          lt:  new Date(`${year + 1}-01-01T00:00:00`),
+        },
+      },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -112,7 +126,7 @@ export default async function LeaveRequestPage({
         <div className="w-full min-w-0 space-y-4">
           <div>
             <h2 className="text-lg font-semibold text-foreground">ประวัติการลาของฉัน</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">ทั้งหมด {total} รายการ</p>
+            <p className="text-sm text-muted-foreground mt-0.5">ปี {year + 543} · ทั้งหมด {total} รายการ</p>
           </div>
 
           {total === 0 ? (
@@ -143,10 +157,10 @@ export default async function LeaveRequestPage({
                               {req.leaveType.name}
                             </td>
                             <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
-                              {formatDate(req.startDate)}
+                              {formatDate(req.leaveStartDateTime)}
                             </td>
                             <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
-                              {formatDate(req.endDate)}
+                              {formatDate(req.leaveEndDateTime)}
                             </td>
                             <td className="px-5 py-4 text-center">
                               <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${badgeCls}`}>

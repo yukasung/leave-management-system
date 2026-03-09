@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useEffect, useRef, useTransition, useCallback } from 'react'
 import { createLeaveRequest, submitLeaveRequest, type FormState } from './actions'
-import { calculateLeaveDays, type LeaveDurationType } from '@/lib/leave-calc'
+import { calculateLeaveDuration, WORK_START_HOUR, WORK_START_MIN, WORK_END_HOUR, WORK_END_MIN } from '@/lib/leave-calc'
 import { buildPolicySummary, type LeaveTypePolicy } from '@/lib/leave-policy-utils'
 import { formatDate } from '@/lib/format-date'
 import HolidayDatePicker from '@/app/components/HolidayDatePicker'
@@ -17,17 +17,15 @@ type Props = {
 
 const initialState: FormState = {}
 
-const DURATION_OPTIONS: { value: LeaveDurationType; label: string }[] = [
-  { value: 'FULL_DAY', label: 'เต็มวัน' },
-  { value: 'HALF_DAY_MORNING', label: 'ครึ่งวันเช้า (08:00 – 12:00)' },
-  { value: 'HALF_DAY_AFTERNOON', label: 'ครึ่งวันบ่าย (13:00 – 17:00)' },
-]
-
-const DURATION_LABEL: Record<LeaveDurationType, string> = {
-  FULL_DAY: 'เต็มวัน',
-  HALF_DAY_MORNING: 'ครึ่งวันเช้า',
-  HALF_DAY_AFTERNOON: 'ครึ่งวันบ่าย',
+/** Format a Date as "YYYY-MM-DDTHH:mm" for datetime-local input value */
+function toDateTimeLocal(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
+
+/** Default time strings for a fresh day */
+const DEFAULT_START_TIME = `${String(WORK_START_HOUR).padStart(2, '0')}:${String(WORK_START_MIN).padStart(2, '0')}`
+const DEFAULT_END_TIME   = `${String(WORK_END_HOUR).padStart(2, '0')}:${String(WORK_END_MIN).padStart(2, '0')}`
 
 export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByType }: Props) {
   const [state, formAction, pending] = useActionState(createLeaveRequest, initialState)
@@ -39,13 +37,12 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
 
-  // Snapshot of form values for the confirmation screen
+  // Snapshot for confirmation screen
   const [snapshot, setSnapshot] = useState<{
     leaveTypeName: string
-    startDate: string
-    endDate: string
-    startDurationType: LeaveDurationType
-    endDurationType: LeaveDurationType
+    leaveStartDateTime: string  // ISO string
+    leaveEndDateTime:   string
+    displayLabel: string
     totalDays: number
     reason: string
     documentName: string
@@ -61,14 +58,14 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   const today = new Date().toISOString().split('T')[0]
 
   const [leaveTypeId, setLeaveTypeId] = useState('')
-  const [startDate, setStartDate] = useState(today)
-  const [endDate, setEndDate] = useState(today)
-  const [startDurationType, setStartDurationType] = useState<LeaveDurationType>('FULL_DAY')
-  const [endDurationType, setEndDurationType] = useState<LeaveDurationType>('FULL_DAY')
-  const [documentUrl, setDocumentUrl] = useState('')
+  const [startDate, setStartDate]     = useState(today)
+  const [endDate, setEndDate]         = useState(today)
+  const [startTime, setStartTime]     = useState(DEFAULT_START_TIME)
+  const [endTime, setEndTime]         = useState(DEFAULT_END_TIME)
+  const [documentUrl, setDocumentUrl]   = useState('')
   const [documentName, setDocumentName] = useState('')
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState('')
+  const [uploading, setUploading]       = useState(false)
+  const [uploadError, setUploadError]   = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   // ── Holiday set for accurate client-side preview ──────────────────────────
@@ -99,17 +96,40 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   }, [startDate, endDate, fetchHolidaysForYear])
 
   const selectedType = leaveTypes.find((lt) => lt.id === leaveTypeId) ?? null
-  const isMultiDay = startDate !== '' && endDate !== '' && startDate !== endDate
 
   // Auto-sync end date if it goes before start
   useEffect(() => {
     if (startDate && endDate && endDate < startDate) setEndDate(startDate)
   }, [startDate, endDate])
 
+  // Prevent midnight (00:00) — browser 12-hour pickers can produce midnight
+  // when the user types "12" and leaves AM selected instead of switching to PM.
+  useEffect(() => {
+    if (startTime === '00:00') setStartTime(DEFAULT_START_TIME)
+  }, [startTime])
+  useEffect(() => {
+    if (endTime === '00:00') setEndTime(DEFAULT_END_TIME)
+  }, [endTime])
+
+  // Auto-correct endTime when same-day and end ≤ start
+  useEffect(() => {
+    if (startDate === endDate && endTime && startTime && endTime <= startTime) {
+      setEndTime(DEFAULT_END_TIME)
+    }
+  }, [startTime, startDate, endDate])
+
+  // Combined datetime strings used for calc + form submission
+  const leaveStartDateTime = startDate && startTime ? `${startDate}T${startTime}` : ''
+  const leaveEndDateTime   = endDate   && endTime   ? `${endDate}T${endTime}`     : ''
+
   // Live preview
   const preview = (() => {
-    if (!startDate || !endDate) return null
-    return calculateLeaveDays(new Date(startDate), new Date(endDate), startDurationType, endDurationType, holidaySet)
+    if (!leaveStartDateTime || !leaveEndDateTime) return null
+    return calculateLeaveDuration(
+      new Date(leaveStartDateTime),
+      new Date(leaveEndDateTime),
+      holidaySet
+    )
   })()
 
   // Remaining quota for selected type
@@ -162,13 +182,12 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   function handleFormAction(formData: FormData) {
     if (preview && !preview.error) {
       setSnapshot({
-        leaveTypeName: selectedType?.name ?? '',
-        startDate,
-        endDate,
-        startDurationType,
-        endDurationType: isMultiDay ? endDurationType : startDurationType,
-        totalDays: preview.totalDays,
-        reason: (formData.get('reason') as string) || '',
+        leaveTypeName:      selectedType?.name ?? '',
+        leaveStartDateTime,
+        leaveEndDateTime,
+        displayLabel:       preview.displayLabel,
+        totalDays:          preview.totalDays,
+        reason:             (formData.get('reason') as string) || '',
         documentName,
       })
     }
@@ -178,8 +197,8 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   const canSubmit =
     !pending &&
     !uploading &&
-    !!startDate &&
-    !!endDate &&
+    !!leaveStartDateTime &&
+    !!leaveEndDateTime &&
     !!leaveTypeId &&
     !preview?.error &&
     !(needsAttachment && !documentUrl)
@@ -206,8 +225,8 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
     setLeaveTypeId('')
     setStartDate(today)
     setEndDate(today)
-    setStartDurationType('FULL_DAY')
-    setEndDurationType('FULL_DAY')
+    setStartTime(DEFAULT_START_TIME)
+    setEndTime(DEFAULT_END_TIME)
     setDocumentUrl('')
     setDocumentName('')
   }
@@ -216,7 +235,12 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   // Phase: Confirmation screen
   // ════════════════════════════════════════════════════════════════════════════
   if (phase === 'confirm' && snapshot) {
-    const isSameDay = snapshot.startDate === snapshot.endDate
+    const startDT = new Date(snapshot.leaveStartDateTime)
+    const endDT   = new Date(snapshot.leaveEndDateTime)
+    const isSameDay = snapshot.leaveStartDateTime.slice(0, 10) === snapshot.leaveEndDateTime.slice(0, 10)
+    const timeRange = isSameDay
+      ? `${snapshot.leaveStartDateTime.slice(11, 16)} – ${snapshot.leaveEndDateTime.slice(11, 16)} น.`
+      : `${snapshot.leaveStartDateTime.slice(11, 16)} น. – ${snapshot.leaveEndDateTime.slice(11, 16)} น.`
     return (
       <div className="max-w-xl mx-auto mt-10 bg-card rounded-2xl shadow-md p-8">
         <h1 className="text-2xl font-bold text-foreground mb-1">ยืนยันการส่งคำขอลา</h1>
@@ -235,19 +259,16 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             label="วันที่"
             value={
               isSameDay
-                ? formatDate(new Date(snapshot.startDate))
-                : `${formatDate(new Date(snapshot.startDate))} – ${formatDate(new Date(snapshot.endDate))}`
+                ? formatDate(startDT)
+                : `${formatDate(startDT)} – ${formatDate(endDT)}`
             }
           />
-          <Row label="ช่วงเวลาวันแรก" value={DURATION_LABEL[snapshot.startDurationType]} />
-          {!isSameDay && (
-            <Row label="ช่วงเวลาวันสุดท้าย" value={DURATION_LABEL[snapshot.endDurationType]} />
-          )}
+          <Row label="เวลา" value={timeRange} />
           <Row
-            label="จำนวนวันลา"
+            label="จำนวน"
             value={
               <span className="font-semibold text-base text-foreground">
-                {snapshot.totalDays} วันทำการ
+                {snapshot.displayLabel}
               </span>
             }
           />
@@ -326,6 +347,10 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
       )}
 
       <form action={handleFormAction} className="space-y-5">
+        {/* Hidden datetime fields submitted to server */}
+        <input type="hidden" name="leaveStartDateTime" value={leaveStartDateTime} />
+        <input type="hidden" name="leaveEndDateTime"   value={leaveEndDateTime} />
+
         {/* Leave Type */}
         <div>
           <label htmlFor="leaveTypeId" className="block text-sm font-medium text-foreground mb-1">
@@ -366,83 +391,77 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
           )}
         </div>
 
-        {/* Date row */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="startDate" className="block text-sm font-medium text-foreground mb-1">
-              วันที่เริ่มต้น <span className="text-red-500">*</span>
-            </label>
-            <HolidayDatePicker
-              id="startDate"
-              name="startDate"
-              value={startDate}
-              min={today}
-              onChange={setStartDate}
-            />
-            {state.errors?.startDate && (
-              <p className="mt-1 text-xs text-red-500">{state.errors.startDate}</p>
-            )}
+        {/* Start date + time */}
+        <div>
+          <p className="text-sm font-medium text-foreground mb-2">
+            วันและเวลาเริ่มต้น <span className="text-red-500">*</span>
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="startDate" className="block text-xs text-muted-foreground mb-1">วันที่</label>
+              <HolidayDatePicker
+                id="startDate"
+                name="startDate"
+                value={startDate}
+                min={today}
+                onChange={setStartDate}
+              />
+            </div>
+            <div>
+              <label htmlFor="startTime" className="block text-xs text-muted-foreground mb-1">เวลา</label>
+              <input
+                id="startTime"
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                min="09:30"
+                max="17:30"
+                step="900"
+                className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              />
+            </div>
           </div>
-
-          <div>
-            <label htmlFor="endDate" className="block text-sm font-medium text-foreground mb-1">
-              วันที่สิ้นสุด <span className="text-red-500">*</span>
-            </label>
-            <HolidayDatePicker
-              id="endDate"
-              name="endDate"
-              value={endDate}
-              min={startDate || today}
-              onChange={setEndDate}
-            />
-            {state.errors?.endDate && (
-              <p className="mt-1 text-xs text-red-500">{state.errors.endDate}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Duration type — separate for start and end */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="startDurationType" className="block text-sm font-medium text-foreground mb-1">
-              ช่วงเวลาวันแรก
-            </label>
-            <select
-              id="startDurationType"
-              name="startDurationType"
-              value={startDurationType}
-              onChange={(e) => setStartDurationType(e.target.value as LeaveDurationType)}
-              className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {DURATION_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-          {isMultiDay && (
-          <div>
-            <label htmlFor="endDurationType" className="block text-sm font-medium text-foreground mb-1">
-              ช่วงเวลาวันสุดท้าย
-            </label>
-            <select
-              id="endDurationType"
-              name="endDurationType"
-              value={endDurationType}
-              onChange={(e) => setEndDurationType(e.target.value as LeaveDurationType)}
-              className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {DURATION_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-          )}
-          {!isMultiDay && (
-            <input type="hidden" name="endDurationType" value={startDurationType} />
+          {state.errors?.leaveStartDateTime && (
+            <p className="mt-1 text-xs text-red-500">{state.errors.leaveStartDateTime}</p>
           )}
         </div>
 
-        {/* Total Leave Days — read-only display */}
+        {/* End date + time */}
+        <div>
+          <p className="text-sm font-medium text-foreground mb-2">
+            วันและเวลาสิ้นสุด <span className="text-red-500">*</span>
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="endDate" className="block text-xs text-muted-foreground mb-1">วันที่</label>
+              <HolidayDatePicker
+                id="endDate"
+                name="endDate"
+                value={endDate}
+                min={startDate || today}
+                onChange={setEndDate}
+              />
+            </div>
+            <div>
+              <label htmlFor="endTime" className="block text-xs text-muted-foreground mb-1">เวลา</label>
+              <input
+                id="endTime"
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                min="09:30"
+                max="17:30"
+                step="900"
+                className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              />
+            </div>
+          </div>
+          {state.errors?.leaveEndDateTime && (
+            <p className="mt-1 text-xs text-red-500">{state.errors.leaveEndDateTime}</p>
+          )}
+        </div>
+
+        {/* Total Leave Duration — read-only display */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
             จำนวนวันลาทั้งหมด
@@ -456,15 +475,12 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             <div className="flex items-center gap-2 px-4 py-2.5 bg-muted border border-border rounded-lg text-sm text-foreground cursor-not-allowed select-none">
               <svg className="h-4 w-4 text-muted-foreground/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               {preview ? (
-                <span>
-                  <strong className="text-base text-foreground">{preview.totalDays}</strong>{' '}
-                  วันทำการ
-                </span>
+                <span className="font-semibold text-base text-foreground">{preview.displayLabel}</span>
               ) : (
-                <span className="text-muted-foreground/60">— เลือกวันที่เพื่อคำนวณ —</span>
+                <span className="text-muted-foreground/60">— เลือกวันที่และเวลาเพื่อคำนวณ —</span>
               )}
             </div>
           )}
@@ -477,7 +493,6 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
           </label>
 
           {documentUrl ? (
-            /* Uploaded — show file name + remove */
             <div className="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-sm">
               <svg className="h-5 w-5 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -494,7 +509,6 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
               <input type="hidden" name="documentUrl" value={documentUrl} />
             </div>
           ) : (
-            /* Picker */
             <button
               type="button"
               onClick={() => fileRef.current?.click()}

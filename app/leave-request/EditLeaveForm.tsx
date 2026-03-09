@@ -15,9 +15,8 @@ import { useActionState, useState, useEffect, useRef, useTransition, useCallback
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { updateLeaveRequest, submitLeaveRequest, type FormState } from './actions'
-import { calculateLeaveDays, type LeaveDurationType } from '@/lib/leave-calc'
+import { calculateLeaveDuration, WORK_START_HOUR, WORK_START_MIN, WORK_END_HOUR, WORK_END_MIN } from '@/lib/leave-calc'
 import { buildPolicySummary, type LeaveTypePolicy } from '@/lib/leave-policy-utils'
-import { formatDate } from '@/lib/format-date'
 import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -25,15 +24,13 @@ import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 type BalanceInfo = { totalDays: number; usedDays: number }
 
 type ExistingLeave = {
-  leaveTypeId:       string
-  startDate:         string   // YYYY-MM-DD
-  endDate:           string   // YYYY-MM-DD
-  startDurationType: LeaveDurationType
-  endDurationType:   LeaveDurationType
-  totalDays:         number
-  reason:            string
-  documentUrl:       string
-  status:            string
+  leaveTypeId:        string
+  leaveStartDateTime: string   // "YYYY-MM-DDTHH:mm"
+  leaveEndDateTime:   string   // "YYYY-MM-DDTHH:mm"
+  totalDays:          number
+  reason:             string
+  documentUrl:        string
+  status:             string
 }
 
 type Props = {
@@ -42,17 +39,14 @@ type Props = {
   leaveTypes:     LeaveTypePolicy[]
   balanceByType:  Record<string, BalanceInfo>
   usageByType:    Record<string, number>
-  isEditable:     boolean   // false ⇒ all fields disabled (read-only view)
-  isPrivileged:   boolean   // true ⇒ HR/ADMIN editing an APPROVED leave
+  isEditable:     boolean
+  isPrivileged:   boolean
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const DURATION_OPTIONS: { value: LeaveDurationType; label: string }[] = [
-  { value: 'FULL_DAY',          label: 'เต็มวัน' },
-  { value: 'HALF_DAY_MORNING',  label: 'ครึ่งวันเช้า (08:00 – 12:00)' },
-  { value: 'HALF_DAY_AFTERNOON', label: 'ครึ่งวันบ่าย (13:00 – 17:00)' },
-]
+const DEFAULT_START_TIME = `${String(WORK_START_HOUR).padStart(2, '0')}:${String(WORK_START_MIN).padStart(2, '0')}`
+const DEFAULT_END_TIME   = `${String(WORK_END_HOUR).padStart(2, '0')}:${String(WORK_END_MIN).padStart(2, '0')}`
 
 const STATUS_BANNER: Record<string, { text: string; cls: string }> = {
   PENDING:          { text: 'คำขอลานี้อยู่ระหว่างรออนุมัติ — ไม่สามารถแก้ไขได้',  cls: 'bg-yellow-50 border-yellow-300 text-yellow-800' },
@@ -74,7 +68,6 @@ export default function EditLeaveForm({
   leaveId, existing, leaveTypes, balanceByType, usageByType,
   isEditable, isPrivileged,
 }: Props) {
-  // Bind leaveId into the action
   const boundAction = updateLeaveRequest.bind(null, leaveId)
   const [state, formAction, pending] = useActionState<FormState, FormData>(boundAction, {})
   const router = useRouter()
@@ -96,16 +89,27 @@ export default function EditLeaveForm({
 
   const today = new Date().toISOString().split('T')[0]
 
-  const [leaveTypeId, setLeaveTypeId]         = useState(existing.leaveTypeId)
-  const [startDate, setStartDate]             = useState(existing.startDate)
-  const [endDate, setEndDate]                 = useState(existing.endDate)
-  const [startDurationType, setStartDurationType] = useState<LeaveDurationType>(existing.startDurationType)
-  const [endDurationType, setEndDurationType]     = useState<LeaveDurationType>(existing.endDurationType)
-  const [documentUrl, setDocumentUrl]         = useState(existing.documentUrl)
-  const [documentName, setDocumentName]       = useState(
+  const [leaveTypeId, setLeaveTypeId] = useState(existing.leaveTypeId)
+
+  // Parse existing datetime strings (YYYY-MM-DDTHH:mm)
+  const [startDate, setStartDate] = useState(
+    existing.leaveStartDateTime ? existing.leaveStartDateTime.slice(0, 10) : today
+  )
+  const [startTime, setStartTime] = useState(
+    existing.leaveStartDateTime?.slice(11, 16) || DEFAULT_START_TIME
+  )
+  const [endDate, setEndDate] = useState(
+    existing.leaveEndDateTime ? existing.leaveEndDateTime.slice(0, 10) : today
+  )
+  const [endTime, setEndTime] = useState(
+    existing.leaveEndDateTime?.slice(11, 16) || DEFAULT_END_TIME
+  )
+
+  const [documentUrl, setDocumentUrl]   = useState(existing.documentUrl)
+  const [documentName, setDocumentName] = useState(
     existing.documentUrl ? existing.documentUrl.split('/').pop() ?? 'เอกสารแนบเดิม' : ''
   )
-  const [uploading, setUploading]   = useState(false)
+  const [uploading, setUploading]     = useState(false)
   const [uploadError, setUploadError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -136,8 +140,6 @@ export default function EditLeaveForm({
     years.forEach(fetchHolidaysForYear)
   }, [startDate, endDate, fetchHolidaysForYear])
 
-  const [_submitPending, startSaveTransition] = useTransition()
-
   const disabled = !isEditable
 
   // Auto-sync end date
@@ -145,12 +147,35 @@ export default function EditLeaveForm({
     if (startDate && endDate && endDate < startDate) setEndDate(startDate)
   }, [startDate, endDate])
 
+  // Prevent midnight (00:00) — browser 12-hour pickers can produce midnight
+  // when the user types "12" and leaves AM selected instead of switching to PM.
+  useEffect(() => {
+    if (startTime === '00:00') setStartTime(DEFAULT_START_TIME)
+  }, [startTime])
+  useEffect(() => {
+    if (endTime === '00:00') setEndTime(DEFAULT_END_TIME)
+  }, [endTime])
+
+  // Auto-correct endTime when same-day and end ≤ start
+  useEffect(() => {
+    if (startDate === endDate && endTime && startTime && endTime <= startTime) {
+      setEndTime(DEFAULT_END_TIME)
+    }
+  }, [startTime, startDate, endDate])
+
   const selectedType = leaveTypes.find((lt) => lt.id === leaveTypeId) ?? null
-  const isMultiDay   = startDate !== '' && endDate !== '' && startDate !== endDate
+
+  // Combined datetime strings
+  const leaveStartDateTime = startDate && startTime ? `${startDate}T${startTime}` : ''
+  const leaveEndDateTime   = endDate   && endTime   ? `${endDate}T${endTime}`     : ''
 
   const preview = (() => {
-    if (!startDate || !endDate) return null
-    return calculateLeaveDays(new Date(startDate), new Date(endDate), startDurationType, endDurationType, holidaySet)
+    if (!leaveStartDateTime || !leaveEndDateTime) return null
+    return calculateLeaveDuration(
+      new Date(leaveStartDateTime),
+      new Date(leaveEndDateTime),
+      holidaySet
+    )
   })()
 
   const remainingQuota = (() => {
@@ -202,8 +227,8 @@ export default function EditLeaveForm({
     isEditable &&
     !pending &&
     !uploading &&
-    !!startDate &&
-    !!endDate &&
+    !!leaveStartDateTime &&
+    !!leaveEndDateTime &&
     !!leaveTypeId &&
     !preview?.error &&
     !(needsAttachment && !documentUrl)
@@ -245,7 +270,6 @@ export default function EditLeaveForm({
 
   // ── Form ───────────────────────────────────────────────────────────────────
 
-  // Banner to show when not editable
   const banner = !isEditable
     ? STATUS_BANNER[existing.status]
     : isPrivileged && existing.status === 'APPROVED'
@@ -282,6 +306,10 @@ export default function EditLeaveForm({
       )}
 
       <form action={formAction} className="space-y-5">
+        {/* Hidden datetime fields submitted to server */}
+        <input type="hidden" name="leaveStartDateTime" value={leaveStartDateTime} />
+        <input type="hidden" name="leaveEndDateTime"   value={leaveEndDateTime} />
+
         {/* Leave Type */}
         <div>
           <label htmlFor="leaveTypeId" className="block text-sm font-medium text-foreground mb-1">
@@ -319,85 +347,81 @@ export default function EditLeaveForm({
           )}
         </div>
 
-        {/* Date row */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="startDate" className="block text-sm font-medium text-foreground mb-1">
-              วันที่เริ่มต้น <span className="text-red-500">*</span>
-            </label>
-            <HolidayDatePicker
-              id="startDate"
-              name="startDate"
-              value={startDate}
-              min={disabled ? undefined : today}
-              onChange={setStartDate}
-              disabled={disabled}
-            />
-            {state.errors?.startDate && (
-              <p className="mt-1 text-xs text-red-500">{state.errors.startDate}</p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="endDate" className="block text-sm font-medium text-foreground mb-1">
-              วันที่สิ้นสุด <span className="text-red-500">*</span>
-            </label>
-            <HolidayDatePicker
-              id="endDate"
-              name="endDate"
-              value={endDate}
-              min={disabled ? undefined : (startDate || today)}
-              onChange={setEndDate}
-              disabled={disabled}
-            />
-            {state.errors?.endDate && (
-              <p className="mt-1 text-xs text-red-500">{state.errors.endDate}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Duration types */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="startDurationType" className="block text-sm font-medium text-foreground mb-1">
-              ช่วงเวลาวันแรก
-            </label>
-            <select
-              id="startDurationType"
-              name="startDurationType"
-              value={startDurationType}
-              onChange={(e) => setStartDurationType(e.target.value as LeaveDurationType)}
-              disabled={disabled}
-              className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
-            >
-              {DURATION_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-          {isMultiDay ? (
+        {/* Start date + time */}
+        <div>
+          <p className="text-sm font-medium text-foreground mb-2">
+            วันและเวลาเริ่มต้น <span className="text-red-500">*</span>
+          </p>
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="endDurationType" className="block text-sm font-medium text-foreground mb-1">
-                ช่วงเวลาวันสุดท้าย
-              </label>
-              <select
-                id="endDurationType"
-                name="endDurationType"
-                value={endDurationType}
-                onChange={(e) => setEndDurationType(e.target.value as LeaveDurationType)}
+              <label htmlFor="startDate" className="block text-xs text-muted-foreground mb-1">วันที่</label>
+              <HolidayDatePicker
+                id="startDate"
+                name="startDate"
+                value={startDate}
+                min={disabled ? undefined : today}
+                onChange={setStartDate}
                 disabled={disabled}
-                className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
-              >
-                {DURATION_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+              />
             </div>
-          ) : (
-            <input type="hidden" name="endDurationType" value={startDurationType} />
+            <div>
+              <label htmlFor="startTime" className="block text-xs text-muted-foreground mb-1">เวลา</label>
+              <input
+                id="startTime"
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                disabled={disabled}
+                min="09:30"
+                max="17:30"
+                step="900"
+                className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed text-sm"
+              />
+            </div>
+          </div>
+          {state.errors?.leaveStartDateTime && (
+            <p className="mt-1 text-xs text-red-500">{state.errors.leaveStartDateTime}</p>
           )}
         </div>
 
-        {/* Days preview */}
+        {/* End date + time */}
+        <div>
+          <p className="text-sm font-medium text-foreground mb-2">
+            วันและเวลาสิ้นสุด <span className="text-red-500">*</span>
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="endDate" className="block text-xs text-muted-foreground mb-1">วันที่</label>
+              <HolidayDatePicker
+                id="endDate"
+                name="endDate"
+                value={endDate}
+                min={disabled ? undefined : (startDate || today)}
+                onChange={setEndDate}
+                disabled={disabled}
+              />
+            </div>
+            <div>
+              <label htmlFor="endTime" className="block text-xs text-muted-foreground mb-1">เวลา</label>
+              <input
+                id="endTime"
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                disabled={disabled}
+                min="09:30"
+                max="17:30"
+                step="900"
+                className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed text-sm"
+              />
+            </div>
+          </div>
+          {state.errors?.leaveEndDateTime && (
+            <p className="mt-1 text-xs text-red-500">{state.errors.leaveEndDateTime}</p>
+          )}
+        </div>
+
+        {/* Days / hours preview */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
             จำนวนวันลาทั้งหมด
@@ -410,12 +434,12 @@ export default function EditLeaveForm({
             <div className="flex items-center gap-2 px-4 py-2.5 bg-muted border border-border rounded-lg text-sm text-foreground cursor-not-allowed select-none">
               <svg className="h-4 w-4 text-muted-foreground/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               {preview ? (
-                <span><strong className="text-base text-foreground">{preview.totalDays}</strong> วันทำการ</span>
+                <span className="font-semibold text-base text-foreground">{preview.displayLabel}</span>
               ) : (
-                <span className="text-muted-foreground/60">— เลือกวันที่เพื่อคำนวณ —</span>
+                <span className="text-muted-foreground/60">— เลือกวันที่และเวลาเพื่อคำนวณ —</span>
               )}
             </div>
           )}

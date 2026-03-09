@@ -25,7 +25,7 @@ export async function hrApproveLeaveRequest(id: string): Promise<ActionResult> {
         data: { status: 'APPROVED' },
       })
 
-      const year = new Date(request.startDate).getFullYear()
+      const year = new Date(request.leaveStartDateTime).getFullYear()
 
       await tx.leaveBalance.updateMany({
         where: {

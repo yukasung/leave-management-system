@@ -1,7 +1,7 @@
 ﻿import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { durationLabel, type LeaveDurationType } from '@/lib/leave-calc'
+import { formatLeaveDuration } from '@/lib/leave-calc'
 import { formatDate } from '@/lib/format-date'
 import LeaveActionsCell from './LeaveActionsCell'
 import AdminLayout from '@/components/admin-layout'
@@ -87,7 +87,6 @@ export default async function MyLeaveHistoryPage({
                     <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่เริ่มลา</th>
                     <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่สิ้นสุด</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">จำนวน</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ครึ่งวัน</th>
                     <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">เหตุผล</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">สถานะ</th>
                     <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่ขอ</th>
@@ -104,18 +103,13 @@ export default async function MyLeaveHistoryPage({
                           {req.leaveType.name}
                         </td>
                         <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
-                          {formatDate(req.startDate)}
+                          {formatDate(req.leaveStartDateTime)}
                         </td>
                         <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
-                          {formatDate(req.endDate)}
+                          {formatDate(req.leaveEndDateTime)}
                         </td>
                         <td className="px-5 py-4 text-center font-semibold text-foreground">
-                          {req.totalDays} วัน
-                        </td>
-                        <td className="px-5 py-4 text-muted-foreground text-xs">
-                          {req.startDurationType === req.endDurationType
-                            ? durationLabel(req.startDurationType as LeaveDurationType)
-                            : `เริ่ม: ${durationLabel(req.startDurationType as LeaveDurationType)} / สิ้นสุด: ${durationLabel(req.endDurationType as LeaveDurationType)}`}
+                          {formatLeaveDuration(req.totalDays)}
                         </td>
                         <td className="px-5 py-4 text-muted-foreground max-w-xs truncate">
                           {req.reason || <span className="text-muted-foreground/40"></span>}

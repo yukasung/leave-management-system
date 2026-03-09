@@ -35,6 +35,7 @@ const STATUS_DOT: Record<string, string> = {
 }
 
 import { formatDate } from '@/lib/format-date'
+import { formatLeaveDuration } from '@/lib/leave-calc'
 
 export default async function HRLeaveRequestsPage({
   searchParams,
@@ -144,7 +145,6 @@ export default async function HRLeaveRequestsPage({
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่เริ่ม</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่สิ้นสุด</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">จำนวนวัน</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ช่วงเวลา</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">สถานะ</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">การดำเนินการ</th>
                   </tr>
@@ -160,15 +160,9 @@ export default async function HRLeaveRequestsPage({
                         )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{req.leaveType.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{formatDate(req.startDate)}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{formatDate(req.endDate)}</td>
-                      <td className="px-4 py-3 font-semibold text-foreground">{req.totalDays}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {req.startDurationType === req.endDurationType
-                          ? (req.startDurationType === 'FULL_DAY' ? 'เต็มวัน' : req.startDurationType === 'HALF_DAY_MORNING' ? 'ครึ่งวันเช้า' : 'ครึ่งวันบ่าย')
-                          : `เริ่ม: ${req.startDurationType === 'HALF_DAY_MORNING' ? 'เช้า' : req.startDurationType === 'HALF_DAY_AFTERNOON' ? 'บ่าย' : 'เต็มวัน'} / สิ้นสุด: ${req.endDurationType === 'HALF_DAY_MORNING' ? 'เช้า' : req.endDurationType === 'HALF_DAY_AFTERNOON' ? 'บ่าย' : 'เต็มวัน'}`
-                        }
-                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{formatDate(req.leaveStartDateTime)}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{formatDate(req.leaveEndDateTime)}</td>
+                      <td className="px-4 py-3 font-semibold text-foreground">{formatLeaveDuration(req.totalDays)}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
                           STATUS_BADGE_NEW[req.status] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400 dark:border-gray-700'
