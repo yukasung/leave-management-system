@@ -139,7 +139,7 @@ export default async function DashboardPage() {
             <h3 className="text-sm font-semibold text-foreground mb-4">การดำเนินการด่วน</h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {[
-                { href: '/leave-requests',    label: 'คำขอลาทั้งหมด',        icon: '📋' },
+                { href: '/hr/leave-requests',    label: 'คำขอลาทั้งหมด',        icon: '📋' },
                 { href: '/employees',         label: 'จัดการพนักงาน',        icon: '👥' },
                 { href: '/leave-types',       label: 'ประเภทการลา',          icon: '🏷️' },
                 { href: '/admin/employees/new', label: 'เพิ่มพนักงาน',       icon: '➕' },
@@ -163,7 +163,7 @@ export default async function DashboardPage() {
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <h3 className="text-sm font-semibold text-foreground">คำขอลาล่าสุด</h3>
-            <Link href="/leave-requests" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            <Link href="/hr/leave-requests" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
               ดูทั้งหมด
             </Link>
           </div>

@@ -8,7 +8,6 @@ import {
   CalendarDays,
   Users,
   Tags,
-  BarChart2,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -27,11 +26,10 @@ import { cn } from '@/lib/utils'
 
 const ADMIN_NAV_ITEMS = [
   { href: '/dashboard',          icon: LayoutDashboard, label: 'แดชบอร์ด'      },
-  { href: '/leave-requests',     icon: CalendarDays,    label: 'คำขอลา' },
+  { href: '/hr/leave-requests',  icon: CalendarDays,    label: 'คำขอลา' },
   { href: '/admin/employees',    icon: Users,           label: 'พนักงาน'      },
   { href: '/admin/departments',  icon: Building2,       label: 'แผนก'    },
   { href: '/leave-types',        icon: Tags,            label: 'ประเภทการลา'    },
-  { href: '/hr/leave-requests',  icon: BarChart2,       label: 'รายงาน'        },
 ]
 
 const USER_NAV_ITEMS = [
