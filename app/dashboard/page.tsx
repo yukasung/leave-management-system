@@ -75,13 +75,13 @@ export default async function DashboardPage() {
   }
 
   return (
-    <AdminLayout title="Dashboard" user={user}>
+    <AdminLayout title="แดชบอร์ด" user={user}>
       <div className="space-y-6 max-w-7xl mx-auto">
 
         {/* Welcome */}
         <div>
           <h2 className="text-lg font-semibold text-foreground">
-            Welcome back, {session.user.name} 👋
+            ยินดีต้อนรับ, {session.user.name} 👋
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {new Date().toLocaleDateString('th-TH', {
@@ -103,15 +103,15 @@ export default async function DashboardPage() {
           {/* Leave status breakdown */}
           <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
             <h3 className="text-sm font-semibold text-foreground mb-4">
-              Leave Requests by Status
+              คำขอลาตามสถานะ
             </h3>
             <div className="space-y-3">
               {[
-                { key: 'PENDING',   label: 'Pending',   color: 'bg-amber-400'  },
-                { key: 'APPROVED',  label: 'Approved',  color: 'bg-emerald-400'},
-                { key: 'REJECTED',  label: 'Rejected',  color: 'bg-red-400'    },
-                { key: 'IN_REVIEW', label: 'In Review', color: 'bg-blue-400'   },
-                { key: 'CANCELLED', label: 'Cancelled', color: 'bg-gray-300'   },
+                { key: 'PENDING',   label: 'รออนุมัติ',       color: 'bg-amber-400'  },
+                { key: 'APPROVED',  label: 'อนุมัติแล้ว',     color: 'bg-emerald-400'},
+                { key: 'REJECTED',  label: 'ไม่อนุมัติ',      color: 'bg-red-400'    },
+                { key: 'IN_REVIEW', label: 'กำลังพิจารณา',    color: 'bg-blue-400'   },
+                { key: 'CANCELLED', label: 'ยกเลิกแล้ว',      color: 'bg-gray-300'   },
               ].map(({ key, label, color }) => {
                 const count = statusMap[key] ?? 0
                 const total = Object.values(statusMap).reduce((a, b) => a + b, 0) || 1
@@ -136,15 +136,15 @@ export default async function DashboardPage() {
 
           {/* Quick actions */}
           <div className="rounded-xl border border-border bg-card p-5 shadow-sm lg:col-span-2">
-            <h3 className="text-sm font-semibold text-foreground mb-4">Quick Actions</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-4">การดำเนินการด่วน</h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {[
-                { href: '/leave-requests',    label: 'All Leave Requests', icon: '📋' },
-                { href: '/employees',         label: 'Manage Employees',   icon: '👥' },
-                { href: '/leave-types',       label: 'Leave Types',        icon: '🏷️' },
-                { href: '/admin/employees/new', label: 'Add Employee',     icon: '➕' },
-                { href: '/hr/audit-logs',     label: 'Audit Logs',         icon: '📜' },
-                { href: '/admin/settings',    label: 'Settings',           icon: '⚙️' },
+                { href: '/leave-requests',    label: 'คำขอลาทั้งหมด',        icon: '📋' },
+                { href: '/employees',         label: 'จัดการพนักงาน',        icon: '👥' },
+                { href: '/leave-types',       label: 'ประเภทการลา',          icon: '🏷️' },
+                { href: '/admin/employees/new', label: 'เพิ่มพนักงาน',       icon: '➕' },
+                { href: '/hr/audit-logs',     label: 'บันทึกการดำเนินการ',   icon: '📜' },
+                { href: '/admin/settings',    label: 'ตั้งค่าระบบ',          icon: '⚙️' },
               ].map(({ href, label, icon }) => (
                 <Link
                   key={href}
@@ -162,9 +162,9 @@ export default async function DashboardPage() {
         {/* Recent leave requests */}
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <h3 className="text-sm font-semibold text-foreground">Recent Leave Requests</h3>
+            <h3 className="text-sm font-semibold text-foreground">คำขอลาล่าสุด</h3>
             <Link href="/leave-requests" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-              View all
+              ดูทั้งหมด
             </Link>
           </div>
           <LeaveTable rows={rows} />

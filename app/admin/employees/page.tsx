@@ -171,7 +171,7 @@ export default async function EmployeesPage({
                       <td className="px-5 py-3.5">
                         {emp.isAdmin && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200 dark:border-violet-800/50">
-                            Admin
+                            ผู้ดูแลระบบ
                           </span>
                         )}
                       </td>
@@ -188,7 +188,7 @@ export default async function EmployeesPage({
                               emp.isActive ? 'bg-emerald-500' : 'bg-red-400'
                             }`}
                           />
-                          {emp.isActive ? 'Active' : 'Inactive'}
+                          {emp.isActive ? 'ทำงานอยู่' : 'ไม่ทำงาน'}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-right">

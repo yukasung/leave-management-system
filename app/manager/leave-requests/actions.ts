@@ -68,7 +68,7 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
           action: 'APPROVE_LEAVE',
           entityType: 'LeaveRequest',
           entityId: id,
-          description: `Approved leave request: ${request.totalDays} day(s)`,
+          description: `อนุมัติคำขอลา: ${request.totalDays} วัน`,
         },
       })
 
@@ -79,7 +79,7 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
       await tx.notification.create({
         data: {
           userId: request.userId,
-          message: `Your leave request for ${request.totalDays} day(s) has been approved`,
+          message: `คำขอลา ${request.totalDays} วันของคุณได้รับการอนุมัติแล้ว`,
           isRead: false,
         },
       })
@@ -117,7 +117,7 @@ export async function rejectLeaveRequest(id: string): Promise<ActionResult> {
           action: 'REJECT_LEAVE',
           entityType: 'LeaveRequest',
           entityId: id,
-          description: 'Manager rejected leave request',
+          description: 'ผู้จัดการปฏิเสธคำขอลา',
         },
       })
 
@@ -128,7 +128,7 @@ export async function rejectLeaveRequest(id: string): Promise<ActionResult> {
       await tx.notification.create({
         data: {
           userId: request.userId,
-          message: 'Your leave request has been rejected',
+          message: 'คำขอลาของคุณถูกปฏิเสธแล้ว',
           isRead: false,
         },
       })

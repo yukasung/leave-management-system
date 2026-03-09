@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { approveLeaveRequest, rejectLeaveRequest } from '@/app/manager/leave-requests/actions'
+import { hrApproveCancellation, hrRejectCancellation } from './actions'
 
-export function HRActionButtons({ id }: { id: string }) {
+export function HRActionButtons({ id, status }: { id: string; status: string }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -15,6 +16,32 @@ export function HRActionButtons({ id }: { id: string }) {
     })
   }
 
+  // CANCEL_REQUESTED: approve or reject the cancellation
+  if (status === 'CANCEL_REQUESTED') {
+    return (
+      <div className="space-y-1">
+        <div className="flex gap-2">
+          <button
+            disabled={isPending}
+            onClick={() => handle(hrApproveCancellation)}
+            className="px-3 py-1.5 text-sm font-medium bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition disabled:opacity-50"
+          >
+            {isPending ? '...' : 'อนุมัติยกเลิก'}
+          </button>
+          <button
+            disabled={isPending}
+            onClick={() => handle(hrRejectCancellation)}
+            className="px-3 py-1.5 text-sm font-medium bg-slate-500 hover:bg-slate-600 text-white rounded-lg transition disabled:opacity-50"
+          >
+            {isPending ? '...' : 'ปฏิเสธยกเลิก'}
+          </button>
+        </div>
+        {error && <p className="text-xs text-red-500">{error}</p>}
+      </div>
+    )
+  }
+
+  // PENDING / IN_REVIEW: approve or reject the leave
   return (
     <div className="space-y-1">
       <div className="flex gap-2">

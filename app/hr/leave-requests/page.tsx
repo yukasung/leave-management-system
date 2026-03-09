@@ -48,7 +48,7 @@ export default async function HRLeaveRequestsPage({
   if (!session || !session.user.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-red-500 text-lg font-semibold">Unauthorized</p>
+        <p className="text-red-500 text-lg font-semibold">ไม่มีสิทธิ์เข้าถึง</p>
       </div>
     )
   }
@@ -64,7 +64,7 @@ export default async function HRLeaveRequestsPage({
     isAdmin:   true,
   }
 
-  const activeStatus = (status ?? 'IN_REVIEW').toUpperCase()
+  const activeStatus = (status ?? 'PENDING').toUpperCase()
 
   const whereStatus =
     activeStatus !== 'ALL' && Object.keys(LeaveStatus).includes(activeStatus)
@@ -88,12 +88,12 @@ export default async function HRLeaveRequestsPage({
   const tabs = ['ALL', 'PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED'] as const
 
   return (
-    <AdminLayout title="HR — Leave Requests" user={user}>
+    <AdminLayout title="คำขอลา — HR" user={user}>
       <div className="space-y-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-foreground">HR — ประวัติคำขอลาทั้งหมด</h1>
+            <h1 className="text-xl font-bold text-foreground">ประวัติคำขอลาทั้งหมด</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               แสดง {requests.length} รายการ
               {activeStatus !== 'ALL' ? ` · กรอง: ${STATUS_LABELS[activeStatus]}` : ''}
@@ -103,7 +103,7 @@ export default async function HRLeaveRequestsPage({
             href="/api/export/leave"
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
           >
-            Export CSV
+            ส่งออก CSV
           </a>
         </div>
 
@@ -114,7 +114,7 @@ export default async function HRLeaveRequestsPage({
             return (
               <Link
                 key={tab}
-                href={tab === 'IN_REVIEW' ? '/hr/leave-requests' : `/hr/leave-requests?status=${tab}`}
+                href={tab === 'PENDING' ? '/hr/leave-requests' : `/hr/leave-requests?status=${tab}`}
                 className={`px-4 py-2 text-sm font-medium rounded-t-md border-b-2 -mb-px transition-colors ${
                   isActive
                     ? 'border-primary text-primary'
@@ -172,8 +172,8 @@ export default async function HRLeaveRequestsPage({
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        {req.status === 'IN_REVIEW' ? (
-                          <HRActionButtons id={req.id} />
+                        {(req.status === 'PENDING' || req.status === 'IN_REVIEW' || req.status === 'CANCEL_REQUESTED') ? (
+                          <HRActionButtons id={req.id} status={req.status} />
                         ) : (
                           <span className="text-muted-foreground/30">—</span>
                         )}
