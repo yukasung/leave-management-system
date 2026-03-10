@@ -18,7 +18,6 @@ const SIDEBAR_ROUTES = [
   '/admin/employees',
   '/admin/holiday-management',
   '/manager',
-  '/notifications',
   '/profile',
   '/leave-balance',
   '/my-leaves',
@@ -56,7 +55,6 @@ function getNavGroups(currentUser: CurrentUser): NavGroup[] {
       { href: '/leave-request',label: 'ยื่นคำขอลา'     },
       { href: '/my-leaves',    label: 'การลาของฉัน'     },
       { href: '/leave-balance',label: 'สิทธิ์การลา'     },
-      { href: '/notifications',label: 'การแจ้งเตือน'    },
       { href: '/profile',      label: 'โปรไฟล์ของฉัน'  },
     ],
   })

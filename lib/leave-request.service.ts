@@ -535,7 +535,7 @@ export async function submitLeave(
         },
       })
 
-      const notifyMessage = `New leave request: ${leave.leaveType.name} by ${leave.user.name} (${leave.totalDays} day${leave.totalDays !== 1 ? 's' : ''})`
+      const notifyMessage = `New leave request: ${leave.leaveType.name} by ${leave.user.name} (${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} day${leave.totalDays !== 1 ? 's' : ''})`
       await tx.notification.createMany({
         data: approverTarget.notifyIds.map((uid) => ({
           userId:  uid,
@@ -676,7 +676,7 @@ export async function cancelLeave(
         data: {
           userId:  leave.userId,
           message: `คำขอยกเลิกการลา "${leave.leaveType.name}" ได้รับการอนุมัติแล้ว` +
-                   (leave.leaveType.deductFromBalance ? ` (คืน ${leave.totalDays} วัน)` : ''),
+                   (leave.leaveType.deductFromBalance ? ` (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)` : ''),
           isRead:  false,
         },
       })
@@ -716,7 +716,7 @@ export async function cancelLeave(
         await tx.notification.createMany({
           data: hrUsers.map((hr) => ({
             userId:  hr.id,
-            message: `${leave.user.name} ขอยกเลิกการลา "${leave.leaveType.name}" (${leave.totalDays} วัน) — รออนุมัติการยกเลิก`,
+            message: `${leave.user.name} ขอยกเลิกการลา "${leave.leaveType.name}" (${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน) — รออนุมัติการยกเลิก`,
             isRead:  false,
           })),
         })
@@ -768,7 +768,7 @@ export async function cancelLeave(
         data: {
           userId:  leave.userId,
           message: `คำขอลา "${leave.leaveType.name}" ของคุณถูกยกเลิกโดย Admin` +
-                   (needsBalanceRestore ? ` (คืน ${leave.totalDays} วัน)` : ''),
+                   (needsBalanceRestore ? ` (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)` : ''),
           isRead:  false,
         },
       })

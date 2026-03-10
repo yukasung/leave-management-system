@@ -168,7 +168,7 @@ export async function hrApproveCancellation(id: string): Promise<ActionResult> {
         data: {
           userId: leave.userId,
           message: `คำขอยกเลิกการลา "${leave.leaveType.name}" ได้รับการอนุมัติแล้ว` +
-            (leave.leaveType.deductFromBalance ? ` (คืน ${leave.totalDays} วัน)` : ''),
+            (leave.leaveType.deductFromBalance ? ` (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)` : ''),
           isRead: false,
         },
       })

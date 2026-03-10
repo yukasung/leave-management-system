@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Languages } from 'lucide-react'
+import { Languages } from 'lucide-react'
 import { buttonVariants } from '@/lib/button-variants'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -85,15 +85,6 @@ export default function Navbar({
 
       {/* Language switcher */}
       <LanguageSwitcher />
-
-      {/* Notifications */}
-      <Link
-        href={lp('/notifications')}
-        aria-label="Notifications"
-        className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'relative h-8 w-8')}
-      >
-        <Bell className="h-4 w-4" />
-      </Link>
 
       {/* User menu */}
       {user && (

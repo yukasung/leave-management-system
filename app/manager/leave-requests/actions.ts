@@ -79,7 +79,7 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
       await tx.notification.create({
         data: {
           userId: request.userId,
-          message: `คำขอลา ${request.totalDays} วันของคุณได้รับการอนุมัติแล้ว`,
+          message: `คำขอลา ${Number.isInteger(request.totalDays) ? request.totalDays : parseFloat(request.totalDays.toFixed(2))} วันของคุณได้รับการอนุมัติแล้ว`,
           isRead: false,
         },
       })

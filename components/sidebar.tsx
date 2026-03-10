@@ -19,7 +19,6 @@ import {
   Umbrella,
   CalendarPlus,
   Wallet,
-  Bell,
   UserCircle,
   BarChart2,
   Clock,
@@ -49,7 +48,6 @@ const USER_NAV_ITEMS = [
   { href: '/leave-request',   icon: CalendarPlus,    label: 'ขอลา'           },
   { href: '/my-leaves',       icon: CalendarDays,    label: 'การลาของฉัน'   },
   { href: '/leave-balance',   icon: Wallet,          label: 'ยอดวันลา'      },
-  { href: '/notifications',   icon: Bell,            label: 'การแจ้งเตือน'  },
   { href: '/profile',         icon: UserCircle,      label: 'โปรไฟล์'        },
 ]
 
