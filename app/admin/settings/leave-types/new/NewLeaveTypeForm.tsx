@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { createLeaveType, type LeaveTypeFormState } from './actions'
 
 const initial: LeaveTypeFormState = { success: false, message: '' }
@@ -12,7 +12,7 @@ export default function NewLeaveTypeForm() {
 
   useEffect(() => {
     if (state.success) {
-      const t = setTimeout(() => router.push('/admin/settings'), 1200)
+      const t = setTimeout(() => router.push('/admin/settings/leave-types'), 1200)
       return () => clearTimeout(t)
     }
   }, [state.success, router])
@@ -28,7 +28,7 @@ export default function NewLeaveTypeForm() {
           }`}
         >
           {state.message}
-          {state.success && <span className="ml-2 text-green-500">กำลังกลับไปหน้าตั้งค่า…</span>}
+          {state.success && <span className="ml-2 text-green-500">กำลังกลับไปหน้าประเภทการลา…</span>}
         </div>
       )}
 

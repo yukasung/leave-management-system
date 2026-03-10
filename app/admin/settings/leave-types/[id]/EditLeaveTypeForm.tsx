@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { updateLeaveType, deleteLeaveType, type LeaveTypeFormState } from './actions'
 
 type LeaveTypeData = {
@@ -28,14 +28,14 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
 
   useEffect(() => {
     if (state.success) {
-      const t = setTimeout(() => router.push('/admin/settings'), 1200)
+      const t = setTimeout(() => router.push('/admin/settings/leave-types'), 1200)
       return () => clearTimeout(t)
     }
   }, [state.success, router])
 
   useEffect(() => {
     if (deleteState?.success) {
-      const t = setTimeout(() => router.push('/admin/settings'), 1200)
+      const t = setTimeout(() => router.push('/admin/settings/leave-types'), 1200)
       return () => clearTimeout(t)
     }
   }, [deleteState?.success, router])
@@ -59,7 +59,7 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
             }`}
           >
             {state.message}
-            {state.success && <span className="ml-2 text-green-500">กำลังกลับไปหน้าตั้งค่า…</span>}
+            {state.success && <span className="ml-2 text-green-500">กำลังกลับไปหน้าประเภทการลา…</span>}
           </div>
         )}
 
@@ -189,7 +189,7 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
             <button
               type="button"
               onClick={() => setDeleteConfirm(false)}
-              className="text-sm text-muted-foreground hover:text-foreground underline"
+              className="border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               ยกเลิก
             </button>

@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { formatThaiDateFromISO, toBE } from '@/lib/date-utils'
+import { formatThaiDateShortFromISO, toBE } from '@/lib/date-utils'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -308,7 +308,7 @@ export default function HolidayImportClient() {
                   return (
                     <tr key={h.date} className="hover:lg-gray-50">
                       <td className="text-center px-4 py-3 text-muted-foreground/60">{i + 1}</td>
-                      <td className="px-4 py-3 text-foreground font-medium tabular-nums">{formatThaiDateFromISO(h.date)}</td>
+                      <td className="px-4 py-3 text-foreground font-medium tabular-nums">{formatThaiDateShortFromISO(h.date)}</td>
                       <td className="px-4 py-3 text-foreground">{h.name}</td>
                       <td className={`text-center px-4 py-3 text-xs font-medium ${isWeekend ? 'text-red-600' : 'text-muted-foreground'}`}>{weekday}</td>
                     </tr>
@@ -405,7 +405,7 @@ export default function HolidayImportClient() {
                 <tr key={h.id} className="hover:lg-gray-50 transition-colors">
                   <td className="text-center px-4 py-3 text-muted-foreground/60">{i + 1}</td>
                   <td className="px-4 py-3 text-foreground font-medium tabular-nums">
-                    {formatThaiDateFromISO(h.date)}
+                    {formatThaiDateShortFromISO(h.date)}
                   </td>
                   <td className="px-4 py-3 text-foreground">{h.name}</td>
                   <td className="text-center px-4 py-3">

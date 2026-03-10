@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { createPosition, type PositionFormState } from './actions'
 
 const initial: PositionFormState = { success: false, message: '' }

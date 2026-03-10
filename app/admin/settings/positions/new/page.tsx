@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
+import { redirect } from '@/i18n/navigation'
+import { Link } from '@/i18n/navigation'
 import NewPositionForm from './NewPositionForm'
 import AdminLayout from '@/components/admin-layout'
 import { prisma } from '@/lib/prisma'

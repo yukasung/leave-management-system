@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { updatePosition, deletePosition, type PositionFormState } from './actions'
 
 type PositionData = { id: string; name: string; _count: { employees: number } }

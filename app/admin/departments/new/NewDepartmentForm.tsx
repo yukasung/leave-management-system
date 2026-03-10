@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { createDepartment, type DepartmentFormState } from './actions'
 
 const initial: DepartmentFormState = { success: false, message: '' }

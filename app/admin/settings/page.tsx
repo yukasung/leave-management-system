@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import AdminLayout from '@/components/admin-layout'
 
 export default async function SettingsPage() {
@@ -17,9 +17,12 @@ export default async function SettingsPage() {
     )
   }
 
-  const [leaveTypeCount, positionCount, dbUser] = await Promise.all([
+  const currentYear = new Date().getFullYear()
+
+  const [leaveTypeCount, positionCount, holidayCount, dbUser] = await Promise.all([
     prisma.leaveType.count(),
     prisma.position.count(),
+    prisma.companyHoliday.count({ where: { year: currentYear } }),
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { avatarUrl: true },
@@ -43,6 +46,27 @@ export default async function SettingsPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          {/* Holidays card */}
+          <Link
+            href="/admin/holiday-management"
+            className="group rounded-xl border border-border bg-card shadow-sm p-6 flex flex-col gap-3 hover:border-primary/40 hover:shadow-md transition-all duration-150"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary text-2xl">
+                ☀️
+              </div>
+              <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors">
+                จัดการ →
+              </span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">วันหยุด</p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                ปีนี้ <span className="font-medium text-foreground">{holidayCount}</span> วัน
+              </p>
+            </div>
+          </Link>
 
           {/* Leave Types card */}
           <Link

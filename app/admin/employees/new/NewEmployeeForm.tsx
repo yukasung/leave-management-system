@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { createEmployee, type CreateEmployeeState } from './actions'
 import AvatarUploader from '../AvatarUploader'
 

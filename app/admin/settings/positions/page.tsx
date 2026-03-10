@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import AdminLayout from '@/components/admin-layout'
 
 export default async function PositionsPage() {

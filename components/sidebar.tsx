@@ -154,6 +154,42 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
           )
         })}
 
+        {/* Bottom nav items — admin only */}
+        {isAdmin && ADMIN_BOTTOM_ITEMS.map(({ href: itemPath, icon: Icon, label }) => {
+          const active = pathname === itemPath || pathname.startsWith(itemPath + '/')
+          return (
+            <Link
+              key={itemPath}
+              href={href(itemPath)}
+              title={collapsed ? label : undefined}
+              className={cn(
+                'group relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
+                'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                active
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                collapsed ? 'justify-center px-2' : 'px-2.5',
+              )}
+            >
+              {active && !collapsed && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-5 rounded-r-full bg-primary" />
+              )}
+              <Icon
+                className={cn(
+                  'h-4 w-4 shrink-0 transition-colors',
+                  active
+                    ? 'text-primary'
+                    : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground',
+                )}
+              />
+              {!collapsed && <span className="truncate">{label}</span>}
+              {!collapsed && active && (
+                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary/70" />
+              )}
+            </Link>
+          )
+        })}
+
         {/* Reports group — admin only */}
         {isAdmin && (
           <div>
@@ -227,48 +263,12 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
           </div>
         )}
 
-        {/* Bottom nav items — admin only */}
-        {isAdmin && ADMIN_BOTTOM_ITEMS.map(({ href: itemPath, icon: Icon, label }) => {
-          const active = pathname === itemPath || pathname.startsWith(itemPath + '/')
-          return (
-            <Link
-              key={itemPath}
-              href={href(itemPath)}
-              title={collapsed ? label : undefined}
-              className={cn(
-                'group relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
-                'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-                active
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                collapsed ? 'justify-center px-2' : 'px-2.5',
-              )}
-            >
-              {active && !collapsed && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-5 rounded-r-full bg-primary" />
-              )}
-              <Icon
-                className={cn(
-                  'h-4 w-4 shrink-0 transition-colors',
-                  active
-                    ? 'text-primary'
-                    : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground',
-                )}
-              />
-              {!collapsed && <span className="truncate">{label}</span>}
-              {!collapsed && active && (
-                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary/70" />
-              )}
-            </Link>
-          )
-        })}
-
         {/* Settings group — admin only */}
         {isAdmin && <div>
-          <Link
-            href={href('/admin/settings')}
-            title={collapsed ? 'Settings' : undefined}
-            onClick={() => !collapsed && setSettingsOpen(true)}
+          <button
+            type="button"
+            onClick={() => !collapsed && setSettingsOpen((o) => !o)}
+            title={collapsed ? 'ตั้งค่า' : undefined}
             className={cn(
               'group relative w-full flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
               'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
@@ -301,7 +301,7 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
                 />
               </>
             )}
-          </Link>
+          </button>
 
           {/* Sub-items */}
           {!collapsed && settingsOpen && (

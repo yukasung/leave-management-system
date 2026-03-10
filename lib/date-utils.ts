@@ -80,3 +80,13 @@ export function formatThaiDateFromISO(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
   return `${d} ${MONTH_TH[m - 1]} ${toBE(y)}`
 }
+
+/**
+ * Format a "YYYY-MM-DD" ISO date string as DD/MM/YYYY(BE).
+ * e.g. "2026-04-15" → "15/04/2569"
+ */
+export function formatThaiDateShortFromISO(iso: string): string {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-').map(Number)
+  return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${toBE(y)}`
+}

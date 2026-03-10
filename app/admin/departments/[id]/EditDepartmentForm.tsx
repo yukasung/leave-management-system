@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { updateDepartment, deleteDepartment, type DepartmentFormState } from './actions'
 
 type DepartmentData = {
@@ -122,18 +122,9 @@ export default function EditDepartmentForm({
         )}
 
         {department._count.employees > 0 ? (
-          <div className="space-y-2">
-            <p className="text-xs text-red-500 font-medium">
-              ⚠️ ไม่สามารถลบได้ — มีพนักงาน {department._count.employees} คนในแผนกนี้
-            </p>
-            <button
-              type="button"
-              disabled
-              className="bg-red-600 opacity-40 cursor-not-allowed text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg"
-            >
-              ลบแผนกนี้
-            </button>
-          </div>
+          <p className="text-xs text-red-500 font-medium">
+            ⚠️ ไม่สามารถลบได้ — มีพนักงาน {department._count.employees} คนในแผนกนี้
+          </p>
         ) : !deleteConfirm ? (
           <button
             type="button"
