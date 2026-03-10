@@ -225,7 +225,7 @@ export default function HolidayImportClient() {
             disabled={botLoading}
             className="inline-flex items-center gap-2 bg-primary hover:lg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
           >
-            {botStage === 'previewing' ? <><Spinner /> กำลังโหลด…</> : '🔍 Preview วันหยุด BOT'}
+            {botStage === 'previewing' ? <><Spinner /> กำลังโหลด…</> : 'Preview วันหยุด BOT'}
           </button>
 
           {botStage === 'previewed' && preview && preview.total > 0 && (
@@ -234,14 +234,14 @@ export default function HolidayImportClient() {
                 onClick={() => handleBOTImport('upsert')}
                 className="inline-flex items-center gap-2 bg-green-600 hover:lg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
               >
-                ✅ อัปเดตข้อมูล (Upsert)
+                อัปเดตข้อมูล (Upsert)
               </button>
               <button
                 onClick={() => handleBOTImport('replace')}
                 className="inline-flex items-center gap-2 bg-red-600 hover:lg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                 title="ลบวันหยุด BOT ทั้งหมดในปีนี้ แล้วนำเข้าใหม่"
               >
-                🔄 นำเข้าใหม่ทั้งหมด (Replace)
+                นำเข้าใหม่ทั้งหมด (Replace)
               </button>
             </>
           )}
@@ -252,6 +252,14 @@ export default function HolidayImportClient() {
             </span>
           )}
 
+          {(botStage === 'previewed' || botStage === 'done' || botStage === 'error') && (
+            <button
+              onClick={resetBOT}
+              className="inline-flex items-center gap-2 border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              ยกเลิก
+            </button>
+          )}
         </div>
 
         {/* BOT error */}
@@ -351,7 +359,7 @@ export default function HolidayImportClient() {
             disabled={addLoading}
             className="inline-flex items-center gap-2 bg-primary hover:lg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
           >
-            {addLoading ? <><Spinner /> กำลังบันทึก…</> : '+ เพิ่มวันหยุด'}
+            {addLoading ? <><Spinner /> กำลังบันทึก…</> : 'เพิ่มวันหยุด'}
           </button>
         </form>
 

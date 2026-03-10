@@ -80,23 +80,23 @@ export function LeaveTable({
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               พนักงาน
             </TableHead>
-            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               ประเภทการลา
             </TableHead>
-            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               วันที่เริ่ม
             </TableHead>
-            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               วันที่สิ้นสุด
             </TableHead>
             <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               จำนวนวัน
             </TableHead>
-            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               สถานะ
             </TableHead>
             {showActions && (
-              <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 จัดการ
               </TableHead>
             )}
@@ -117,15 +117,15 @@ export function LeaveTable({
                 </div>
               </TableCell>
               {/* Leave Type */}
-              <TableCell className="text-sm text-muted-foreground">
+              <TableCell className="text-center text-sm text-muted-foreground">
                 {row.leaveType}
               </TableCell>
               {/* Start Date */}
-              <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+              <TableCell className="text-center text-sm text-muted-foreground whitespace-nowrap">
                 {formatThaiDateShort(new Date(row.leaveStartDateTime))}
               </TableCell>
               {/* End Date */}
-              <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+              <TableCell className="text-center text-sm text-muted-foreground whitespace-nowrap">
                 {formatThaiDateShort(new Date(row.leaveEndDateTime))}
               </TableCell>
               {/* Days */}
@@ -133,7 +133,7 @@ export function LeaveTable({
                 {Number.isInteger(row.totalDays) ? row.totalDays : parseFloat(row.totalDays.toFixed(2))}
               </TableCell>
               {/* Status */}
-              <TableCell>
+              <TableCell className="text-center">
                 <span
                   className={cn(
                     'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
@@ -146,8 +146,8 @@ export function LeaveTable({
               </TableCell>
               {/* Actions */}
               {showActions && (
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-1">
                     <Link
                       href={`/hr/leave-requests?highlight=${row.id}`}
                       className={buttonVariants({ variant: 'ghost', size: 'xs' })}

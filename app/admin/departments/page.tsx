@@ -61,9 +61,9 @@ export default async function DepartmentsPage() {
                 <tr>
                   <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">ชื่อแผนก</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">ผู้จัดการ</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">ผู้จัดการ</th>
                   <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">จำนวนพนักงาน</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">จัดการ</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -71,7 +71,7 @@ export default async function DepartmentsPage() {
                   <tr key={dept.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
                     <td className="px-5 py-4 text-muted-foreground/60">{idx + 1}</td>
                     <td className="px-5 py-4 font-medium text-foreground">{dept.name}</td>
-                    <td className="px-5 py-4 text-muted-foreground">
+                    <td className="px-5 py-4 text-center text-muted-foreground">
                       {dept.manager ? (
                         <span>{dept.manager.name}</span>
                       ) : (
@@ -83,7 +83,7 @@ export default async function DepartmentsPage() {
                         {dept._count.employees}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-5 py-4 text-center">
                       <Link
                         href={`/admin/departments/${dept.id}`}
                         className="text-sm font-medium text-primary hover:underline"

@@ -84,7 +84,7 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
 
   const REPORT_PATHS = ['/hr/leave-summary', '/hr/leave-history', '/hr/leave-balance-report', '/hr/department-leave', '/hr/pending-leave']
   const isReportsActive = REPORT_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
-  const isSettingsActive = pathname === '/admin/settings' || pathname.startsWith('/admin/settings/')
+  const isSettingsActive = pathname === '/admin/settings' || pathname.startsWith('/admin/settings/') || pathname === '/admin/holiday-management' || pathname.startsWith('/admin/holiday-management/')
   const [reportsOpen, setReportsOpen] = useState(isReportsActive)
   const [settingsOpen, setSettingsOpen] = useState(isSettingsActive)
 

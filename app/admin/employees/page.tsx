@@ -124,11 +124,11 @@ export default async function EmployeesPage({
                   <tr className="text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     <th className="px-5 py-3.5">รหัสพนักงาน</th>
                     <th className="px-5 py-3.5">ชื่อ-นามสกุล</th>
-                    <th className="px-5 py-3.5">แผนก</th>
-                    <th className="px-5 py-3.5">ตำแหน่ง</th>
-                    <th className="px-5 py-3.5">ผู้ดูแลระบบ</th>
-                    <th className="px-5 py-3.5">สถานะ</th>
-                    <th className="px-5 py-3.5 text-right">จัดการ</th>
+                    <th className="px-5 py-3.5 text-center">แผนก</th>
+                    <th className="px-5 py-3.5 text-center">ตำแหน่ง</th>
+                    <th className="px-5 py-3.5 text-center">ผู้ดูแลระบบ</th>
+                    <th className="px-5 py-3.5 text-center">สถานะ</th>
+                    <th className="px-5 py-3.5 text-center">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -162,20 +162,20 @@ export default async function EmployeesPage({
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-muted-foreground">
+                      <td className="px-5 py-3.5 text-center text-muted-foreground">
                         {emp.department?.name ?? (
                           <span className="text-muted-foreground/40"></span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 text-muted-foreground">{emp.position}</td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 text-center text-muted-foreground">{emp.position}</td>
+                      <td className="px-5 py-3.5 text-center">
                         {emp.isAdmin && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200 dark:border-violet-800/50">
                             ผู้ดูแลระบบ
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 text-center">
                         <span
                           className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
                             emp.isActive
@@ -191,7 +191,7 @@ export default async function EmployeesPage({
                           {emp.isActive ? 'ทำงานอยู่' : 'ไม่ทำงาน'}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-right">
+                      <td className="px-5 py-3.5 text-center">
                         <Link
                           href={`/admin/employees/${emp.id}`}
                           className="text-sm font-medium text-primary hover:underline"

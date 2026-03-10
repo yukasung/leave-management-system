@@ -140,9 +140,9 @@ export default async function LeaveRequestPage({
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40 border-b border-border">
                       <tr>
-                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ประเภทการลา</th>
-                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่เริ่มลา</th>
-                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่สิ้นสุด</th>
+                        <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">ประเภทการลา</th>
+                        <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่เริ่มลา</th>
+                        <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่สิ้นสุด</th>
                         <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">สถานะ</th>
                         <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">จัดการ</th>
                       </tr>
@@ -153,13 +153,13 @@ export default async function LeaveRequestPage({
                         const label    = STATUS_LABEL[req.status]  ?? req.status
                         return (
                           <tr key={req.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition">
-                            <td className="px-5 py-4 font-medium text-foreground">
+                            <td className="px-5 py-4 text-center font-medium text-foreground">
                               {req.leaveType.name}
                             </td>
-                            <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
+                            <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
                               {formatDate(req.leaveStartDateTime)}
                             </td>
-                            <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
+                            <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
                               {formatDate(req.leaveEndDateTime)}
                             </td>
                             <td className="px-5 py-4 text-center">

@@ -165,19 +165,19 @@ export default async function PendingLeavePage({
                 <tr className="border-b border-border bg-muted/50">
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">#</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">ชื่อพนักงาน</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">แผนก</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">วันที่เริ่ม</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">วันที่สิ้นสุด</th>
-                  <th className="px-4 py-3 text-right font-semibold text-muted-foreground whitespace-nowrap">จำนวน (วัน)</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">
+                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">แผนก</th>
+                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
+                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">วันที่เริ่ม</th>
+                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">วันที่สิ้นสุด</th>
+                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">จำนวน (วัน)</th>
+                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">
                     <Link href={buildSortLink(nextDir)} className="flex items-center gap-1 hover:text-foreground transition-colors">
                       วันที่ยื่น
                       <span className="text-xs">{sortDir === 'desc' ? '↓' : '↑'}</span>
                     </Link>
                   </th>
-                  <th className="px-4 py-3 text-right font-semibold text-muted-foreground whitespace-nowrap">รอมา (วัน)</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">ผู้อนุมัติ</th>
+                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">รอมา (วัน)</th>
+                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">ผู้อนุมัติ</th>
                   <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">สถานะ</th>
                 </tr>
               </thead>
@@ -201,14 +201,14 @@ export default async function PendingLeavePage({
                     >
                       <td className="px-4 py-3 text-muted-foreground">{idx + 1}</td>
                       <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{row.employeeName}</td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{row.department}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">{row.leaveType}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">{formatDate(row.startDate)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">{formatDate(row.endDate)}</td>
-                      <td className="px-4 py-3 text-right font-medium">{row.totalDays}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">{formatDate(row.createdAt)}</td>
+                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{row.department}</td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap">{row.leaveType}</td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap">{formatDate(row.startDate)}</td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap">{formatDate(row.endDate)}</td>
+                      <td className="px-4 py-3 text-center font-medium">{row.totalDays}</td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap text-muted-foreground">{formatDate(row.createdAt)}</td>
                       <td className={cn(
-                        'px-4 py-3 text-right font-semibold',
+                        'px-4 py-3 text-center font-semibold',
                         row.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-foreground',
                       )}>
                         {row.waitDays}
@@ -218,7 +218,7 @@ export default async function PendingLeavePage({
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">{row.approverName}</td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap text-muted-foreground">{row.approverName}</td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className={cn(
                           'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',

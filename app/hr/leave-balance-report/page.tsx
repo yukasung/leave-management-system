@@ -147,13 +147,13 @@ export default async function LeaveBalanceReportPage({
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground w-10">#</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-36">ชื่อพนักงาน</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-28">แผนก</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-32">ประเภทการลา</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-28">แผนก</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-32">ประเภทการลา</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">โควตา (วัน)</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">ใช้ไปแล้ว</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">คงเหลือ</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-36">การใช้งาน</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">สถานะ</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-36">การใช้งาน</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">สถานะ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -189,12 +189,12 @@ export default async function LeaveBalanceReportPage({
                         </td>
 
                         {/* Department */}
-                        <td className="px-4 py-3 text-muted-foreground">
+                        <td className="px-4 py-3 text-center text-muted-foreground">
                           {b.user.department?.name ?? <span className="italic opacity-40">—</span>}
                         </td>
 
                         {/* Leave type */}
-                        <td className="px-4 py-3 text-muted-foreground">{b.leaveType.name}</td>
+                        <td className="px-4 py-3 text-center text-muted-foreground">{b.leaveType.name}</td>
 
                         {/* Entitlement */}
                         <td className="px-4 py-3 text-center tabular-nums text-foreground font-medium">
@@ -219,7 +219,7 @@ export default async function LeaveBalanceReportPage({
                         </td>
 
                         {/* Progress bar */}
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-center">
                           <div className="flex items-center gap-2">
                             <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden min-w-16">
                               <div
@@ -239,7 +239,7 @@ export default async function LeaveBalanceReportPage({
                         </td>
 
                         {/* Status badge */}
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-center">
                           {isEmpty ? (
                             <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:border-red-800/50 dark:bg-red-950/40 dark:text-red-400 whitespace-nowrap">
                               <XCircle className="h-3 w-3" />

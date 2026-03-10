@@ -194,16 +194,16 @@ export default async function LeaveHistoryPage({
   }
 
   // ── Sort header helper ───────────────────────────────────────────────────────
-  type ColDef = { col: SortKey; label: string; className?: string }
+  type ColDef = { col: SortKey; label: string; className?: string; center?: boolean }
   const COLUMNS: ColDef[] = [
     { col: 'name',       label: 'ชื่อพนักงาน',    className: 'min-w-35' },
-    { col: 'department', label: 'แผนก',            className: 'min-w-28' },
-    { col: 'leaveType',  label: 'ประเภทการลา',     className: 'min-w-30' },
-    { col: 'startDate',  label: 'วันที่เริ่ม',      className: 'min-w-25' },
-    { col: 'endDate',    label: 'วันที่สิ้นสุด',    className: 'min-w-25' },
-    { col: 'totalDays',  label: 'จำนวนวัน',         className: 'min-w-20' },
-    { col: 'status',     label: 'สถานะ',            className: 'min-w-30' },
-    { col: 'createdAt',  label: 'วันที่สร้าง',       className: 'min-w-25' },
+    { col: 'department', label: 'แผนก',            className: 'min-w-28', center: true },
+    { col: 'leaveType',  label: 'ประเภทการลา',     className: 'min-w-30', center: true },
+    { col: 'startDate',  label: 'วันที่เริ่ม',      className: 'min-w-25', center: true },
+    { col: 'endDate',    label: 'วันที่สิ้นสุด',    className: 'min-w-25', center: true },
+    { col: 'totalDays',  label: 'จำนวนวัน',         className: 'min-w-20', center: true },
+    { col: 'status',     label: 'สถานะ',            className: 'min-w-30', center: true },
+    { col: 'createdAt',  label: 'วันที่สร้าง',       className: 'min-w-25', center: true },
   ]
 
   return (
@@ -240,10 +240,10 @@ export default async function LeaveHistoryPage({
                     <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-25">
                       รหัสพนักงาน
                     </th>
-                    {COLUMNS.map(({ col, label, className }) => (
+                    {COLUMNS.map(({ col, label, className, center }) => (
                       <th
                         key={col}
-                        className={cn('px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground', className)}
+                        className={cn('px-3 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground', center ? 'text-center' : 'text-left', className)}
                       >
                         <Link
                           href={sortUrl(col)}
@@ -263,7 +263,7 @@ export default async function LeaveHistoryPage({
                       เหตุผล
                     </th>
                     {/* Approver — no sort */}
-                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-30">
+                    <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-30">
                       ผู้อนุมัติ
                     </th>
                   </tr>
@@ -280,21 +280,21 @@ export default async function LeaveHistoryPage({
                       {/* Name */}
                       <td className="px-3 py-3 font-medium text-foreground">{req.user.name}</td>
                       {/* Department */}
-                      <td className="px-3 py-3 text-muted-foreground">
+                      <td className="px-3 py-3 text-center text-muted-foreground">
                         {req.user.department?.name ?? <span className="italic opacity-40">—</span>}
                       </td>
                       {/* Leave type */}
-                      <td className="px-3 py-3 text-muted-foreground">{req.leaveType.name}</td>
+                      <td className="px-3 py-3 text-center text-muted-foreground">{req.leaveType.name}</td>
                       {/* Start */}
-                      <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">{formatDate(req.leaveStartDateTime)}</td>
+                      <td className="px-3 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveStartDateTime)}</td>
                       {/* End */}
-                      <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">{formatDate(req.leaveEndDateTime)}</td>
+                      <td className="px-3 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveEndDateTime)}</td>
                       {/* Days */}
-                      <td className="px-3 py-3 font-semibold text-foreground whitespace-nowrap">
+                      <td className="px-3 py-3 text-center font-semibold text-foreground whitespace-nowrap">
                         {formatLeaveDuration(req.totalDays)}
                       </td>
                       {/* Status */}
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-3 text-center">
                         <span className={cn(
                           'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap',
                           STATUS_BADGE[req.status] ?? 'bg-gray-100 text-gray-600 border-gray-200',
@@ -304,7 +304,7 @@ export default async function LeaveHistoryPage({
                         </span>
                       </td>
                       {/* Created at */}
-                      <td className="px-3 py-3 text-muted-foreground whitespace-nowrap text-xs">
+                      <td className="px-3 py-3 text-center text-muted-foreground whitespace-nowrap text-xs">
                         {formatDate(req.createdAt)}
                       </td>
                       {/* Reason */}
@@ -316,7 +316,7 @@ export default async function LeaveHistoryPage({
                         )}
                       </td>
                       {/* Approver */}
-                      <td className="px-3 py-3 text-muted-foreground">
+                      <td className="px-3 py-3 text-center text-muted-foreground">
                         {req.approvals[0]?.approver.name ?? (
                           <span className="italic opacity-40 text-xs">—</span>
                         )}

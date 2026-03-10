@@ -96,7 +96,7 @@ export default async function DashboardUserPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
               สิทธิ์ทั้งหมด
             </p>
-            <p className="text-3xl font-bold text-foreground">{totalBalance}</p>
+            <p className="text-3xl font-bold text-foreground">{Number.isInteger(totalBalance) ? totalBalance : parseFloat(totalBalance.toFixed(2))}</p>
             <p className="text-xs text-muted-foreground mt-1">วัน</p>
             <p className="text-xs text-primary mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
               ดูสิทธิ์ทั้งหมด →
@@ -110,7 +110,7 @@ export default async function DashboardUserPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
               ใช้ไปแล้ว
             </p>
-            <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">{usedBalance}</p>
+            <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">{Number.isInteger(usedBalance) ? usedBalance : parseFloat(usedBalance.toFixed(2))}</p>
             <p className="text-xs text-muted-foreground mt-1">วัน</p>
             <p className="text-xs text-primary mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
               ดูสิทธิ์ทั้งหมด →
@@ -124,7 +124,7 @@ export default async function DashboardUserPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
               คงเหลือ
             </p>
-            <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{remaining}</p>
+            <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{Number.isInteger(remaining) ? remaining : parseFloat(remaining.toFixed(2))}</p>
             <p className="text-xs text-muted-foreground mt-1">วัน</p>
             <p className="text-xs text-primary mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
               ดูสิทธิ์ทั้งหมด →
@@ -237,9 +237,9 @@ export default async function DashboardUserPage() {
                     return (
                       <tr key={b.id} className="hover:bg-muted/40 transition-colors duration-150">
                         <td className="px-5 py-3 font-medium text-foreground">{b.leaveType.name}</td>
-                        <td className="px-5 py-3 text-center text-muted-foreground">{b.totalDays}</td>
-                        <td className="px-5 py-3 text-center text-muted-foreground">{b.usedDays}</td>
-                        <td className={`px-5 py-3 text-center font-semibold ${remColor}`}>{rem}</td>
+                        <td className="px-5 py-3 text-center text-muted-foreground">{Number.isInteger(b.totalDays) ? b.totalDays : parseFloat(b.totalDays.toFixed(2))}</td>
+                        <td className="px-5 py-3 text-center text-muted-foreground">{Number.isInteger(b.usedDays) ? b.usedDays : parseFloat(b.usedDays.toFixed(2))}</td>
+                        <td className={`px-5 py-3 text-center font-semibold ${remColor}`}>{Number.isInteger(rem) ? rem : parseFloat(rem.toFixed(2))}</td>
                       </tr>
                     )
                   })}
@@ -290,7 +290,7 @@ export default async function DashboardUserPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-xs text-muted-foreground hidden sm:block">{r.totalDays} วัน</span>
+                    <span className="text-xs text-muted-foreground hidden sm:block">{Number.isInteger(r.totalDays) ? r.totalDays : parseFloat(r.totalDays.toFixed(2))} วัน</span>
                     <span className={`inline-block text-xs font-medium px-2.5 py-0.5 rounded-full border ${STATUS_BADGE[r.status] ?? STATUS_BADGE.DRAFT}`}>
                       {STATUS_LABEL[r.status] ?? r.status}
                     </span>

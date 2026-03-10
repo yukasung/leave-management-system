@@ -298,10 +298,10 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
                 <thead>
                   <tr className="border-b border-border">
                     <th className="pb-2 text-left text-xs font-semibold text-muted-foreground">แผนก</th>
-                    <th className="pb-2 text-right text-xs font-semibold text-muted-foreground">พนักงาน</th>
-                    <th className="pb-2 text-right text-xs font-semibold text-muted-foreground">คำขอ</th>
-                    <th className="pb-2 text-right text-xs font-semibold text-muted-foreground">วันรวม</th>
-                    <th className="pb-2 text-right text-xs font-semibold text-muted-foreground">เฉลี่ย/คน</th>
+                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground">พนักงาน</th>
+                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground">คำขอ</th>
+                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground">วันรวม</th>
+                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground">เฉลี่ย/คน</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -318,12 +318,12 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
                             <span className="font-medium text-foreground truncate max-w-28" title={d.name}>{d.name}</span>
                           </div>
                         </td>
-                        <td className="py-2.5 text-right tabular-nums text-muted-foreground">{d.empCount}</td>
-                        <td className="py-2.5 text-right tabular-nums text-muted-foreground">{d.requestCount}</td>
-                        <td className="py-2.5 text-right tabular-nums font-medium text-foreground">
+                        <td className="py-2.5 text-center tabular-nums text-muted-foreground">{d.empCount}</td>
+                        <td className="py-2.5 text-center tabular-nums text-muted-foreground">{d.requestCount}</td>
+                        <td className="py-2.5 text-center tabular-nums font-medium text-foreground">
                           {d.totalDays % 1 === 0 ? d.totalDays : d.totalDays.toFixed(1)}
                         </td>
-                        <td className="py-2.5 text-right tabular-nums text-muted-foreground">{avg}</td>
+                        <td className="py-2.5 text-center tabular-nums text-muted-foreground">{avg}</td>
                       </tr>
                     )
                   })}
@@ -331,12 +331,12 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
                 <tfoot>
                   <tr className="border-t-2 border-border">
                     <td className="pt-2.5 font-semibold text-foreground">รวม</td>
-                    <td className="pt-2.5 text-right tabular-nums font-semibold text-foreground">{summary.totalEmployees}</td>
-                    <td className="pt-2.5 text-right tabular-nums font-semibold text-foreground">{summary.totalRequests}</td>
-                    <td className="pt-2.5 text-right tabular-nums font-semibold text-foreground">
+                    <td className="pt-2.5 text-center tabular-nums font-semibold text-foreground">{summary.totalEmployees}</td>
+                    <td className="pt-2.5 text-center tabular-nums font-semibold text-foreground">{summary.totalRequests}</td>
+                    <td className="pt-2.5 text-center tabular-nums font-semibold text-foreground">
                       {summary.totalDays % 1 === 0 ? summary.totalDays : summary.totalDays.toFixed(1)}
                     </td>
-                    <td className="pt-2.5 text-right tabular-nums font-semibold text-foreground">{avgPerEmp}</td>
+                    <td className="pt-2.5 text-center tabular-nums font-semibold text-foreground">{avgPerEmp}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -374,7 +374,7 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">พนักงานที่ลา</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">วันลารวม</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-28">เฉลี่ย/พนักงาน</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-36">การใช้งาน</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-36">การใช้งาน</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
