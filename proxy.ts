@@ -15,8 +15,9 @@ export default auth((req) => {
   const isAuthPage = nextUrl.pathname.startsWith('/login')
     || nextUrl.pathname.match(/^\/(th|en)\/login/) !== null
   const isApiAuth  = nextUrl.pathname.startsWith('/api/auth')
+  const isApiRoute = nextUrl.pathname.startsWith('/api/')
 
-  if (isApiAuth) return NextResponse.next()
+  if (isApiAuth || isApiRoute) return NextResponse.next()
 
   // Not logged in → redirect to login
   if (!isLoggedIn && !isAuthPage) {

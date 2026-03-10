@@ -10,16 +10,10 @@ export default async function NewDepartmentPage() {
   if (!session?.user?.id) redirect('/login')
   if (!session.user.isAdmin) redirect('/dashboard')
 
-  const [managers, dbUser] = await Promise.all([
-    prisma.user.findMany({
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true },
-    }),
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { avatarUrl: true },
-    }),
-  ])
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { avatarUrl: true },
+  })
 
   const user = {
     name:      session.user.name ?? '',
@@ -38,7 +32,7 @@ export default async function NewDepartmentPage() {
         </nav>
         <h2 className="text-lg font-semibold text-foreground">เพิ่มแผนกใหม่</h2>
         <div className="rounded-xl border border-border bg-card shadow-sm p-6">
-          <NewDepartmentForm managers={managers} />
+          <NewDepartmentForm />
         </div>
       </div>
     </AdminLayout>

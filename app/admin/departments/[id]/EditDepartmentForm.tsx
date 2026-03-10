@@ -4,12 +4,9 @@ import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateDepartment, deleteDepartment, type DepartmentFormState } from './actions'
 
-type Manager = { id: string; name: string }
-
 type DepartmentData = {
   id: string
   name: string
-  managerId: string | null
   _count: { employees: number }
 }
 
@@ -17,10 +14,8 @@ const initial: DepartmentFormState = { success: false, message: '' }
 
 export default function EditDepartmentForm({
   department,
-  managers,
 }: {
   department: DepartmentData
-  managers: Manager[]
 }) {
   const router = useRouter()
   const boundUpdate = updateDepartment.bind(null, department.id)
@@ -47,6 +42,10 @@ export default function EditDepartmentForm({
   async function handleDelete() {
     setDeleting(true)
     const result = await deleteDepartment(department.id)
+    if (result.success) {
+      router.push('/admin/departments')
+      return
+    }
     setDeleteState(result)
     setDeleting(false)
   }
@@ -85,23 +84,6 @@ export default function EditDepartmentForm({
           )}
         </div>
 
-        {/* Manager */}
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1">ผู้จัดการแผนก</label>
-          <select
-            name="managerId"
-            defaultValue={department.managerId ?? ''}
-            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">— ไม่ระบุ —</option>
-            {managers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
         <div className="flex items-center gap-3 pt-2">
           <button
             type="submit"
@@ -110,9 +92,13 @@ export default function EditDepartmentForm({
           >
             {pending ? 'กำลังบันทึก…' : 'บันทึก'}
           </button>
-          <a href="/admin/departments" className="text-sm text-muted-foreground hover:text-foreground underline">
+          <button
+            type="button"
+            onClick={() => router.push('/admin/departments')}
+            className="border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+          >
             ยกเลิก
-          </a>
+          </button>
         </div>
       </form>
 
@@ -136,9 +122,18 @@ export default function EditDepartmentForm({
         )}
 
         {department._count.employees > 0 ? (
-          <p className="text-xs text-red-500 font-medium">
-            ⚠️ ไม่สามารถลบได้ — มีพนักงาน {department._count.employees} คนในแผนกนี้
-          </p>
+          <div className="space-y-2">
+            <p className="text-xs text-red-500 font-medium">
+              ⚠️ ไม่สามารถลบได้ — มีพนักงาน {department._count.employees} คนในแผนกนี้
+            </p>
+            <button
+              type="button"
+              disabled
+              className="bg-red-600 opacity-40 cursor-not-allowed text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg"
+            >
+              ลบแผนกนี้
+            </button>
+          </div>
         ) : !deleteConfirm ? (
           <button
             type="button"
@@ -161,7 +156,7 @@ export default function EditDepartmentForm({
             <button
               type="button"
               onClick={() => setDeleteConfirm(false)}
-              className="text-sm text-muted-foreground hover:text-foreground underline"
+              className="border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               ยกเลิก
             </button>

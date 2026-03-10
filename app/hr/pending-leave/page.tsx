@@ -1,0 +1,240 @@
+import { prisma }      from '@/lib/prisma'
+import { auth }        from '@/lib/auth'
+import { LeaveStatus } from '@prisma/client'
+import AdminLayout     from '@/components/admin-layout'
+import PendingLeaveFilters from './PendingLeaveFilters'
+import { formatDate }  from '@/lib/format-date'
+import Link            from 'next/link'
+import { cn }          from '@/lib/utils'
+
+type SearchParams = {
+  approverId?:   string
+  departmentId?: string
+  dateFrom?:     string
+  dateTo?:       string
+  dir?:          string
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING:          'รออนุมัติ',
+  IN_REVIEW:        'รอ HR',
+  CANCEL_REQUESTED: 'ขอยกเลิก',
+}
+
+const STATUS_CLASSES: Record<string, string> = {
+  PENDING:          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+  IN_REVIEW:        'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+  CANCEL_REQUESTED: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+}
+
+export default async function PendingLeavePage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
+  const session = await auth()
+  if (!session?.user.isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-red-500 text-lg font-semibold">ไม่มีสิทธิ์เข้าถึง</p>
+      </div>
+    )
+  }
+
+  const dbUser = await prisma.user.findUnique({
+    where:  { id: session.user.id },
+    select: { avatarUrl: true },
+  })
+  const user = {
+    name:      session.user.name  ?? '',
+    email:     session.user.email ?? '',
+    avatarUrl: dbUser?.avatarUrl  ?? null,
+    isAdmin:   true,
+  }
+
+  const { approverId, departmentId, dateFrom, dateTo, dir: dirParam } = await searchParams
+  const sortDir: 'asc' | 'desc' = dirParam === 'asc' ? 'asc' : 'desc'
+
+  const now = new Date()
+
+  const PENDING_STATUSES: LeaveStatus[] = ['PENDING', 'IN_REVIEW', 'CANCEL_REQUESTED']
+
+  const where = {
+    status: { in: PENDING_STATUSES },
+    ...(dateFrom || dateTo
+      ? {
+          createdAt: {
+            ...(dateFrom ? { gte: new Date(dateFrom)                       } : {}),
+            ...(dateTo   ? { lte: new Date(dateTo + 'T23:59:59.999Z')     } : {}),
+          },
+        }
+      : {}),
+    ...(departmentId ? { user: { departmentId } } : {}),
+    ...(approverId
+      ? { approvals: { some: { approverId, status: 'PENDING' as const } } }
+      : {}),
+  }
+
+  const [requests, departments, approversRaw] = await Promise.all([
+    prisma.leaveRequest.findMany({
+      where,
+      orderBy: { createdAt: sortDir },
+      include: {
+        user: {
+          select: {
+            name:       true,
+            department: { select: { name: true } },
+          },
+        },
+        leaveType: { select: { name: true } },
+        approvals: {
+          where:   { status: 'PENDING' },
+          orderBy: { level: 'asc' },
+          take:    1,
+          include: { approver: { select: { id: true, name: true } } },
+        },
+      },
+    }),
+    prisma.department.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+    prisma.approval.findMany({
+      where:    { status: 'PENDING' },
+      select:   { approver: { select: { id: true, name: true } } },
+      distinct: ['approverId'],
+    }),
+  ])
+
+  const approvers = approversRaw.map((a) => a.approver)
+
+  const rows = requests.map((r) => {
+    const waitDays = Math.floor((now.getTime() - r.createdAt.getTime()) / 86_400_000)
+    return {
+      id:           r.id,
+      employeeName: r.user.name,
+      department:   r.user.department?.name ?? '-',
+      leaveType:    r.leaveType.name,
+      startDate:    r.leaveStartDateTime,
+      endDate:      r.leaveEndDateTime,
+      totalDays:    r.totalDays,
+      createdAt:    r.createdAt,
+      waitDays,
+      isOverdue:    waitDays > 3,
+      approverName: r.approvals[0]?.approver?.name ?? '-',
+      status:       r.status as string,
+    }
+  })
+
+  const overdue = rows.filter((r) => r.isOverdue).length
+
+  function buildSortLink(nextDir: 'asc' | 'desc') {
+    const q = new URLSearchParams()
+    if (approverId)   q.set('approverId',   approverId)
+    if (departmentId) q.set('departmentId', departmentId)
+    if (dateFrom)     q.set('dateFrom',     dateFrom)
+    if (dateTo)       q.set('dateTo',       dateTo)
+    q.set('dir', nextDir)
+    return `?${q.toString()}`
+  }
+
+  const nextDir = sortDir === 'desc' ? 'asc' : 'desc'
+
+  return (
+    <AdminLayout title="คำขอรออนุมัติ" user={user}>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">คำขอรออนุมัติ</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            คำขอลาที่อยู่ระหว่างรอการอนุมัติ
+          </p>
+        </div>
+
+        {/* Filters */}
+        <PendingLeaveFilters
+          departments={departments}
+          approvers={approvers}
+          current={{ approverId, departmentId, dateFrom, dateTo, dir: dirParam }}
+          total={rows.length}
+          overdue={overdue}
+        />
+
+        {/* Table */}
+        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">#</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">ชื่อพนักงาน</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">แผนก</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">วันที่เริ่ม</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">วันที่สิ้นสุด</th>
+                  <th className="px-4 py-3 text-right font-semibold text-muted-foreground whitespace-nowrap">จำนวน (วัน)</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">
+                    <Link href={buildSortLink(nextDir)} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                      วันที่ยื่น
+                      <span className="text-xs">{sortDir === 'desc' ? '↓' : '↑'}</span>
+                    </Link>
+                  </th>
+                  <th className="px-4 py-3 text-right font-semibold text-muted-foreground whitespace-nowrap">รอมา (วัน)</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">ผู้อนุมัติ</th>
+                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">สถานะ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">
+                      ไม่มีคำขอที่รออนุมัติ
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((row, idx) => (
+                    <tr
+                      key={row.id}
+                      className={cn(
+                        'transition-colors',
+                        row.isOverdue
+                          ? 'bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/40'
+                          : 'hover:bg-muted/40',
+                      )}
+                    >
+                      <td className="px-4 py-3 text-muted-foreground">{idx + 1}</td>
+                      <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{row.employeeName}</td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{row.department}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{row.leaveType}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{formatDate(row.startDate)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{formatDate(row.endDate)}</td>
+                      <td className="px-4 py-3 text-right font-medium">{row.totalDays}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">{formatDate(row.createdAt)}</td>
+                      <td className={cn(
+                        'px-4 py-3 text-right font-semibold',
+                        row.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-foreground',
+                      )}>
+                        {row.waitDays}
+                        {row.isOverdue && (
+                          <span className="ml-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                            เร่งด่วน
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">{row.approverName}</td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                        <span className={cn(
+                          'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                          STATUS_CLASSES[row.status] ?? 'bg-gray-100 text-gray-700',
+                        )}>
+                          {STATUS_LABELS[row.status] ?? row.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </AdminLayout>
+  )
+}

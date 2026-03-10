@@ -254,12 +254,13 @@ export default function EditEmployeeForm({
 
             {/* Actions */}
             <div className="flex items-center justify-end gap-3 pt-1">
-              <a
-                href="/admin/employees"
+              <button
+                type="button"
+                onClick={() => router.push('/admin/employees')}
                 className="px-5 py-2.5 text-sm font-medium text-muted-foreground border border-border rounded-lg hover:bg-muted/40 transition"
               >
                 ยกเลิก
-              </a>
+              </button>
               <button
                 type="submit"
                 disabled={pending || state.success}

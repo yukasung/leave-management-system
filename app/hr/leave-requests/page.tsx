@@ -42,18 +42,18 @@ const STATUS_DOT: Record<string, string> = {
 
 import { formatDate } from '@/lib/format-date'
 import { formatLeaveDuration } from '@/lib/leave-calc'
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, Search } from 'lucide-react'
 import { buttonVariants } from '@/lib/button-variants'
 import { cn } from '@/lib/utils'
 
-const PAGE_SIZE = 15
+const PAGE_SIZE = 10
 
 export default async function HRLeaveRequestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; search?: string; page?: string }>
+  searchParams: Promise<{ status?: string; search?: string; page?: string; year?: string; sort?: string; dir?: string }>
 }) {
-  const { status, search, page: pageParam } = await searchParams
+  const { status, search, page: pageParam, year: yearParam, sort: sortParam, dir: dirParam } = await searchParams
   const session = await auth()
 
   if (!session || !session.user.isAdmin) {
@@ -78,6 +78,10 @@ export default async function HRLeaveRequestsPage({
   const activeStatus = (status ?? 'PENDING').toUpperCase()
   const currentPage  = Math.max(1, parseInt(pageParam ?? '1', 10))
   const skip         = (currentPage - 1) * PAGE_SIZE
+  const currentYear  = new Date().getFullYear()
+  const selectedYear = parseInt(yearParam ?? String(currentYear), 10)
+  const yearStart    = new Date(selectedYear, 0, 1)
+  const yearEnd      = new Date(selectedYear + 1, 0, 1)
 
   const VALID_STATUSES = ['DRAFT', 'PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED', 'CANCELLED', 'CANCEL_REQUESTED']
   const whereStatus =
@@ -88,6 +92,30 @@ export default async function HRLeaveRequestsPage({
   const where = {
     ...(whereStatus ? { status: whereStatus } : {}),
     ...(search ? { user: { name: { contains: search, mode: 'insensitive' as const } } } : {}),
+    leaveStartDateTime: { gte: yearStart, lt: yearEnd },
+  }
+
+  const allDates = await prisma.leaveRequest.findMany({
+    select: { leaveStartDateTime: true },
+    distinct: ['leaveStartDateTime'],
+  })
+  const yearSet = new Set(allDates.map((r) => r.leaveStartDateTime.getFullYear()))
+  if (!yearSet.has(currentYear)) yearSet.add(currentYear)
+  const yearOptions = Array.from(yearSet).sort((a, b) => b - a)
+
+  const VALID_SORTS = ['name', 'department', 'leaveType', 'startDate', 'endDate', 'totalDays', 'status'] as const
+  type SortKey = typeof VALID_SORTS[number]
+  const sortKey: SortKey = (VALID_SORTS as readonly string[]).includes(sortParam ?? '') ? (sortParam as SortKey) : 'startDate'
+  const sortDir: 'asc' | 'desc' = dirParam === 'asc' ? 'asc' : 'desc'
+
+  const ORDER_BY: Record<SortKey, object> = {
+    name:       { user: { name: sortDir } },
+    department: { user: { department: { name: sortDir } } },
+    leaveType:  { leaveType: { name: sortDir } },
+    startDate:  { leaveStartDateTime: sortDir },
+    endDate:    { leaveEndDateTime: sortDir },
+    totalDays:  { totalDays: sortDir },
+    status:     { status: sortDir },
   }
 
   const [requests, total] = await Promise.all([
@@ -95,7 +123,7 @@ export default async function HRLeaveRequestsPage({
       where,
       skip,
       take: PAGE_SIZE,
-      orderBy: { createdAt: 'desc' },
+      orderBy: ORDER_BY[sortKey],
       include: {
         user: {
           select: {
@@ -111,23 +139,22 @@ export default async function HRLeaveRequestsPage({
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
-  function pageUrl(p: number) {
+  function buildQuery(overrides: Record<string, string | undefined> = {}) {
     const q = new URLSearchParams()
-    if (activeStatus !== 'PENDING') q.set('status', activeStatus)
-    if (search) q.set('search', search)
-    q.set('page', String(p))
-    return `/hr/leave-requests?${q.toString()}`
-  }
-
-  function tabUrl(tab: string) {
-    const q = new URLSearchParams()
-    if (tab !== 'PENDING') q.set('status', tab)
-    if (search) q.set('search', search)
+    const merged = { status: activeStatus !== 'PENDING' ? activeStatus : undefined, search: search || undefined, year: selectedYear !== currentYear ? String(selectedYear) : undefined, sort: sortKey !== 'startDate' ? sortKey : undefined, dir: sortDir !== 'desc' ? sortDir : undefined, ...overrides }
+    for (const [k, v] of Object.entries(merged)) if (v) q.set(k, v)
     const qs = q.toString()
     return `/hr/leave-requests${qs ? `?${qs}` : ''}`
   }
 
-  const tabs = ['ALL', 'PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED', 'CANCEL_REQUESTED'] as const
+  function pageUrl(p: number) { return buildQuery({ page: p > 1 ? String(p) : undefined }) }
+  function tabUrl(tab: string) { return buildQuery({ status: tab !== 'PENDING' ? tab : undefined, page: undefined }) }
+  function sortUrl(col: string) {
+    const newDir = sortKey === col && sortDir === 'desc' ? 'asc' : 'desc'
+    return buildQuery({ sort: col !== 'startDate' ? col : undefined, dir: newDir !== 'desc' ? newDir : undefined, page: undefined })
+  }
+
+  const tabs = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCEL_REQUESTED'] as const
 
   return (
     <AdminLayout title="คำขอลาทั้งหมด" user={user}>
@@ -141,12 +168,7 @@ export default async function HRLeaveRequestsPage({
               {activeStatus !== 'ALL' ? ` · กรอง: ${STATUS_LABELS[activeStatus] ?? activeStatus}` : ''}
             </p>
           </div>
-          <a
-            href="/api/export/leave"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-          >
-            ส่งออก CSV
-          </a>
+
         </div>
 
         {/* Filter tabs */}
@@ -182,6 +204,15 @@ export default async function HRLeaveRequestsPage({
               className="pl-8 h-8 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
+          <select
+            name="year"
+            defaultValue={String(selectedYear)}
+            className="h-8 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {yearOptions.map((y) => (
+              <option key={y} value={String(y)}>{y}</option>
+            ))}
+          </select>
         </form>
 
         {/* Table */}
@@ -196,13 +227,26 @@ export default async function HRLeaveRequestsPage({
                 <thead className="bg-muted/40">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ชื่อพนักงาน</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">แผนก</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ประเภทการลา</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่เริ่ม</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่สิ้นสุด</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">จำนวนวัน</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">สถานะ</th>
+                    {([
+                      { col: 'name',      label: 'ชื่อพนักงาน' },
+                      { col: 'department', label: 'แผนก' },
+                      { col: 'leaveType', label: 'ประเภทการลา' },
+                      { col: 'startDate', label: 'วันที่เริ่ม' },
+                      { col: 'endDate',   label: 'วันที่สิ้นสุด' },
+                      { col: 'totalDays', label: 'จำนวนวัน' },
+                      { col: 'status',    label: 'สถานะ' },
+                    ] as const).map(({ col, label }) => (
+                      <th key={col} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        <Link href={sortUrl(col)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                          {label}
+                          {sortKey === col
+                            ? sortDir === 'asc'
+                              ? <ChevronUp className="h-3 w-3" />
+                              : <ChevronDown className="h-3 w-3" />
+                            : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                        </Link>
+                      </th>
+                    ))}
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">การดำเนินการ</th>
                   </tr>
                 </thead>

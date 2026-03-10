@@ -83,10 +83,19 @@ export default function HolidayImportClient() {
     setImportResult(null)
     setBotError('')
     try {
-      const res = await fetch(`/api/admin/holidays/import-preview?year=${year}`)
+      let res = await fetch(`/api/admin/holidays/import-preview?year=${year}`)
+      // Retry once on 404 (dev server may not have compiled the route yet)
+      if (res.status === 404) {
+        await new Promise((r) => setTimeout(r, 800))
+        res = await fetch(`/api/admin/holidays/import-preview?year=${year}`)
+      }
       if (!res.ok) {
-        const lody = await res.json().catch(() => ({}))
-        throw new Error((lody as { error?: string }).error ?? `HTTP ${res.status}`)
+        let errMsg = `HTTP ${res.status}`
+        try {
+          const lody = await res.json()
+          if (lody?.error) errMsg = lody.error
+        } catch { /* non-JSON response */ }
+        throw new Error(errMsg)
       }
       const data: PreviewResponse = await res.json()
       setPreview(data)
@@ -216,7 +225,7 @@ export default function HolidayImportClient() {
             disabled={botLoading}
             className="inline-flex items-center gap-2 bg-primary hover:lg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
           >
-            {botStage === 'previewing' ? <><Spinner /> กำลังโหลด…</> : '🔍 Preview วันหยุด lOT'}
+            {botStage === 'previewing' ? <><Spinner /> กำลังโหลด…</> : '🔍 Preview วันหยุด BOT'}
           </button>
 
           {botStage === 'previewed' && preview && preview.total > 0 && (
@@ -230,7 +239,7 @@ export default function HolidayImportClient() {
               <button
                 onClick={() => handleBOTImport('replace')}
                 className="inline-flex items-center gap-2 bg-red-600 hover:lg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-                title="ลบวันหยุด lOT ทั้งหมดในปีนี้ แล้วนำเข้าใหม่"
+                title="ลบวันหยุด BOT ทั้งหมดในปีนี้ แล้วนำเข้าใหม่"
               >
                 🔄 นำเข้าใหม่ทั้งหมด (Replace)
               </button>
@@ -245,23 +254,23 @@ export default function HolidayImportClient() {
 
         </div>
 
-        {/* lOT error */}
+        {/* BOT error */}
         {botStage === 'error' && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <span className="font-semibold">เกิดข้อผิดพลาด:</span> {botError}
           </div>
         )}
 
-        {/* API warning lanner */}
+        {/* API warning banner */}
         {botStage === 'previewed' && preview?.warning && (
-          <div className="rounded-lg border border-amler-200 bg-amler-50 px-4 py-3 text-sm text-amler-800">
-            <p className="font-semibold text-amler-700 ml-1">⚠️ ไม่พบข้อมูลวันหยุด</p>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <p className="font-semibold text-amber-700 ml-1">⚠️ ไม่พบข้อมูลวันหยุด</p>
             <p>{preview.warning}</p>
             <p className="mt-1">กรุณาเพิ่มวันหยุดด้วยตนเองผ่าน <strong>เพิ่มวันหยุดด้วยตนเอง</strong> ด้านล่าง</p>
           </div>
         )}
 
-        {/* lOT success lanner */}
+        {/* BOT success banner */}
         {botStage === 'done' && importResult && (
           <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
             <p className="font-semibold text-green-700 mb-1">

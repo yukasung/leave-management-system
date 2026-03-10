@@ -106,9 +106,13 @@ export default function NewLeaveTypeForm() {
         >
           {pending ? 'กำลังบันทึก…' : 'บันทึก'}
         </button>
-        <a href="/admin/settings/leave-types" className="text-sm text-muted-foreground hover:text-foreground underline">
+        <button
+          type="button"
+          onClick={() => router.push('/admin/settings/leave-types')}
+          className="border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+        >
           ยกเลิก
-        </a>
+        </button>
       </div>
     </form>
   )

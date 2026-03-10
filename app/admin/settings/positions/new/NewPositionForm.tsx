@@ -48,7 +48,13 @@ export default function NewPositionForm() {
         >
           {pending ? 'กำลังบันทึก…' : 'บันทึก'}
         </button>
-        <a href="/admin/settings/positions" className="text-sm text-muted-foreground hover:text-foreground underline">ยกเลิก</a>
+        <button
+          type="button"
+          onClick={() => router.push('/admin/settings/positions')}
+          className="border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+        >
+          ยกเลิก
+        </button>
       </div>
     </form>
   )

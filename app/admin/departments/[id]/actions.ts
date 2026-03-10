@@ -21,7 +21,6 @@ export async function updateDepartment(
   }
 
   const name = (formData.get('name') as string | null)?.trim() ?? ''
-  const managerId = (formData.get('managerId') as string | null)?.trim() || null
 
   if (!name) {
     return { success: false, message: 'กรุณากรอกชื่อแผนก', errors: { name: 'ชื่อแผนกจำเป็น' } }
@@ -37,7 +36,7 @@ export async function updateDepartment(
   await prisma.$transaction(async (tx) => {
     await tx.department.update({
       where: { id },
-      data: { name, managerId },
+      data: { name },
     })
 
     await tx.auditLog.create({

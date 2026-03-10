@@ -17,14 +17,10 @@ export default async function EditDepartmentPage({
 
   const { id } = await params
 
-  const [department, managers, dbUser] = await Promise.all([
+  const [department, dbUser] = await Promise.all([
     prisma.department.findUnique({
       where: { id },
       include: { _count: { select: { employees: true } } },
-    }),
-    prisma.user.findMany({
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
@@ -51,7 +47,7 @@ export default async function EditDepartmentPage({
         </nav>
         <h2 className="text-lg font-semibold text-foreground">แก้ไขแผนก</h2>
         <div className="rounded-xl border border-border bg-card shadow-sm p-6">
-          <EditDepartmentForm department={department} managers={managers} />
+          <EditDepartmentForm department={department} />
         </div>
       </div>
     </AdminLayout>

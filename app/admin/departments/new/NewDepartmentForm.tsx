@@ -4,11 +4,9 @@ import { useActionState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createDepartment, type DepartmentFormState } from './actions'
 
-type Manager = { id: string; name: string }
-
 const initial: DepartmentFormState = { success: false, message: '' }
 
-export default function NewDepartmentForm({ managers }: { managers: Manager[] }) {
+export default function NewDepartmentForm() {
   const router = useRouter()
   const [state, action, pending] = useActionState(createDepartment, initial)
 
@@ -52,24 +50,6 @@ export default function NewDepartmentForm({ managers }: { managers: Manager[] })
         )}
       </div>
 
-      {/* Manager */}
-      <div>
-        <label className="block text-sm font-medium text-foreground mb-1">
-          ผู้จัดการแผนก
-        </label>
-        <select
-          name="managerId"
-          className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="">— ไม่ระบุ —</option>
-          {managers.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {/* Actions */}
       <div className="flex items-center gap-3 pt-2">
         <button
@@ -79,12 +59,13 @@ export default function NewDepartmentForm({ managers }: { managers: Manager[] })
         >
           {pending ? 'กำลังบันทึก…' : 'บันทึก'}
         </button>
-        <a
-          href="/admin/departments"
-          className="text-sm text-muted-foreground hover:text-foreground underline"
+        <button
+          type="button"
+          onClick={() => router.push('/admin/departments')}
+          className="border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-5 py-2 rounded-lg transition-colors"
         >
           ยกเลิก
-        </a>
+        </button>
       </div>
     </form>
   )
