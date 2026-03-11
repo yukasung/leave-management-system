@@ -20,10 +20,12 @@ export type EmployeeData = {
   position:     string
   positionId:   string | null
   isAdmin:      boolean
+  isManager:    boolean
   isProbation:  boolean
   isActive:     boolean
   departmentId: string | null
   managerId:    string | null
+  approverIds:  string[]
 }
 
 const initialState: UpdateEmployeeState = {}
@@ -209,22 +211,41 @@ export default function EditEmployeeForm({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">ผู้จัดการสายงาน <Required /></label>
-                <select
-                  name="managerId"
-                  value={selectedManagerId}
-                  onChange={(ev) => setSelectedManagerId(ev.target.value)}
-                  className={selectCls(!!e.managerId)}
-                >
-                  <option value="" disabled>— เลือกผู้จัดการสายงาน —</option>
-                  {managers
-                    .filter((m) => m.id !== employee.id)
-                    .map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.firstName} {m.lastName} — {m.position}
-                      </option>
-                    ))}
-                </select>
+                <label className="block text-sm font-medium text-foreground mb-1.5">ผู้อนุมัติการลา</label>
+                {managers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground italic">ยังไม่มีผู้อนุมัติการลาในระบบ</p>
+                ) : (
+                  <div className="rounded-lg border border-input overflow-hidden">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="w-10 px-3 py-2"></th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">ชื่อ-นามสกุล</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">แผนก / ตำแหน่ง</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {managers
+                          .filter((m) => m.id !== employee.id)
+                          .map((m) => (
+                            <tr key={m.id} className="hover:bg-muted/40 transition-colors">
+                              <td className="px-3 py-2.5 text-center">
+                                <input
+                                  type="checkbox"
+                                  name="approverIds"
+                                  value={m.id}
+                                  defaultChecked={employee.approverIds.includes(m.id)}
+                                  className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                                />
+                              </td>
+                              <td className="px-3 py-2.5 font-medium text-foreground">{m.firstName} {m.lastName}</td>
+                              <td className="px-3 py-2.5 text-muted-foreground">{m.position}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
                 <FieldError msg={e.managerId} />
               </div>
 
@@ -245,10 +266,16 @@ export default function EditEmployeeForm({
                 <h3 className="text-sm font-semibold text-foreground">สิทธิ์ระบบ</h3>
               </div>
               <CheckboxField
+                name="isManager"
+                defaultChecked={employee.isManager}
+                label="ผู้อนุมัติการลา"
+                hint="สามารถอนุมัติหรือปฏิเสธคำขอลาของพนักงานในสายงาน"
+              />
+              <CheckboxField
                 name="isAdmin"
                 defaultChecked={employee.isAdmin}
                 label="ผู้ดูแลระบบ"
-                hint="สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้จัดการสายงาน"
+                hint="สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้อนุมัติการลา"
               />
             </div>
 

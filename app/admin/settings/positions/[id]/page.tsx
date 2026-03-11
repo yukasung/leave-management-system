@@ -35,7 +35,7 @@ export default async function EditPositionPage({ params }: { params: Promise<{ i
     <AdminLayout title="แก้ไขตำแหน่ง" user={user}>
       <div className="max-w-xl mx-auto space-y-5">
         <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/admin/settings" className="hover:text-foreground transition">ตั้งค่าระบบ</Link>
+          <Link href="/admin/settings" className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300 transition">ตั้งค่าระบบ</Link>
           <span>/</span>
           <span className="text-foreground font-medium">{position.name}</span>
         </nav>

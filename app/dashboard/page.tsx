@@ -7,6 +7,7 @@ import { DashboardCards } from '@/components/dashboard-cards'
 import { LeaveTable, type LeaveRow } from '@/components/leave-table'
 import { buttonVariants } from '@/lib/button-variants'
 import { formatThaiDateShort } from '@/lib/date-utils'
+import { ChevronRight } from 'lucide-react'
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -61,6 +62,7 @@ export default async function DashboardPage() {
     leaveEndDateTime:   r.leaveEndDateTime,
     totalDays:  r.totalDays,
     status:     r.status,
+    createdAt:  r.createdAt,
   }))
 
   const statusMap = Object.fromEntries(
@@ -163,8 +165,8 @@ export default async function DashboardPage() {
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <h3 className="text-sm font-semibold text-foreground">คำขอลาล่าสุด</h3>
-            <Link href="/hr/leave-requests" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-              ดูทั้งหมด
+            <Link href="/hr/leave-requests" className="inline-flex items-center gap-0.5 text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300">
+              ดูทั้งหมด <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           </div>
           <LeaveTable rows={rows} />

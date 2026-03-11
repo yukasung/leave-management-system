@@ -41,7 +41,7 @@ export default async function EditDepartmentPage({
     <AdminLayout title="แก้ไขแผนก" user={user}>
       <div className="max-w-xl mx-auto space-y-5">
         <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/admin/departments" className="hover:text-foreground transition">จัดการแผนก</Link>
+          <Link href="/admin/departments" className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300 transition">จัดการแผนก</Link>
           <span>/</span>
           <span className="text-foreground font-medium">{department.name}</span>
         </nav>

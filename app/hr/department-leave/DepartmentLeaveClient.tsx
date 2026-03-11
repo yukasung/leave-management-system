@@ -386,6 +386,9 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
                     <tr key={d.id} className="hover:bg-primary/3 transition-colors">
                       <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{i + 1}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                          <span className="font-medium text-foreground">{d.name}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center tabular-nums text-muted-foreground whitespace-nowrap">{d.empCount}</td>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { formatThaiDateShortFromISO, toBE } from '@/lib/date-utils'
+import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -232,14 +233,17 @@ export default function HolidayImportClient() {
             <>
               <button
                 onClick={() => handleBOTImport('upsert')}
+                title={`เพิ่มวันหยุดที่ยังไม่มี และอัปเดตชื่อของวันหยุด BOT ที่เปลี่ยนแปลง
+วันหยุดที่เพิ่มด้วยตนเอง (Manual) จะไม่ถูกแตะต้อง`}
                 className="inline-flex items-center gap-2 bg-green-600 hover:lg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
               >
                 อัปเดตข้อมูล (Upsert)
               </button>
               <button
                 onClick={() => handleBOTImport('replace')}
+                title={`ลบวันหยุด BOT ทั้งหมดในปีนี้ออกก่อน แล้วนำเข้าข้อมูลใหม่ทั้งหมด
+วันหยุดที่เพิ่มด้วยตนเอง (Manual) จะไม่ถูกลบ`}
                 className="inline-flex items-center gap-2 bg-red-600 hover:lg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-                title="ลบวันหยุด BOT ทั้งหมดในปีนี้ แล้วนำเข้าใหม่"
               >
                 นำเข้าใหม่ทั้งหมด (Replace)
               </button>
@@ -335,12 +339,10 @@ export default function HolidayImportClient() {
         <form onSubmit={handleManualAdd} className="flex flex-wrap items-end gap-4">
           <div>
             <label className="block text-sm font-medium text-foreground ml-1">วันที่</label>
-            <input
-              type="date"
-              required
+            <HolidayDatePicker
+              name="manualDate"
               value={manualDate}
-              onChange={(e) => setManualDate(e.target.value)}
-              className="block rounded-lg border border-input bg-lackground text-foreground px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+              onChange={(d) => setManualDate(d)}
             />
           </div>
           <div className="flex-1 min-w-56">

@@ -170,7 +170,7 @@ export default async function LeaveTypesPage() {
                         <div className="flex items-center justify-end gap-1">
                           <Link
                             href={`/admin/settings/leave-types/${lt.id}`}
-                            className={buttonVariants({ variant: 'ghost', size: 'xs' })}
+                            className="text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                           >
                             แก้ไข
                           </Link>

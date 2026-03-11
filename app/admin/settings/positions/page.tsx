@@ -41,7 +41,7 @@ export default async function PositionsPage() {
 
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/admin/settings" className="hover:text-foreground transition-colors">
+          <Link href="/admin/settings" className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
             ตั้งค่าระบบ
           </Link>
           <span>/</span>
@@ -92,7 +92,7 @@ export default async function PositionsPage() {
                     <td className="px-5 py-4 text-right whitespace-nowrap">
                       <Link
                         href={`/admin/settings/positions/${pos.id}`}
-                        className="text-sm font-medium text-primary hover:underline"
+                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                       >
                         แก้ไข →
                       </Link>

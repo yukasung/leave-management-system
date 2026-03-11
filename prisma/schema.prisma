@@ -167,6 +167,11 @@ model Employee {
   positionRef  Position?   @relation(fields: [positionId], references: [id])
 
   isAdmin      Boolean     @default(false)
+  isManager    Boolean     @default(false)
+
+  // Many-to-many: approvers assigned to this employee
+  approvers    Employee[]  @relation("EmployeeApprovers")
+  approvedFor  Employee[]  @relation("EmployeeApprovers")
 
   // Direct supervisor — references another Employee (self-relation)
   managerId    String?

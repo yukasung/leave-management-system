@@ -102,9 +102,9 @@ export default async function HRLeaveRequestsPage({
   if (!yearSet.has(currentYear)) yearSet.add(currentYear)
   const yearOptions = Array.from(yearSet).sort((a, b) => b - a)
 
-  const VALID_SORTS = ['name', 'department', 'leaveType', 'startDate', 'endDate', 'totalDays', 'status'] as const
+  const VALID_SORTS = ['name', 'department', 'leaveType', 'startDate', 'endDate', 'totalDays', 'status', 'createdAt'] as const
   type SortKey = typeof VALID_SORTS[number]
-  const sortKey: SortKey = (VALID_SORTS as readonly string[]).includes(sortParam ?? '') ? (sortParam as SortKey) : 'startDate'
+  const sortKey: SortKey = (VALID_SORTS as readonly string[]).includes(sortParam ?? '') ? (sortParam as SortKey) : 'createdAt'
   const sortDir: 'asc' | 'desc' = dirParam === 'asc' ? 'asc' : 'desc'
 
   const ORDER_BY: Record<SortKey, object> = {
@@ -115,6 +115,7 @@ export default async function HRLeaveRequestsPage({
     endDate:    { leaveEndDateTime: sortDir },
     totalDays:  { totalDays: sortDir },
     status:     { status: sortDir },
+    createdAt:  { createdAt: sortDir },
   }
 
   const [requests, total] = await Promise.all([
@@ -123,13 +124,14 @@ export default async function HRLeaveRequestsPage({
       skip,
       take: PAGE_SIZE,
       orderBy: ORDER_BY[sortKey],
-      include: {
-        user: {
-          select: {
-            name: true,
-            department: { select: { name: true } },
-          },
-        },
+      select: {
+        id: true,
+        createdAt: true,
+        leaveStartDateTime: true,
+        leaveEndDateTime: true,
+        totalDays: true,
+        status: true,
+        user: { select: { name: true, department: { select: { name: true } } } },
         leaveType: { select: { name: true } },
       },
     }),
@@ -140,7 +142,7 @@ export default async function HRLeaveRequestsPage({
 
   function buildQuery(overrides: Record<string, string | undefined> = {}) {
     const q = new URLSearchParams()
-    const merged = { status: activeStatus !== 'PENDING' ? activeStatus : undefined, search: search || undefined, year: selectedYear !== currentYear ? String(selectedYear) : undefined, sort: sortKey !== 'startDate' ? sortKey : undefined, dir: sortDir !== 'desc' ? sortDir : undefined, ...overrides }
+    const merged = { status: activeStatus !== 'PENDING' ? activeStatus : undefined, search: search || undefined, year: selectedYear !== currentYear ? String(selectedYear) : undefined, sort: sortKey !== 'createdAt' ? sortKey : undefined, dir: sortDir !== 'desc' ? sortDir : undefined, ...overrides }
     for (const [k, v] of Object.entries(merged)) if (v) q.set(k, v)
     const qs = q.toString()
     return `/hr/leave-requests${qs ? `?${qs}` : ''}`
@@ -150,7 +152,7 @@ export default async function HRLeaveRequestsPage({
   function tabUrl(tab: string) { return buildQuery({ status: tab !== 'PENDING' ? tab : undefined, page: undefined }) }
   function sortUrl(col: string) {
     const newDir = sortKey === col && sortDir === 'desc' ? 'asc' : 'desc'
-    return buildQuery({ sort: col !== 'startDate' ? col : undefined, dir: newDir !== 'desc' ? newDir : undefined, page: undefined })
+    return buildQuery({ sort: col !== 'createdAt' ? col : undefined, dir: newDir !== 'desc' ? newDir : undefined, page: undefined })
   }
 
   const tabs = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCEL_REQUESTED'] as const
@@ -234,6 +236,7 @@ export default async function HRLeaveRequestsPage({
                       { col: 'endDate',   label: 'วันที่สิ้นสุด', center: true },
                       { col: 'totalDays', label: 'จำนวนวัน',    center: true },
                       { col: 'status',    label: 'สถานะ',        center: true },
+                      { col: 'createdAt', label: 'วันที่ขอ',      center: true },
                     ] as const).map(({ col, label, center }) => (
                       <th key={col} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap ${center ? 'text-center' : 'text-left'}`}>
                         <Link href={sortUrl(col)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
@@ -262,7 +265,7 @@ export default async function HRLeaveRequestsPage({
                       <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{req.leaveType.name}</td>
                       <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveStartDateTime)}</td>
                       <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveEndDateTime)}</td>
-                      <td className="px-4 py-3 text-center font-semibold text-foreground whitespace-nowrap">{req.totalDays}</td>
+                      <td className="px-4 py-3 text-center font-semibold text-foreground whitespace-nowrap">{parseFloat(Number(req.totalDays).toFixed(2))}</td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
                           STATUS_BADGE_NEW[req.status] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400 dark:border-gray-700'
@@ -271,6 +274,7 @@ export default async function HRLeaveRequestsPage({
                           {STATUS_LABELS[req.status] ?? req.status}
                         </span>
                       </td>
+                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.createdAt)}</td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         {(req.status === 'PENDING' || req.status === 'IN_REVIEW' || req.status === 'CANCEL_REQUESTED') ? (
                           <HRActionButtons id={req.id} status={req.status} />

@@ -32,8 +32,9 @@ export async function updateEmployee(
     const phone        = (formData.get('phone')        as string | null)?.trim() || null
     const avatarUrl    = (formData.get('avatarUrl')    as string | null)?.trim() || null
     const isAdmin      = formData.get('isAdmin') === 'on'
+    const isManager    = formData.get('isManager') === 'on'
+    const approverIds  = (formData.getAll('approverIds') as string[]).filter(Boolean)
     const departmentId = (formData.get('departmentId') as string | null)?.trim() || null
-    const managerId    = (formData.get('managerId')    as string | null)?.trim() || null
     const isProbation  = formData.get('isProbation') === 'on'
 
     // ── Guard: cannot remove the last admin ──────────────────────────────────
@@ -57,7 +58,6 @@ export async function updateEmployee(
     const errors: UpdateEmployeeState['errors'] = {}
 
     if (!positionId) errors.positionId = 'กรุณาเลือกตำแหน่ง'
-    if (!managerId) errors.managerId = 'กรุณาเลือกผู้จัดการสายงาน'
 
     if (Object.keys(errors).length > 0) {
       return { success: false, errors }
@@ -94,12 +94,11 @@ export async function updateEmployee(
             ? { connect: { id: positionId } }
             : { disconnect: true },
           isAdmin,
+          isManager,
           isProbation,
+          approvers: { set: approverIds.map(id => ({ id })) },
           department: departmentId
             ? { connect: { id: departmentId } }
-            : { disconnect: true },
-          manager: managerId
-            ? { connect: { id: managerId } }
             : { disconnect: true },
         },
       })

@@ -42,7 +42,8 @@ export async function createEmployee(
     const departmentId = (formData.get('departmentId') as string | null)?.trim() || null
     const positionId   = (formData.get('positionId')   as string | null)?.trim() || null
     const isAdmin      = formData.get('isAdmin') === 'on'
-    const managerId    = (formData.get('managerId')    as string | null)?.trim() || null
+    const isManager    = formData.get('isManager') === 'on'
+    const approverIds  = (formData.getAll('approverIds') as string[]).filter(Boolean)
     const isProbation  = formData.get('isProbation') === 'on'
 
     // ── Validation ───────────────────────────────────────────────────────────────────
@@ -97,11 +98,12 @@ export async function createEmployee(
           avatarUrl,
           position,
           isAdmin,
+          isManager,
           isProbation,
           isActive:     true,
           ...(positionId   ? { positionRef: { connect: { id: positionId   } } } : {}),
           ...(departmentId ? { department:  { connect: { id: departmentId } } } : {}),
-          ...(managerId    ? { manager:     { connect: { id: managerId    } } } : {}),
+          ...(approverIds.length > 0 ? { approvers: { connect: approverIds.map(id => ({ id })) } } : {}),
         },
         select: { id: true, employeeCode: true, firstName: true, lastName: true },
       })

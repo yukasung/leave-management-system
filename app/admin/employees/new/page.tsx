@@ -20,7 +20,7 @@ export default async function NewEmployeePage() {
       },
     }),
     prisma.employee.findMany({
-      where: { isActive: true },
+      where: { isActive: true, isManager: true },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
       select: { id: true, firstName: true, lastName: true, position: true },
     }),
@@ -46,7 +46,7 @@ export default async function NewEmployeePage() {
       <div className="max-w-3xl mx-auto space-y-5">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/admin/employees" className="hover:text-foreground transition">
+          <Link href="/admin/employees" className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300 transition">
             จัดการพนักงาน
           </Link>
           <span>/</span>

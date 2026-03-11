@@ -283,7 +283,7 @@ export default function EditLeaveForm({
         <h1 className="text-2xl font-bold text-foreground">
           {isEditable ? 'แก้ไขคำขอลา' : 'รายละเอียดคำขอลา'}
         </h1>
-        <Link href="/my-leaves" className="text-sm text-primary hover:underline">
+        <Link href="/my-leaves" className="text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300">
           ← ย้อนกลับ
         </Link>
       </div>

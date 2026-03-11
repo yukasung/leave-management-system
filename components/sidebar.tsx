@@ -193,7 +193,15 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
           <div>
             <button
               type="button"
-              onClick={() => !collapsed && setReportsOpen((o) => !o)}
+              onClick={() => {
+                if (collapsed) {
+                  setCollapsed(false)
+                  localStorage.setItem('sidebar-collapsed', 'false')
+                  setReportsOpen(true)
+                } else {
+                  setReportsOpen((o) => !o)
+                }
+              }}
               title={collapsed ? 'รายงาน' : undefined}
               className={cn(
                 'group relative w-full flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
@@ -265,7 +273,15 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
         {isAdmin && <div>
           <button
             type="button"
-            onClick={() => !collapsed && setSettingsOpen((o) => !o)}
+            onClick={() => {
+              if (collapsed) {
+                setCollapsed(false)
+                localStorage.setItem('sidebar-collapsed', 'false')
+                setSettingsOpen(true)
+              } else {
+                setSettingsOpen((o) => !o)
+              }
+            }}
             title={collapsed ? 'ตั้งค่า' : undefined}
             className={cn(
               'group relative w-full flex items-center gap-3 rounded-lg py-2 text-sm font-medium',

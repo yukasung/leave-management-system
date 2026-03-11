@@ -20,6 +20,7 @@ export type LeaveRow = {
   leaveEndDateTime: Date
   totalDays: number
   status: string
+  createdAt?: Date
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -93,6 +94,9 @@ export function LeaveTable({
               จำนวนวัน
             </TableHead>
             <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              วันที่ขอ
+            </TableHead>
+            <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               สถานะ
             </TableHead>
             {showActions && (
@@ -132,6 +136,10 @@ export function LeaveTable({
               <TableCell className="text-center text-sm font-medium text-foreground">
                 {Number.isInteger(row.totalDays) ? row.totalDays : parseFloat(row.totalDays.toFixed(2))}
               </TableCell>
+              {/* Created At */}
+              <TableCell className="text-center text-sm text-muted-foreground whitespace-nowrap">
+                {row.createdAt ? formatThaiDateShort(new Date(row.createdAt)) : '—'}
+              </TableCell>
               {/* Status */}
               <TableCell className="text-center">
                 <span
@@ -150,9 +158,9 @@ export function LeaveTable({
                   <div className="flex items-center justify-center gap-1">
                     <Link
                       href={`/hr/leave-requests?highlight=${row.id}`}
-                      className={buttonVariants({ variant: 'ghost', size: 'xs' })}
+                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                     >
-                      ดู
+                      ดูรายละเอียด
                     </Link>
                   </div>
                 </TableCell>

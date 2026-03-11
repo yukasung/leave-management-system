@@ -86,7 +86,7 @@ export default async function DepartmentsPage() {
                     <td className="px-5 py-4 text-center whitespace-nowrap">
                       <Link
                         href={`/admin/departments/${dept.id}`}
-                        className="text-sm font-medium text-primary hover:underline"
+                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                       >
                         แก้ไข →
                       </Link>

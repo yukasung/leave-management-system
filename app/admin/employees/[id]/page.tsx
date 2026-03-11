@@ -31,12 +31,14 @@ export default async function EditEmployeePage({
         position:     true,
         positionId:   true,
         isAdmin:      true,
+        isManager:    true,
         isProbation:  true,
         isActive:     true,
         departmentId: true,
         managerId:    true,
         createdAt:    true,
         department:   { select: { name: true } },
+        approvers:    { select: { id: true } },
       },
     }),
     prisma.department.findMany({
@@ -48,7 +50,7 @@ export default async function EditEmployeePage({
       },
     }),
     prisma.employee.findMany({
-      where: { isActive: true },
+      where: { isActive: true, isManager: true },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
       select: { id: true, firstName: true, lastName: true, position: true },
     }),
@@ -76,7 +78,7 @@ export default async function EditEmployeePage({
       <div className="max-w-5xl mx-auto space-y-5">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/admin/employees" className="hover:text-foreground transition">
+          <Link href="/admin/employees" className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300 transition">
             จัดการพนักงาน
           </Link>
           <span>/</span>
@@ -97,10 +99,12 @@ export default async function EditEmployeePage({
             position:     employee.position,
             positionId:   employee.positionId,
             isAdmin:      employee.isAdmin,
+            isManager:    employee.isManager,
             isProbation:  employee.isProbation,
             isActive:     employee.isActive,
             departmentId: employee.departmentId,
             managerId:    employee.managerId,
+            approverIds:  employee.approvers.map(a => a.id),
           }}
           departments={departments}
           managers={managers}

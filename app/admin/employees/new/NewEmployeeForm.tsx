@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { createEmployee, type CreateEmployeeState } from './actions'
 import AvatarUploader from '../AvatarUploader'
+import { User, Mail, Phone, Hash } from 'lucide-react'
 
 type Department = { id: string; name: string; manager: { employee: { id: string } | null } | null }
 type ManagerOption  = { id: string; firstName: string; lastName: string; position: string }
@@ -24,14 +25,10 @@ export default function NewEmployeeForm({
   const [firstName,         setFirstName]        = useState('')
   const [lastName,          setLastName]          = useState('')
   const [selectedDeptId,    setSelectedDeptId]    = useState('')
-  const [selectedManagerId, setSelectedManagerId] = useState('')
   const [state, formAction, pending] = useActionState(createEmployee, initialState)
 
   function handleDeptChange(deptId: string) {
     setSelectedDeptId(deptId)
-    const dept = departments.find((d) => d.id === deptId)
-    const deptManagerEmployeeId = dept?.manager?.employee?.id
-    if (deptManagerEmployeeId) setSelectedManagerId(deptManagerEmployeeId)
   }
 
   useEffect(() => {
@@ -73,13 +70,16 @@ export default function NewEmployeeForm({
           <label className="block text-sm font-medium text-foreground mb-1.5">
             รหัสพนักงาน <Required />
           </label>
-          <input
-            type="text"
-            name="employeeCode"
-            placeholder="เช่น EMP-001"
-            autoComplete="off"
-            className={inputCls(!!e.employeeCode)}
-          />
+          <div className="relative">
+            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
+            <input
+              type="text"
+              name="employeeCode"
+              placeholder="เช่น EMP-001"
+              autoComplete="off"
+              className={`${inputCls(!!e.employeeCode)} pl-9`}
+            />
+          </div>
           <FieldError msg={e.employeeCode} />
         </div>
 
@@ -89,58 +89,70 @@ export default function NewEmployeeForm({
             <label className="block text-sm font-medium text-foreground mb-1.5">
               ชื่อ <Required />
             </label>
-            <input
-              type="text"
-              name="firstName"
-              value={firstName}
-              onChange={e => setFirstName(e.target.value)}
-              placeholder="ชื่อ"
-              className={inputCls(!!e.firstName)}
-            />
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
+              <input
+                type="text"
+                name="firstName"
+                value={firstName}
+                onChange={e => setFirstName(e.target.value)}
+                placeholder="ชื่อ"
+                className={`${inputCls(!!e.firstName)} pl-9`}
+              />
+            </div>
             <FieldError msg={e.firstName} />
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">
               นามสกุล <Required />
             </label>
-            <input
-              type="text"
-              name="lastName"
-              value={lastName}
-              onChange={e => setLastName(e.target.value)}
-              placeholder="นามสกุล"
-              className={inputCls(!!e.lastName)}
-            />
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
+              <input
+                type="text"
+                name="lastName"
+                value={lastName}
+                onChange={e => setLastName(e.target.value)}
+                placeholder="นามสกุล"
+                className={`${inputCls(!!e.lastName)} pl-9`}
+              />
+            </div>
             <FieldError msg={e.lastName} />
           </div>
         </div>
 
-        {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1.5">
-            อีเมล <Required />
-          </label>
-          <input
-            type="email"
-            name="email"
-            placeholder="employee@company.com"
-            autoComplete="off"
-            className={inputCls(!!e.email)}
-          />
-          <FieldError msg={e.email} />
-        </div>
-
-        {/* Phone */}
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1.5">
-            เบอร์โทรศัพท์
-          </label>
-          <input
-            type="tel"
-            name="phone"
-            placeholder="เช่น 081-234-5678"
-            className={inputCls(false)}
-          />
+        {/* Row: Email + Phone */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              อีเมล <Required />
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
+              <input
+                type="email"
+                name="email"
+                placeholder="employee@company.com"
+                autoComplete="off"
+                className={`${inputCls(!!e.email)} pl-9`}
+              />
+            </div>
+            <FieldError msg={e.email} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              เบอร์โทรศัพท์
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
+              <input
+                type="tel"
+                name="phone"
+                placeholder="เช่น 081-234-5678"
+                className={`${inputCls(false)} pl-9`}
+              />
+            </div>
+          </div>
         </div>
       </fieldset>
 
@@ -150,28 +162,29 @@ export default function NewEmployeeForm({
           ตำแหน่งและบทบาท
         </legend>
 
-        {/* Department */}
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1.5">
-            แผนก
-          </label>
-          <select
-            name="departmentId"
-            value={selectedDeptId}
-            onChange={(ev) => handleDeptChange(ev.target.value)}
-            className={selectCls(!!e.departmentId)}
-          >
-            <option value="">— ไม่ระบุแผนก —</option>
-            {departments.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-          <FieldError msg={e.departmentId} />
-        </div>
+        {/* Department + Position row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Department */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              แผนก
+            </label>
+            <select
+              name="departmentId"
+              value={selectedDeptId}
+              onChange={(ev) => handleDeptChange(ev.target.value)}
+              className={selectCls(!!e.departmentId)}
+            >
+              <option value="">— ไม่ระบุแผนก —</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+            <FieldError msg={e.departmentId} />
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Position */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">
@@ -189,27 +202,44 @@ export default function NewEmployeeForm({
             </select>
             <FieldError msg={e.positionId} />
           </div>
-          </div>
+        </div>
 
         {/* Manager */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-1.5">
-            ผู้จัดการสายงาน
+            ผู้อนุมัติการลา
           </label>
-          <select
-            name="managerId"
-            value={selectedManagerId}
-            onChange={(ev) => setSelectedManagerId(ev.target.value)}
-            className={selectCls(!!e.managerId)}
-          >
-            <option value="">— ไม่มีผู้จัดการ —</option>
-            {managers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.firstName} {m.lastName} — {m.position}
-              </option>
-            ))}
-          </select>
-          <FieldError msg={e.managerId} />
+          {managers.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">ยังไม่มีผู้อนุมัติการลาในระบบ</p>
+          ) : (
+            <div className="rounded-lg border border-input overflow-hidden">
+              <table className="min-w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="w-10 px-3 py-2"></th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">ชื่อ-นามสกุล</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">แผนก / ตำแหน่ง</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {managers.map((m) => (
+                    <tr key={m.id} className="hover:bg-muted/40 transition-colors">
+                      <td className="px-3 py-2.5 text-center">
+                        <input
+                          type="checkbox"
+                          name="approverIds"
+                          value={m.id}
+                          className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                        />
+                      </td>
+                      <td className="px-3 py-2.5 font-medium text-foreground">{m.firstName} {m.lastName}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{m.position}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <div className="pt-1">
@@ -241,6 +271,22 @@ export default function NewEmployeeForm({
           <label className="flex items-start gap-3 cursor-pointer select-none group">
             <input
               type="checkbox"
+              name="isManager"
+              className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-primary"
+            />
+            <span>
+              <span className="text-sm font-medium text-foreground group-hover:text-foreground">
+                ผู้อนุมัติการลา
+              </span>
+              <br />
+              <span className="text-xs text-muted-foreground/60">
+                สามารถอนุมัติหรือปฏิเสธคำขอลาของพนักงานในสายงาน
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer select-none group">
+            <input
+              type="checkbox"
               name="isAdmin"
               className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-primary"
             />
@@ -250,7 +296,7 @@ export default function NewEmployeeForm({
               </span>
               <br />
               <span className="text-xs text-muted-foreground/60">
-                สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้จัดการสายงาน
+                สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้อนุมัติการลา
               </span>
             </span>
           </label>

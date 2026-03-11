@@ -194,7 +194,7 @@ export default async function EmployeesPage({
                       <td className="px-5 py-3.5 text-center whitespace-nowrap">
                         <Link
                           href={`/admin/employees/${emp.id}`}
-                          className="text-sm font-medium text-primary hover:underline"
+                          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                         >
                           ดูรายละเอียด
                         </Link>

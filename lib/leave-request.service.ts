@@ -75,10 +75,16 @@ type ApproverTarget = {
 }
 
 async function resolveApproverTarget(
-  employee: { managerId: string | null } | null | undefined
+  employee: { managerId: string | null; approvers?: { userId: string | null }[] } | null | undefined
 ): Promise<ApproverTarget | null> {
+  // 1. Use the new many-to-many approvers relation first
+  const approverUsers = (employee?.approvers ?? []).map(a => a.userId).filter(Boolean) as string[]
+  if (approverUsers.length > 0) {
+    return { approverId: approverUsers[0], notifyIds: approverUsers }
+  }
+
+  // 2. Legacy fallback: single managerId
   if (employee?.managerId) {
-    // managerId references Employee.id — resolve the manager's User account
     const managerEmp = await prisma.employee.findUnique({
       where: { id: employee.managerId },
       select: { userId: true },
@@ -88,7 +94,7 @@ async function resolveApproverTarget(
     }
   }
 
-  // Fallback: all admin users receive the request (any one can approve)
+  // 3. Fallback: all admin users receive the request (any one can approve)
   const adminUsers = await prisma.user.findMany({
     where: { employee: { isAdmin: true } },
     orderBy: { createdAt: 'asc' },
@@ -96,8 +102,8 @@ async function resolveApproverTarget(
   })
   if (adminUsers.length === 0) return null
   return {
-    approverId: adminUsers[0].id,           // first admin stored for FK integrity
-    notifyIds:  adminUsers.map((u) => u.id), // ALL admins notified
+    approverId: adminUsers[0].id,
+    notifyIds:  adminUsers.map((u) => u.id),
   }
 }
 
@@ -127,7 +133,7 @@ export async function createDraft(
     select: {
       isProbation: true,
       name: true,
-      employee: { select: { managerId: true } },
+      employee: { select: { managerId: true, approvers: { select: { userId: true } } } },
     },
   })
 
@@ -480,7 +486,7 @@ export async function submitLeave(
       user: {
         select: {
           name: true,
-          employee: { select: { managerId: true } },
+          employee: { select: { managerId: true, approvers: { select: { userId: true } } } },
         },
       },
     },
