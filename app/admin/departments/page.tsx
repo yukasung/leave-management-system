@@ -59,31 +59,31 @@ export default async function DepartmentsPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40 border-b border-border">
                 <tr>
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">ชื่อแผนก</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">ผู้จัดการ</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">จำนวนพนักงาน</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">จัดการ</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ชื่อแผนก</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ผู้จัดการ</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวนพนักงาน</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {departments.map((dept, idx) => (
                   <tr key={dept.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
-                    <td className="px-5 py-4 text-muted-foreground/60">{idx + 1}</td>
-                    <td className="px-5 py-4 font-medium text-foreground">{dept.name}</td>
-                    <td className="px-5 py-4 text-center text-muted-foreground">
+                    <td className="px-5 py-4 text-muted-foreground/60 whitespace-nowrap">{idx + 1}</td>
+                    <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">{dept.name}</td>
+                    <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
                       {dept.manager ? (
                         <span>{dept.manager.name}</span>
                       ) : (
                         <span className="text-muted-foreground/40 italic">ไม่ระบุ</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-5 py-4 text-center whitespace-nowrap">
                       <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted text-foreground font-semibold text-xs">
                         {dept._count.employees}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-5 py-4 text-center whitespace-nowrap">
                       <Link
                         href={`/admin/departments/${dept.id}`}
                         className="text-sm font-medium text-primary hover:underline"

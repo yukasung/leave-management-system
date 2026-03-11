@@ -55,21 +55,21 @@ export default async function AuditLogPage() {
               <table className="min-w-full text-sm">
                 <thead className="bg-muted/40 border-b border-border">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ผู้ดำเนินการ</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">การดำเนินการ</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ประเภทข้อมูล</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">รหัสข้อมูล</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">คำอธิบาย</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ผู้ดำเนินการ</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">การดำเนินการ</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ประเภทข้อมูล</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">รหัสข้อมูล</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คำอธิบาย</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {logs.map((log, index) => (
                     <tr key={log.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
-                      <td className="px-4 py-3 text-muted-foreground/60">{index + 1}</td>
-                      <td className="px-4 py-3 font-medium text-foreground">{log.user.name}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-muted-foreground/60 whitespace-nowrap">{index + 1}</td>
+                      <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{log.user.name}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <span
                           className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${
                             ACTION_BADGE[log.action] ?? ACTION_BADGE_DEFAULT
@@ -78,7 +78,7 @@ export default async function AuditLogPage() {
                           {log.action}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{log.entityType}</td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{log.entityType}</td>
                       <td className="px-4 py-3 text-muted-foreground/60 font-mono text-xs truncate max-w-40">
                         {log.entityId}
                       </td>

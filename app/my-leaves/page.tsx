@@ -1,7 +1,6 @@
 ﻿import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { formatLeaveDuration } from '@/lib/leave-calc'
 import { formatDate } from '@/lib/format-date'
 import LeaveActionsCell from './LeaveActionsCell'
 import AdminLayout from '@/components/admin-layout'
@@ -83,14 +82,14 @@ export default async function MyLeaveHistoryPage({
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 border-b border-border">
                   <tr>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">ประเภทการลา</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่เริ่มลา</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่สิ้นสุด</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">จำนวน</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">เหตุผล</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">สถานะ</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันที่ขอ</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">จัดการ</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่เริ่มลา</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่สิ้นสุด</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวน</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">เหตุผล</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">สถานะ</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่ขอ</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -99,7 +98,7 @@ export default async function MyLeaveHistoryPage({
                     const label   = STATUS_LABEL[req.status] ?? req.status
                     return (
                       <tr key={req.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition">
-                        <td className="px-5 py-4 text-center font-medium text-foreground">
+                        <td className="px-5 py-4 text-center font-medium text-foreground whitespace-nowrap">
                           {req.leaveType.name}
                         </td>
                         <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
@@ -109,12 +108,12 @@ export default async function MyLeaveHistoryPage({
                           {formatDate(req.leaveEndDateTime)}
                         </td>
                         <td className="px-5 py-4 text-center font-semibold text-foreground">
-                          {formatLeaveDuration(req.totalDays)}
+                          {parseFloat(Number(req.totalDays).toFixed(2))}
                         </td>
-                        <td className="px-5 py-4 text-muted-foreground max-w-xs truncate">
+                        <td className="px-5 py-4 text-center text-muted-foreground max-w-xs truncate">
                           {req.reason || <span className="text-muted-foreground/40"></span>}
                         </td>
-                        <td className="px-5 py-4 text-center">
+                        <td className="px-5 py-4 text-center whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${badgeCls}`}>
                             {label}
                           </span>
@@ -122,7 +121,7 @@ export default async function MyLeaveHistoryPage({
                         <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
                           {formatDate(req.createdAt)}
                         </td>
-                        <td className="px-5 py-4 text-center">
+                        <td className="px-5 py-4 text-center whitespace-nowrap">
                           <LeaveActionsCell leaveId={req.id} status={req.status} />
                         </td>
                       </tr>

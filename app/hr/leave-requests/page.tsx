@@ -41,7 +41,6 @@ const STATUS_DOT: Record<string, string> = {
 }
 
 import { formatDate } from '@/lib/format-date'
-import { formatLeaveDuration } from '@/lib/leave-calc'
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, Search } from 'lucide-react'
 import { buttonVariants } from '@/lib/button-variants'
 import { cn } from '@/lib/utils'
@@ -210,7 +209,7 @@ export default async function HRLeaveRequestsPage({
             className="h-8 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           >
             {yearOptions.map((y) => (
-              <option key={y} value={String(y)}>{y}</option>
+              <option key={y} value={String(y)}>{y + 543}</option>
             ))}
           </select>
         </form>
@@ -226,7 +225,7 @@ export default async function HRLeaveRequestsPage({
               <table className="min-w-full divide-y divide-border text-sm">
                 <thead className="bg-muted/40">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
                     {([
                       { col: 'name',      label: 'ชื่อพนักงาน', center: false },
                       { col: 'department', label: 'แผนก',       center: false },
@@ -236,7 +235,7 @@ export default async function HRLeaveRequestsPage({
                       { col: 'totalDays', label: 'จำนวนวัน',    center: true },
                       { col: 'status',    label: 'สถานะ',        center: true },
                     ] as const).map(({ col, label, center }) => (
-                      <th key={col} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground ${center ? 'text-center' : 'text-left'}`}>
+                      <th key={col} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap ${center ? 'text-center' : 'text-left'}`}>
                         <Link href={sortUrl(col)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
                           {label}
                           {sortKey === col
@@ -247,24 +246,24 @@ export default async function HRLeaveRequestsPage({
                         </Link>
                       </th>
                     ))}
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">การดำเนินการ</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">การดำเนินการ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {requests.map((req, index) => (
                     <tr key={req.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
-                      <td className="px-4 py-3 text-muted-foreground">{skip + index + 1}</td>
-                      <td className="px-4 py-3 font-medium text-foreground">{req.user.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{skip + index + 1}</td>
+                      <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{req.user.name}</td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                         {req.user.department?.name ?? (
                           <span className="italic text-muted-foreground/50">ไม่ระบุ</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center text-muted-foreground">{req.leaveType.name}</td>
-                      <td className="px-4 py-3 text-center text-muted-foreground">{formatDate(req.leaveStartDateTime)}</td>
-                      <td className="px-4 py-3 text-center text-muted-foreground">{formatDate(req.leaveEndDateTime)}</td>
-                      <td className="px-4 py-3 text-center font-semibold text-foreground">{formatLeaveDuration(req.totalDays)}</td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{req.leaveType.name}</td>
+                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveStartDateTime)}</td>
+                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveEndDateTime)}</td>
+                      <td className="px-4 py-3 text-center font-semibold text-foreground whitespace-nowrap">{req.totalDays}</td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
                           STATUS_BADGE_NEW[req.status] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400 dark:border-gray-700'
                         }`}>
@@ -272,7 +271,7 @@ export default async function HRLeaveRequestsPage({
                           {STATUS_LABELS[req.status] ?? req.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
                         {(req.status === 'PENDING' || req.status === 'IN_REVIEW' || req.status === 'CANCEL_REQUESTED') ? (
                           <HRActionButtons id={req.id} status={req.status} />
                         ) : (

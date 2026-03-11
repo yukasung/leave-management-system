@@ -38,11 +38,12 @@ export default async function DashboardUserPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  const year = new Date().getFullYear()
+  const yearCE = new Date().getFullYear()
+  const year   = yearCE + 543
 
   const [balances, recentRequests, pendingCount, dbUser] = await Promise.all([
     prisma.leaveBalance.findMany({
-      where: { userId: session.user.id, year },
+      where: { userId: session.user.id, year: yearCE },
       orderBy: { leaveType: { name: 'asc' } },
       include: { leaveType: { select: { name: true } } },
     }),
@@ -220,10 +221,10 @@ export default async function DashboardUserPage() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 border-b border-border">
                   <tr>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ประเภทการลา</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">สิทธิ์ทั้งหมด</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">ใช้ไปแล้ว</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">คงเหลือ</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">สิทธิ์ทั้งหมด</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ใช้ไปแล้ว</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คงเหลือ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -236,10 +237,10 @@ export default async function DashboardUserPage() {
                       : 'text-emerald-600 dark:text-emerald-400'
                     return (
                       <tr key={b.id} className="hover:bg-muted/40 transition-colors duration-150">
-                        <td className="px-5 py-3 font-medium text-foreground">{b.leaveType.name}</td>
-                        <td className="px-5 py-3 text-center text-muted-foreground">{Number.isInteger(b.totalDays) ? b.totalDays : parseFloat(b.totalDays.toFixed(2))}</td>
-                        <td className="px-5 py-3 text-center text-muted-foreground">{Number.isInteger(b.usedDays) ? b.usedDays : parseFloat(b.usedDays.toFixed(2))}</td>
-                        <td className={`px-5 py-3 text-center font-semibold ${remColor}`}>{Number.isInteger(rem) ? rem : parseFloat(rem.toFixed(2))}</td>
+                        <td className="px-5 py-3 font-medium text-foreground whitespace-nowrap">{b.leaveType.name}</td>
+                        <td className="px-5 py-3 text-center text-muted-foreground whitespace-nowrap">{Number.isInteger(b.totalDays) ? b.totalDays : parseFloat(b.totalDays.toFixed(2))}</td>
+                        <td className="px-5 py-3 text-center text-muted-foreground whitespace-nowrap">{Number.isInteger(b.usedDays) ? b.usedDays : parseFloat(b.usedDays.toFixed(2))}</td>
+                        <td className={`px-5 py-3 text-center font-semibold whitespace-nowrap ${remColor}`}>{Number.isInteger(rem) ? rem : parseFloat(rem.toFixed(2))}</td>
                       </tr>
                     )
                   })}

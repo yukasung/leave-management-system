@@ -235,15 +235,15 @@ export default async function LeaveHistoryPage({
               <table className="min-w-full divide-y divide-border text-sm">
                 <thead className="bg-muted/40">
                   <tr>
-                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground w-10">#</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-10">#</th>
                     {/* Employee ID — no sort */}
-                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-25">
+                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-25">
                       รหัสพนักงาน
                     </th>
                     {COLUMNS.map(({ col, label, className, center }) => (
                       <th
                         key={col}
-                        className={cn('px-3 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground', center ? 'text-center' : 'text-left', className)}
+                        className={cn('px-3 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap', center ? 'text-center' : 'text-left', className)}
                       >
                         <Link
                           href={sortUrl(col)}
@@ -259,11 +259,11 @@ export default async function LeaveHistoryPage({
                       </th>
                     ))}
                     {/* Reason — no sort (long text) */}
-                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-35">
+                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-35">
                       เหตุผล
                     </th>
                     {/* Approver — no sort */}
-                    <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-30">
+                    <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-30">
                       ผู้อนุมัติ
                     </th>
                   </tr>
@@ -271,20 +271,20 @@ export default async function LeaveHistoryPage({
                 <tbody className="divide-y divide-border">
                   {requests.map((req, index) => (
                     <tr key={req.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
-                      <td className="px-3 py-3 text-muted-foreground text-xs">{skip + index + 1}</td>
-                      <td className="px-3 py-3 text-xs font-mono text-muted-foreground">
+                      <td className="px-3 py-3 text-muted-foreground text-xs whitespace-nowrap">{skip + index + 1}</td>
+                      <td className="px-3 py-3 text-xs font-mono text-muted-foreground whitespace-nowrap">
                         {req.user.employee?.employeeCode ?? (
                           <span className="italic opacity-40">—</span>
                         )}
                       </td>
                       {/* Name */}
-                      <td className="px-3 py-3 font-medium text-foreground">{req.user.name}</td>
+                      <td className="px-3 py-3 font-medium text-foreground whitespace-nowrap">{req.user.name}</td>
                       {/* Department */}
-                      <td className="px-3 py-3 text-center text-muted-foreground">
+                      <td className="px-3 py-3 text-center text-muted-foreground whitespace-nowrap">
                         {req.user.department?.name ?? <span className="italic opacity-40">—</span>}
                       </td>
                       {/* Leave type */}
-                      <td className="px-3 py-3 text-center text-muted-foreground">{req.leaveType.name}</td>
+                      <td className="px-3 py-3 text-center text-muted-foreground whitespace-nowrap">{req.leaveType.name}</td>
                       {/* Start */}
                       <td className="px-3 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveStartDateTime)}</td>
                       {/* End */}
@@ -294,7 +294,7 @@ export default async function LeaveHistoryPage({
                         {formatLeaveDuration(req.totalDays)}
                       </td>
                       {/* Status */}
-                      <td className="px-3 py-3 text-center">
+                      <td className="px-3 py-3 text-center whitespace-nowrap">
                         <span className={cn(
                           'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap',
                           STATUS_BADGE[req.status] ?? 'bg-gray-100 text-gray-600 border-gray-200',

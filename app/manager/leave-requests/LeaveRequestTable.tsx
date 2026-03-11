@@ -30,7 +30,7 @@ function ActionButtons({ id }: { id: string }) {
 
   return (
     <div className="space-y-1">
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-nowrap">
         <button
           disabled={isPending}
           onClick={() => handle(approveLeaveRequest)}
@@ -65,29 +65,28 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
       <table className="w-full bg-card text-sm">
         <thead>
           <tr className="bg-muted/40 border-b border-border text-left text-muted-foreground font-semibold">
-            <th className="px-5 py-3">พนักงาน</th>
-            <th className="px-5 py-3">ประเภทการลา</th>
-            <th className="px-5 py-3">วันที่</th>
-            <th className="px-5 py-3 text-center">จำนวน</th>
-            <th className="px-5 py-3">เหตุผล</th>
-            <th className="px-5 py-3">วันที่ส่งคำขอ</th>
-            <th className="px-5 py-3">การดำเนินการ</th>
+            <th className="px-5 py-3 whitespace-nowrap">พนักงาน</th>
+            <th className="px-5 py-3 whitespace-nowrap">ประเภทการลา</th>
+            <th className="px-5 py-3 whitespace-nowrap">วันที่</th>
+            <th className="px-5 py-3 text-center whitespace-nowrap">จำนวน</th>
+            <th className="px-5 py-3 whitespace-nowrap">เหตุผล</th>
+            <th className="px-5 py-3 whitespace-nowrap">วันที่ส่งคำขอ</th>
+            <th className="px-5 py-3 whitespace-nowrap">การดำเนินการ</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
           {requests.map((req) => (
             <tr key={req.id} className="hover:bg-muted/40 transition">
-              <td className="px-5 py-4">
-                <p className="font-medium text-foreground">{req.user.name}</p>
+              <td className="px-5 py-4 whitespace-nowrap">
                 <p className="text-xs text-muted-foreground/60">{req.user.email}</p>
               </td>
-              <td className="px-5 py-4 text-foreground">{req.leaveType.name}</td>
+              <td className="px-5 py-4 text-foreground whitespace-nowrap">{req.leaveType.name}</td>
               <td className="px-5 py-4 text-foreground whitespace-nowrap">
                 {formatDate(req.leaveStartDateTime)}
                 {' — '}
                 {formatDate(req.leaveEndDateTime)}
               </td>
-              <td className="px-5 py-4 text-center font-semibold text-foreground">
+              <td className="px-5 py-4 text-center font-semibold text-foreground whitespace-nowrap">
                 {formatLeaveDuration(req.totalDays)}
               </td>
               <td className="px-5 py-4 text-muted-foreground max-w-xs truncate">
@@ -96,7 +95,7 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
               <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
                 {formatDate(req.createdAt)}
               </td>
-              <td className="px-5 py-4">
+              <td className="px-5 py-4 whitespace-nowrap">
                 <ActionButtons id={req.id} />
               </td>
             </tr>

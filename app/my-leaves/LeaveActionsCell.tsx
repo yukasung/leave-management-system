@@ -77,7 +77,7 @@ export default function LeaveActionsCell({ leaveId, status }: Props) {
   // ── DRAFT: submit + edit + delete draft ──────────────────────────────────
   if (status === 'DRAFT') {
     return (
-      <div className="flex items-center gap-2 justify-center">
+      <div className="flex items-center gap-2 justify-center flex-nowrap">
         <button
           onClick={handleSubmit}
           disabled={pending}
@@ -131,7 +131,7 @@ export default function LeaveActionsCell({ leaveId, status }: Props) {
   // ── CANCEL_REQUESTED: awaiting HR ──────────────────────────────────────────
   if (status === 'CANCEL_REQUESTED') {
     return (
-      <span className="text-xs font-medium text-amber-600">รออนุมัติการยกเลิก</span>
+      <span className="text-xs font-medium text-amber-600 whitespace-nowrap">รออนุมัติการยกเลิก</span>
     )
   }
 

@@ -32,7 +32,7 @@ export default async function LeaveBalancePage() {
         {/* Header */}
         <div>
           <h2 className="text-lg font-semibold text-foreground">ยอดวันลาคงเหลือ</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">ปี {new Date().getFullYear()}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">ปี {new Date().getFullYear() + 543}</p>
         </div>
 
         {balances.length === 0 ? (
@@ -44,10 +44,10 @@ export default async function LeaveBalancePage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40 border-b border-border">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ประเภทการลา</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันลาที่ได้รับ</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">ใช้ไปแล้ว</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">คงเหลือ</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันลาที่ได้รับ</th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ใช้ไปแล้ว</th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คงเหลือ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -58,16 +58,16 @@ export default async function LeaveBalancePage() {
 
                   return (
                     <tr key={balance.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition">
-                      <td className="px-5 py-4 font-medium text-foreground">
+                      <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">
                         {balance.leaveType.name}
                       </td>
-                      <td className="px-5 py-4 text-center text-muted-foreground">
+                      <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
                         {balance.totalDays} วัน
                       </td>
-                      <td className="px-5 py-4 text-center text-muted-foreground">
+                      <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
                         {balance.usedDays} วัน
                       </td>
-                      <td className="px-5 py-4 text-center">
+                      <td className="px-5 py-4 text-center whitespace-nowrap">
                         <span
                           className={`inline-block px-3 py-1 rounded-full text-sm font-semibold border ${
                             isEmpty

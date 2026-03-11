@@ -1,7 +1,5 @@
 'use client'
 
-import { Languages } from 'lucide-react'
-import { buttonVariants } from '@/lib/button-variants'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -14,50 +12,13 @@ import {
 import { logout } from '@/app/actions/auth'
 import { ThemeToggle } from '@/components/theme-toggle'
 import Link from 'next/link'
-import { usePathname, useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 
 export type AdminUser = {
   name: string
   email: string
   avatarUrl?: string | null
   isAdmin: boolean
-}
-
-function LanguageSwitcher() {
-  const params = useParams()
-  const locale = (params?.locale as string) || 'th'
-  const rawPathname = usePathname()
-  const router = useRouter()
-
-  const switchLocale = (next: string) => {
-    const pathWithoutLocale = rawPathname.replace(new RegExp(`^/${locale}`), '') || '/'
-    router.push(`/${next}${pathWithoutLocale}`)
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-8 w-8')}
-        title="Switch language"
-      >
-        <Languages className="h-4 w-4" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36">
-        <DropdownMenuItem
-          onClick={() => switchLocale('th')}
-          className={locale === 'th' ? 'font-semibold text-primary' : ''}
-        >
-          🇹🇭 ภาษาไทย
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => switchLocale('en')}
-          className={locale === 'en' ? 'font-semibold text-primary' : ''}
-        >
-          🇬🇧 English
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
 }
 
 export default function Navbar({
@@ -82,9 +43,6 @@ export default function Navbar({
 
       {/* Theme toggle */}
       <ThemeToggle />
-
-      {/* Language switcher */}
-      <LanguageSwitcher />
 
       {/* User menu */}
       {user && (

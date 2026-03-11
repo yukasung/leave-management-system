@@ -425,7 +425,7 @@ export default function HolidayImportClient() {
                       {h.source === 'BOT' ? 'BOT' : 'Manual'}
                     </span>
                   </td>
-                  <td className="text-center px-4 py-3">
+                  <td className="text-center px-4 py-3 whitespace-nowrap">
                     <button
                       onClick={() => handleDelete(h.id)}
                       disabled={deletingId === h.id}

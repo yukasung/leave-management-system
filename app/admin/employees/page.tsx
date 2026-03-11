@@ -122,19 +122,19 @@ export default async function EmployeesPage({
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 border-b border-border">
                   <tr className="text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    <th className="px-5 py-3.5">รหัสพนักงาน</th>
-                    <th className="px-5 py-3.5">ชื่อ-นามสกุล</th>
-                    <th className="px-5 py-3.5 text-center">แผนก</th>
-                    <th className="px-5 py-3.5 text-center">ตำแหน่ง</th>
-                    <th className="px-5 py-3.5 text-center">ผู้ดูแลระบบ</th>
-                    <th className="px-5 py-3.5 text-center">สถานะ</th>
-                    <th className="px-5 py-3.5 text-center">จัดการ</th>
+                    <th className="px-5 py-3.5 whitespace-nowrap">รหัสพนักงาน</th>
+                    <th className="px-5 py-3.5 whitespace-nowrap">ชื่อ-นามสกุล</th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">แผนก</th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">ตำแหน่ง</th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">ผู้ดูแลระบบ</th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">สถานะ</th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {employees.map((emp) => (
                     <tr key={emp.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
-                      <td className="px-5 py-3.5 font-mono text-muted-foreground text-xs">
+                      <td className="px-5 py-3.5 font-mono text-muted-foreground text-xs whitespace-nowrap">
                         {emp.employeeCode}
                       </td>
                       <td className="px-5 py-3.5">
@@ -162,20 +162,20 @@ export default async function EmployeesPage({
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-center text-muted-foreground">
+                      <td className="px-5 py-3.5 text-center text-muted-foreground whitespace-nowrap">
                         {emp.department?.name ?? (
                           <span className="text-muted-foreground/40"></span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 text-center text-muted-foreground">{emp.position}</td>
-                      <td className="px-5 py-3.5 text-center">
+                      <td className="px-5 py-3.5 text-center text-muted-foreground whitespace-nowrap">{emp.position}</td>
+                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
                         {emp.isAdmin && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200 dark:border-violet-800/50">
                             ผู้ดูแลระบบ
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 text-center">
+                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
                         <span
                           className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
                             emp.isActive
@@ -191,7 +191,7 @@ export default async function EmployeesPage({
                           {emp.isActive ? 'ทำงานอยู่' : 'ไม่ทำงาน'}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-center">
+                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
                         <Link
                           href={`/admin/employees/${emp.id}`}
                           className="text-sm font-medium text-primary hover:underline"

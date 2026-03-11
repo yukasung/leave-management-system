@@ -93,7 +93,7 @@ export default async function LeaveBalanceReportPage({
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">รายงานยอดวันลาคงเหลือ</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">ปี {year} · สรุปวันลาคงเหลือของพนักงานทุกคน</p>
+            <p className="text-sm text-muted-foreground mt-0.5">ปี {year + 543} · สรุปวันลาคงเหลือของพนักงานทุกคน</p>
           </div>
         </div>
 
@@ -145,15 +145,15 @@ export default async function LeaveBalanceReportPage({
               <table className="min-w-full divide-y divide-border text-sm">
                 <thead className="bg-muted/40">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground w-10">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-36">ชื่อพนักงาน</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-28">แผนก</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-32">ประเภทการลา</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">โควตา (วัน)</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">ใช้ไปแล้ว</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">คงเหลือ</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-36">การใช้งาน</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">สถานะ</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-10">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-36">ชื่อพนักงาน</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-28">แผนก</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-32">ประเภทการลา</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">โควตา (วัน)</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">ใช้ไปแล้ว</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">คงเหลือ</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-36">การใช้งาน</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">สถานะ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -176,10 +176,10 @@ export default async function LeaveBalanceReportPage({
                             : 'hover:bg-primary/3 dark:hover:bg-primary/10',
                         )}
                       >
-                        <td className="px-4 py-3 text-muted-foreground text-xs">{index + 1}</td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{index + 1}</td>
 
                         {/* Name + code */}
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <p className="font-medium text-foreground">{b.user.name}</p>
                           {b.user.employee?.employeeCode && (
                             <p className="text-xs font-mono text-muted-foreground/60 mt-0.5">
@@ -189,25 +189,25 @@ export default async function LeaveBalanceReportPage({
                         </td>
 
                         {/* Department */}
-                        <td className="px-4 py-3 text-center text-muted-foreground">
+                        <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">
                           {b.user.department?.name ?? <span className="italic opacity-40">—</span>}
                         </td>
 
                         {/* Leave type */}
-                        <td className="px-4 py-3 text-center text-muted-foreground">{b.leaveType.name}</td>
+                        <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{b.leaveType.name}</td>
 
                         {/* Entitlement */}
-                        <td className="px-4 py-3 text-center tabular-nums text-foreground font-medium">
+                        <td className="px-4 py-3 text-center tabular-nums text-foreground font-medium whitespace-nowrap">
                           {b.totalDays % 1 === 0 ? b.totalDays : b.totalDays.toFixed(1)}
                         </td>
 
                         {/* Used */}
-                        <td className="px-4 py-3 text-center tabular-nums text-muted-foreground">
+                        <td className="px-4 py-3 text-center tabular-nums text-muted-foreground whitespace-nowrap">
                           {b.usedDays % 1 === 0 ? b.usedDays : b.usedDays.toFixed(1)}
                         </td>
 
                         {/* Remaining */}
-                        <td className="px-4 py-3 text-center tabular-nums">
+                        <td className="px-4 py-3 text-center tabular-nums whitespace-nowrap">
                           <span className={cn(
                             'font-semibold',
                             isEmpty ? 'text-red-600 dark:text-red-400' :

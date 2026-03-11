@@ -14,7 +14,7 @@ const MONTH_TH = [
   'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
 ]
 
-// ── Year conversion ──────────────────────────────────────────────────────────
+// ── Year conversion ────────────────────────────────────────────────────────────
 
 /** Convert a CE year to BE year for display. BE = CE + 543. */
 export function toBE(ceYear: number): number {
@@ -33,11 +33,10 @@ export function toCE(beYear: number): number {
  * e.g. new Date('2026-04-15') → "15 เมษายน 2569"
  */
 export function formatThaiDate(date: Date): string {
-  return date.toLocaleDateString('th-TH', {
-    day:   'numeric',
-    month: 'long',
-    year:  'numeric',
-  })
+  const d = date.getDate()
+  const m = MONTH_TH[date.getMonth()]
+  const y = toBE(date.getFullYear())
+  return `${d} ${m} ${y}`
 }
 
 /**
@@ -45,11 +44,10 @@ export function formatThaiDate(date: Date): string {
  * e.g. new Date('2026-04-15') → "15/04/2569"
  */
 export function formatThaiDateShort(date: Date): string {
-  return date.toLocaleDateString('th-TH', {
-    day:   '2-digit',
-    month: '2-digit',
-    year:  'numeric',
-  })
+  const d = String(date.getDate()).padStart(2, '0')
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const y = toBE(date.getFullYear())
+  return `${d}/${m}/${y}`
 }
 
 /**
@@ -57,22 +55,23 @@ export function formatThaiDateShort(date: Date): string {
  * e.g. "15 เม.ย. 2569 13:45" or "15 เม.ย. 2569 13:45:30" (with seconds)
  */
 export function formatThaiDateTime(date: Date, includeSeconds = false): string {
-  return date.toLocaleString('th-TH', {
-    year:   'numeric',
-    month:  'short',
-    day:    'numeric',
-    hour:   '2-digit',
-    minute: '2-digit',
-    ...(includeSeconds ? { second: '2-digit' } as const : {}),
-  })
+  const d = date.getDate()
+  const m = MONTH_TH[date.getMonth()].slice(0, 3) + '.'
+  const y = toBE(date.getFullYear())
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  const base = `${d} ${m} ${y} ${hh}:${mm}`
+  if (includeSeconds) {
+    const ss = String(date.getSeconds()).padStart(2, '0')
+    return `${base}:${ss}`
+  }
+  return base
 }
 
 // ── ISO string → display string ───────────────────────────────────────────────
 
 /**
  * Format a "YYYY-MM-DD" ISO date string as a long Thai date with BE year.
- * Parses the parts directly — no timezone shift — so it is safe for dates
- * stored as UTC midnight in the database.
  * e.g. "2026-04-15" → "15 เมษายน 2569"
  */
 export function formatThaiDateFromISO(iso: string): string {

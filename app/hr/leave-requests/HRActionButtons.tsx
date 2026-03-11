@@ -20,7 +20,7 @@ export function HRActionButtons({ id, status }: { id: string; status: string }) 
   if (status === 'CANCEL_REQUESTED') {
     return (
       <div className="space-y-1">
-        <div className="flex gap-2">
+        <div className="flex gap-2 whitespace-nowrap">
           <button
             disabled={isPending}
             onClick={() => handle(hrApproveCancellation)}
@@ -44,7 +44,7 @@ export function HRActionButtons({ id, status }: { id: string; status: string }) 
   // PENDING / IN_REVIEW: approve or reject the leave
   return (
     <div className="space-y-1">
-      <div className="flex gap-2">
+      <div className="flex gap-2 whitespace-nowrap">
         <button
           disabled={isPending}
           onClick={() => handle(approveLeaveRequest)}

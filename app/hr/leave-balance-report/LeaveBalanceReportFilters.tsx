@@ -124,7 +124,7 @@ export default function LeaveBalanceReportFilters({
           className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
         >
           {yearOptions.map((y) => (
-            <option key={y} value={String(y)}>{y}</option>
+            <option key={y} value={String(y)}>{y + 543}</option>
           ))}
         </select>
       </div>

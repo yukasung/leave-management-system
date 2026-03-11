@@ -73,41 +73,41 @@ export default async function LeaveTypesPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40 border-b border-border">
                 <tr>
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">ชื่อ</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันสูงสุด/ปี</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">วันสูงสุด/ครั้ง</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">ต้องแนบเอกสาร</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">หักยอด</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">ลาช่วงทดลองงาน</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">คำขอ</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">จัดการ</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ชื่อ</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันสูงสุด/ปี</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันสูงสุด/ครั้ง</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ต้องแนบเอกสาร</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">หักยอด</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ลาช่วงทดลองงาน</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คำขอ</th>
+                  <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {leaveTypes.map((lt) => (
                   <tr key={lt.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
-                    <td className="px-5 py-4 font-medium text-foreground">{lt.name}</td>
-                    <td className="px-5 py-4 text-center text-muted-foreground">
+                    <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">{lt.name}</td>
+                    <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
                       {lt.maxDaysPerYear ?? <span className="text-muted-foreground/40">—</span>}
                     </td>
-                    <td className="px-5 py-4 text-center text-muted-foreground">
+                    <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
                       {lt.maxDaysPerRequest ?? <span className="text-muted-foreground/40">—</span>}
                     </td>
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-5 py-4 text-center whitespace-nowrap">
                       <BoolBadge value={lt.requiresAttachment} yes="ต้องการ" no="ไม่ต้องการ" />
                     </td>
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-5 py-4 text-center whitespace-nowrap">
                       <BoolBadge value={lt.deductFromBalance} yes="หัก" no="ไม่หัก" />
                     </td>
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-5 py-4 text-center whitespace-nowrap">
                       <BoolBadge value={lt.allowDuringProbation} yes="อนุญาต" no="ไม่อนุญาต" />
                     </td>
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-5 py-4 text-center whitespace-nowrap">
                       <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted text-foreground font-semibold text-xs">
                         {lt._count.leaveRequests}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-5 py-4 text-right whitespace-nowrap">
                       <Link
                         href={`/admin/settings/leave-types/${lt.id}`}
                         className="text-sm font-medium text-primary hover:underline"

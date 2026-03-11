@@ -297,11 +297,11 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="pb-2 text-left text-xs font-semibold text-muted-foreground">แผนก</th>
-                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground">พนักงาน</th>
-                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground">คำขอ</th>
-                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground">วันรวม</th>
-                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground">เฉลี่ย/คน</th>
+                    <th className="pb-2 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">แผนก</th>
+                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">พนักงาน</th>
+                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">คำขอ</th>
+                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">วันรวม</th>
+                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">เฉลี่ย/คน</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -367,14 +367,14 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
             <table className="min-w-full divide-y divide-border text-sm">
               <thead className="bg-muted/40">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground w-10">#</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-36">แผนก</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">จำนวนพนักงาน</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-20">คำขอลา</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">พนักงานที่ลา</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-24">วันลารวม</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-28">เฉลี่ย/พนักงาน</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-36">การใช้งาน</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-10">#</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-36">แผนก</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">จำนวนพนักงาน</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-20">คำขอลา</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">พนักงานที่ลา</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">วันลารวม</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-28">เฉลี่ย/พนักงาน</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-36">การใช้งาน</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -384,16 +384,13 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
                   const color = CHART_COLORS[i % CHART_COLORS.length]
                   return (
                     <tr key={d.id} className="hover:bg-primary/3 transition-colors">
-                      <td className="px-4 py-3 text-muted-foreground text-xs">{i + 1}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                          <span className="font-medium text-foreground">{d.name}</span>
+                      <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{i + 1}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-center tabular-nums text-muted-foreground">{d.empCount}</td>
-                      <td className="px-4 py-3 text-center tabular-nums text-muted-foreground">{d.requestCount}</td>
-                      <td className="px-4 py-3 text-center tabular-nums text-muted-foreground">
+                      <td className="px-4 py-3 text-center tabular-nums text-muted-foreground whitespace-nowrap">{d.empCount}</td>
+                      <td className="px-4 py-3 text-center tabular-nums text-muted-foreground whitespace-nowrap">{d.requestCount}</td>
+                      <td className="px-4 py-3 text-center tabular-nums text-muted-foreground whitespace-nowrap">
                         {d.uniqueEmployees}
                         {d.empCount > 0 && (
                           <span className="text-xs ml-1 text-muted-foreground/50">
@@ -401,10 +398,10 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center tabular-nums font-semibold text-foreground">
+                      <td className="px-4 py-3 text-center tabular-nums font-semibold text-foreground whitespace-nowrap">
                         {d.totalDays % 1 === 0 ? d.totalDays : d.totalDays.toFixed(1)}
                       </td>
-                      <td className="px-4 py-3 text-center tabular-nums text-muted-foreground">
+                      <td className="px-4 py-3 text-center tabular-nums text-muted-foreground whitespace-nowrap">
                         {avg > 0 ? (avg % 1 === 0 ? avg : avg.toFixed(1)) : '—'}
                       </td>
                       <td className="px-4 py-3">
