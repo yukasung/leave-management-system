@@ -24,6 +24,7 @@ export default async function LeaveBalancePage() {
     email:     session.user.email ?? '',
     avatarUrl: dbUser?.avatarUrl ?? null,
     isAdmin:   session.user.isAdmin,
+    isManager: session.user.isManager,
   }
 
   return (
@@ -46,8 +47,8 @@ export default async function LeaveBalancePage() {
                 <tr>
                   <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
                   <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันลาที่ได้รับ</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ใช้ไปแล้ว</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คงเหลือ</th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ใช้ไปแล้ว (วัน)</th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คงเหลือ (วัน)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

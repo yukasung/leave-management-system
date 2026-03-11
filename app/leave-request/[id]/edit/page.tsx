@@ -93,6 +93,7 @@ export default async function EditLeavePage({
     email:     session.user.email ?? '',
     avatarUrl: dbUser?.avatarUrl ?? null,
     isAdmin:   session.user.isAdmin,
+    isManager: session.user.isManager,
   }
 
   return (

@@ -50,6 +50,7 @@ export default async function ProfilePage() {
     email:     user.email ?? '',
     avatarUrl: user.avatarUrl ?? null,
     isAdmin:   session.user.isAdmin,
+    isManager: session.user.isManager,
   }
 
   return (

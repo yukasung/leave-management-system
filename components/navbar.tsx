@@ -19,6 +19,7 @@ export type AdminUser = {
   email: string
   avatarUrl?: string | null
   isAdmin: boolean
+  isManager?: boolean
 }
 
 export default function Navbar({

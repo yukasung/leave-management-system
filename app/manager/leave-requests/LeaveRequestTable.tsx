@@ -64,11 +64,11 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
     <div className="overflow-x-auto rounded-2xl shadow-sm">
       <table className="w-full bg-card text-sm">
         <thead>
-          <tr className="bg-muted/40 border-b border-border text-left text-muted-foreground font-semibold">
-            <th className="px-5 py-3 whitespace-nowrap">พนักงาน</th>
+          <tr className="bg-muted/40 border-b border-border text-center text-muted-foreground font-semibold">
+            <th className="px-5 py-3 whitespace-nowrap text-left">พนักงาน</th>
             <th className="px-5 py-3 whitespace-nowrap">ประเภทการลา</th>
             <th className="px-5 py-3 whitespace-nowrap">วันที่</th>
-            <th className="px-5 py-3 text-center whitespace-nowrap">จำนวน</th>
+            <th className="px-5 py-3 whitespace-nowrap">จำนวน (วัน)</th>
             <th className="px-5 py-3 whitespace-nowrap">เหตุผล</th>
             <th className="px-5 py-3 whitespace-nowrap">วันที่ส่งคำขอ</th>
             <th className="px-5 py-3 whitespace-nowrap">การดำเนินการ</th>
@@ -76,8 +76,9 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
         </thead>
         <tbody className="divide-y divide-border">
           {requests.map((req) => (
-            <tr key={req.id} className="hover:bg-muted/40 transition">
-              <td className="px-5 py-4 whitespace-nowrap">
+            <tr key={req.id} className="hover:bg-muted/40 transition text-center">
+              <td className="px-5 py-4 whitespace-nowrap text-left">
+                <p className="font-medium text-foreground">{req.user.name}</p>
                 <p className="text-xs text-muted-foreground/60">{req.user.email}</p>
               </td>
               <td className="px-5 py-4 text-foreground whitespace-nowrap">{req.leaveType.name}</td>
@@ -86,8 +87,8 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
                 {' — '}
                 {formatDate(req.leaveEndDateTime)}
               </td>
-              <td className="px-5 py-4 text-center font-semibold text-foreground whitespace-nowrap">
-                {formatLeaveDuration(req.totalDays)}
+              <td className="px-5 py-4 font-semibold text-foreground whitespace-nowrap">
+                {formatLeaveDuration(req.totalDays).replace(' วันทำการ', '')}
               </td>
               <td className="px-5 py-4 text-muted-foreground max-w-xs truncate">
                 {req.reason || <span className="text-muted-foreground/60">—</span>}
@@ -96,7 +97,9 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
                 {formatDate(req.createdAt)}
               </td>
               <td className="px-5 py-4 whitespace-nowrap">
-                <ActionButtons id={req.id} />
+                <div className="flex justify-center">
+                  <ActionButtons id={req.id} />
+                </div>
               </td>
             </tr>
           ))}

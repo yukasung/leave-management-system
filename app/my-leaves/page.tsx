@@ -61,6 +61,7 @@ export default async function MyLeaveHistoryPage({
     email:     session.user.email ?? '',
     avatarUrl: dbUser?.avatarUrl ?? null,
     isAdmin:   session.user.isAdmin,
+    isManager: session.user.isManager,
   }
 
   return (
@@ -85,7 +86,7 @@ export default async function MyLeaveHistoryPage({
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่เริ่มลา</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่สิ้นสุด</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวน</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวน (วัน)</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">เหตุผล</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">สถานะ</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่ขอ</th>

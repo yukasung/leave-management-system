@@ -29,7 +29,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Resolve admin flag from employee record
         const employee = await prisma.employee.findUnique({
           where: { userId: user.id },
-          select: { isAdmin: true },
+          select: { isAdmin: true, isManager: true },
         })
 
         return {
@@ -37,6 +37,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           email: user.email,
           name: user.name,
           isAdmin: employee?.isAdmin ?? false,
+          isManager: employee?.isManager ?? false,
         }
       },
     }),
@@ -46,14 +47,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id
         token.isAdmin = (user as { isAdmin: boolean }).isAdmin
+        token.isManager = (user as { isManager: boolean }).isManager
       }
-      // Re-hydrate isAdmin on every token refresh in case the token pre-dates the field
-      if (token.id && token.isAdmin === undefined) {
+      // Re-hydrate on every token refresh in case the token pre-dates the field
+      if (token.id && (token.isAdmin === undefined || token.isManager === undefined)) {
         const employee = await prisma.employee.findUnique({
           where: { userId: token.id as string },
-          select: { isAdmin: true },
+          select: { isAdmin: true, isManager: true },
         })
         token.isAdmin = employee?.isAdmin ?? false
+        token.isManager = employee?.isManager ?? false
       }
       return token
     },
@@ -61,6 +64,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token) {
         session.user.id = token.id as string
         session.user.isAdmin = token.isAdmin as boolean
+        session.user.isManager = token.isManager as boolean
       }
       return session
     },

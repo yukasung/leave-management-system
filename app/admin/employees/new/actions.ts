@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { hash } from 'bcryptjs'
 
 export type CreateEmployeeState = {
   success?: boolean
@@ -120,6 +121,40 @@ export async function createEmployee(
 
       return emp
     })
+
+    // ── Create User account + LeaveBalances for current year ─────────────────
+    const currentYear = new Date().getFullYear()
+    const [leaveTypes, existingUser] = await Promise.all([
+      prisma.leaveType.findMany({ select: { id: true, maxDaysPerYear: true } }),
+      prisma.user.findUnique({ where: { email }, select: { id: true } }),
+    ])
+
+    let userId: string
+    if (existingUser) {
+      userId = existingUser.id
+      await prisma.employee.update({ where: { id: employee.id }, data: { userId } })
+    } else {
+      const defaultPassword = await hash('admin1234', 10)
+      const newUser = await prisma.user.create({
+        data: {
+          email,
+          name: `${firstName} ${lastName}`,
+          password: defaultPassword,
+        },
+      })
+      userId = newUser.id
+      await prisma.employee.update({ where: { id: employee.id }, data: { userId } })
+    }
+
+    await Promise.all(
+      leaveTypes.map((lt) =>
+        prisma.leaveBalance.upsert({
+          where: { userId_leaveTypeId_year: { userId, leaveTypeId: lt.id, year: currentYear } },
+          create: { userId, leaveTypeId: lt.id, year: currentYear, totalDays: lt.maxDaysPerYear ?? 0, usedDays: 0 },
+          update: {},
+        })
+      )
+    )
 
     revalidatePath('/admin/employees')
 

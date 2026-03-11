@@ -108,6 +108,7 @@ export default async function LeaveRequestPage({
     email:     session.user.email ?? '',
     avatarUrl: dbUser?.avatarUrl ?? null,
     isAdmin:   session.user.isAdmin,
+    isManager: session.user.isManager,
   }
 
   return (

@@ -10,18 +10,30 @@ export default async function ManagerLeaveRequestsPage() {
 
   const userId = session.user.id
 
+  // Find the employee record for this user
+  const currentEmployee = await prisma.employee.findUnique({
+    where: { userId },
+    select: { id: true },
+  })
+
   const [requests, dbUser] = await Promise.all([
-    prisma.leaveRequest.findMany({
-      where: {
-        status: 'PENDING',
-        user: { employee: { manager: { userId } } },
-      },
-      orderBy: { createdAt: 'asc' },
-      include: {
-        user: { select: { name: true, email: true } },
-        leaveType: { select: { name: true } },
-      },
-    }),
+    currentEmployee
+      ? prisma.leaveRequest.findMany({
+          where: {
+            status: 'PENDING',
+            user: {
+              employee: {
+                approvers: { some: { id: currentEmployee.id } },
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+          include: {
+            user: { select: { name: true, email: true } },
+            leaveType: { select: { name: true } },
+          },
+        })
+      : Promise.resolve([]),
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { avatarUrl: true },
@@ -33,6 +45,7 @@ export default async function ManagerLeaveRequestsPage() {
     email:     session.user.email ?? '',
     avatarUrl: dbUser?.avatarUrl ?? null,
     isAdmin:   session.user.isAdmin,
+    isManager: session.user.isManager,
   }
 
   return (

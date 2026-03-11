@@ -67,6 +67,7 @@ export default async function DashboardUserPage() {
     email:     session.user.email ?? '',
     avatarUrl: dbUser?.avatarUrl ?? null,
     isAdmin:   session.user.isAdmin,
+    isManager: session.user.isManager,
   }
 
   const totalBalance = balances.reduce((s, b) => s + b.totalDays, 0)
@@ -222,9 +223,9 @@ export default async function DashboardUserPage() {
                 <thead className="bg-muted/40 border-b border-border">
                   <tr>
                     <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">สิทธิ์ทั้งหมด</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ใช้ไปแล้ว</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คงเหลือ</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">สิทธิ์ทั้งหมด (วัน)</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ใช้ไปแล้ว (วัน)</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คงเหลือ (วัน)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
