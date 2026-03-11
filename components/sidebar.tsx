@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useParams } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   LayoutDashboard,
   CalendarDays,
@@ -67,11 +67,12 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   // Build locale-prefixed href for links
   const href = (path: string) => locale ? `/${locale}${path}` : path
 
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return true
+  const [collapsed, setCollapsed] = useState(true)
+
+  useEffect(() => {
     const stored = localStorage.getItem('sidebar-collapsed')
-    return stored === null ? true : stored === 'true'
-  })
+    if (stored !== null) setCollapsed(stored === 'true')
+  }, [])
 
   const toggleCollapsed = () =>
     setCollapsed((c) => {
