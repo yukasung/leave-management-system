@@ -131,7 +131,7 @@ export default async function LeaveTypesPage() {
                     <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       คำขอ
                     </TableHead>
-                    <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       จัดการ
                     </TableHead>
                   </TableRow>
@@ -166,11 +166,11 @@ export default async function LeaveTypesPage() {
                       <TableCell className="text-center text-sm text-muted-foreground">
                         {lt._count.leaveRequests}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
                           <Link
                             href={`/admin/settings/leave-types/${lt.id}`}
-                            className="text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                           >
                             แก้ไข
                           </Link>

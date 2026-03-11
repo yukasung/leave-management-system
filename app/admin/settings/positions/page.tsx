@@ -94,7 +94,7 @@ export default async function PositionsPage() {
                         href={`/admin/settings/positions/${pos.id}`}
                         className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                       >
-                        แก้ไข →
+                        แก้ไข
                       </Link>
                     </td>
                   </tr>

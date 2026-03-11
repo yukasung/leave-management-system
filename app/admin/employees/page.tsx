@@ -11,15 +11,29 @@ const PAGE_SIZE = 15
 export default async function EmployeesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; department?: string; page?: string }>
+  searchParams: Promise<{ search?: string; department?: string; page?: string; sort?: string; order?: string }>
 }) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
   if (!session.user.isAdmin) redirect('/dashboard')
 
-  const { search, department, page: pageParam } = await searchParams
+  const { search, department, page: pageParam, sort: sortParam, order: orderParam } = await searchParams
   const currentPage = Math.max(1, parseInt(pageParam ?? '1', 10))
   const skip = (currentPage - 1) * PAGE_SIZE
+
+  const VALID_SORTS = ['employeeCode', 'firstName', 'department', 'position', 'isActive'] as const
+  type SortKey = typeof VALID_SORTS[number]
+  const sort: SortKey = VALID_SORTS.includes(sortParam as SortKey) ? (sortParam as SortKey) : 'department'
+  const order = orderParam === 'asc' ? 'asc' : 'desc'
+  const nextOrder = (col: SortKey) => (sort === col && order === 'asc' ? 'desc' : 'asc')
+
+  const ORDER_BY: Record<SortKey, object | object[]> = {
+    employeeCode: { employeeCode: order },
+    firstName:    [{ firstName: order }, { lastName: order }],
+    department:   [{ department: { name: order } }, { firstName: 'asc' as const }],
+    position:     [{ position: order }, { firstName: 'asc' as const }],
+    isActive:     [{ isActive: order === 'asc' ? 'desc' as const : 'asc' as const }, { firstName: 'asc' as const }],
+  }
 
   const where = {
     ...(search
@@ -40,7 +54,7 @@ export default async function EmployeesPage({
       where,
       skip,
       take: PAGE_SIZE,
-      orderBy: [{ department: { name: 'asc' } }, { firstName: 'asc' }],
+      orderBy: ORDER_BY[sort] as Parameters<typeof prisma.employee.findMany>[0]['orderBy'],
       select: {
         id: true,
         employeeCode: true,
@@ -50,6 +64,7 @@ export default async function EmployeesPage({
         avatarUrl: true,
         position: true,
         isAdmin: true,
+        isManager: true,
         isActive: true,
         isProbation: true,
         department: { select: { id: true, name: true } },
@@ -68,12 +83,23 @@ export default async function EmployeesPage({
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
-  function pageUrl(p: number) {
+  function pageUrl(p: number, s = sort, o = order) {
     const params = new URLSearchParams()
     if (search) params.set('search', search)
     if (department) params.set('department', department)
+    params.set('sort', s)
+    params.set('order', o)
     params.set('page', String(p))
     return `/admin/employees?${params.toString()}`
+  }
+
+  function sortUrl(col: SortKey) {
+    return pageUrl(1, col, nextOrder(col))
+  }
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sort !== col) return <span className="ml-1 opacity-30">↕</span>
+    return <span className="ml-1">{order === 'asc' ? '↑' : '↓'}</span>
   }
 
   const user = {
@@ -122,12 +148,32 @@ export default async function EmployeesPage({
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 border-b border-border">
                   <tr className="text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    <th className="px-5 py-3.5 whitespace-nowrap">รหัสพนักงาน</th>
-                    <th className="px-5 py-3.5 whitespace-nowrap">ชื่อ-นามสกุล</th>
-                    <th className="px-5 py-3.5 text-center whitespace-nowrap">แผนก</th>
-                    <th className="px-5 py-3.5 text-center whitespace-nowrap">ตำแหน่ง</th>
-                    <th className="px-5 py-3.5 text-center whitespace-nowrap">ผู้ดูแลระบบ</th>
-                    <th className="px-5 py-3.5 text-center whitespace-nowrap">สถานะ</th>
+                    <th className="px-5 py-3.5 whitespace-nowrap">
+                      <Link href={sortUrl('employeeCode')} className="inline-flex items-center hover:text-foreground transition-colors">
+                        รหัสพนักงาน<SortIcon col="employeeCode" />
+                      </Link>
+                    </th>
+                    <th className="px-5 py-3.5 whitespace-nowrap">
+                      <Link href={sortUrl('firstName')} className="inline-flex items-center hover:text-foreground transition-colors">
+                        ชื่อ-นามสกุล<SortIcon col="firstName" />
+                      </Link>
+                    </th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">
+                      <Link href={sortUrl('department')} className="inline-flex items-center justify-center w-full hover:text-foreground transition-colors">
+                        แผนก<SortIcon col="department" />
+                      </Link>
+                    </th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">
+                      <Link href={sortUrl('position')} className="inline-flex items-center justify-center w-full hover:text-foreground transition-colors">
+                        ตำแหน่ง<SortIcon col="position" />
+                      </Link>
+                    </th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">บทบาท</th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">
+                      <Link href={sortUrl('isActive')} className="inline-flex items-center justify-center w-full hover:text-foreground transition-colors">
+                        สถานะ<SortIcon col="isActive" />
+                      </Link>
+                    </th>
                     <th className="px-5 py-3.5 text-center whitespace-nowrap">จัดการ</th>
                   </tr>
                 </thead>
@@ -169,11 +215,18 @@ export default async function EmployeesPage({
                       </td>
                       <td className="px-5 py-3.5 text-center text-muted-foreground whitespace-nowrap">{emp.position}</td>
                       <td className="px-5 py-3.5 text-center whitespace-nowrap">
-                        {emp.isAdmin && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200 dark:border-violet-800/50">
-                            ผู้ดูแลระบบ
-                          </span>
-                        )}
+                        <div className="flex flex-col items-center gap-1">
+                          {emp.isAdmin && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200 dark:border-violet-800/50">
+                              ผู้ดูแลระบบ
+                            </span>
+                          )}
+                          {emp.isManager && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50">
+                              ผู้อนุมัติการลา
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-3.5 text-center whitespace-nowrap">
                         <span
@@ -196,7 +249,7 @@ export default async function EmployeesPage({
                           href={`/admin/employees/${emp.id}`}
                           className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                         >
-                          ดูรายละเอียด
+                          แก้ไข
                         </Link>
                       </td>
                     </tr>

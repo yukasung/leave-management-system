@@ -13,7 +13,6 @@ export default async function DepartmentsPage() {
     prisma.department.findMany({
       orderBy: { name: 'asc' },
       include: {
-        manager: { select: { name: true, email: true } },
         _count: { select: { employees: true } },
       },
     }),
@@ -61,7 +60,6 @@ export default async function DepartmentsPage() {
                 <tr>
                   <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ชื่อแผนก</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ผู้จัดการ</th>
                   <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวนพนักงาน</th>
                   <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จัดการ</th>
                 </tr>
@@ -71,13 +69,6 @@ export default async function DepartmentsPage() {
                   <tr key={dept.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
                     <td className="px-5 py-4 text-muted-foreground/60 whitespace-nowrap">{idx + 1}</td>
                     <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">{dept.name}</td>
-                    <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                      {dept.manager ? (
-                        <span>{dept.manager.name}</span>
-                      ) : (
-                        <span className="text-muted-foreground/40 italic">ไม่ระบุ</span>
-                      )}
-                    </td>
                     <td className="px-5 py-4 text-center whitespace-nowrap">
                       <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted text-foreground font-semibold text-xs">
                         {dept._count.employees}
@@ -88,7 +79,7 @@ export default async function DepartmentsPage() {
                         href={`/admin/departments/${dept.id}`}
                         className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                       >
-                        แก้ไข →
+                        แก้ไข
                       </Link>
                     </td>
                   </tr>

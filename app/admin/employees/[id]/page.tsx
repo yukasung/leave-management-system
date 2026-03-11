@@ -52,7 +52,7 @@ export default async function EditEmployeePage({
     prisma.employee.findMany({
       where: { isActive: true, isManager: true },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
-      select: { id: true, firstName: true, lastName: true, position: true },
+      select: { id: true, firstName: true, lastName: true, position: true, department: { select: { name: true } } },
     }),
     prisma.position.findMany({
       orderBy: { name: 'asc' },

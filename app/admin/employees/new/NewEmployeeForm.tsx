@@ -7,7 +7,7 @@ import AvatarUploader from '../AvatarUploader'
 import { User, Mail, Phone, Hash } from 'lucide-react'
 
 type Department = { id: string; name: string; manager: { employee: { id: string } | null } | null }
-type ManagerOption  = { id: string; firstName: string; lastName: string; position: string }
+type ManagerOption  = { id: string; firstName: string; lastName: string; position: string; department: { name: string } | null }
 type PositionOption = { id: string; name: string }
 
 const initialState: CreateEmployeeState = {}
@@ -209,37 +209,41 @@ export default function NewEmployeeForm({
           <label className="block text-sm font-medium text-foreground mb-1.5">
             ผู้อนุมัติการลา
           </label>
-          {managers.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic">ยังไม่มีผู้อนุมัติการลาในระบบ</p>
-          ) : (
-            <div className="rounded-lg border border-input overflow-hidden">
+          <div className="rounded-lg border border-input overflow-hidden">
               <table className="min-w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="w-10 px-3 py-2"></th>
                     <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">ชื่อ-นามสกุล</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">แผนก / ตำแหน่ง</th>
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-muted-foreground">แผนก</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {managers.map((m) => (
-                    <tr key={m.id} className="hover:bg-muted/40 transition-colors">
-                      <td className="px-3 py-2.5 text-center">
-                        <input
-                          type="checkbox"
-                          name="approverIds"
-                          value={m.id}
-                          className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                        />
+                  {managers.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-3 py-4 text-center text-sm text-muted-foreground italic">
+                        ไม่มีข้อมูลผู้อนุมัติการลา
                       </td>
-                      <td className="px-3 py-2.5 font-medium text-foreground">{m.firstName} {m.lastName}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground">{m.position}</td>
                     </tr>
-                  ))}
+                  ) : (
+                    managers.map((m) => (
+                      <tr key={m.id} className="hover:bg-muted/40 transition-colors">
+                        <td className="px-3 py-2.5 text-center">
+                          <input
+                            type="checkbox"
+                            name="approverIds"
+                            value={m.id}
+                            className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                          />
+                        </td>
+                        <td className="px-3 py-2.5 font-medium text-foreground">{m.firstName} {m.lastName}</td>
+                        <td className="px-3 py-2.5 text-center text-muted-foreground">{m.department?.name ?? <span className="italic opacity-50">ไม่ระบุ</span>}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
-          )}
         </div>
 
         <div className="pt-1">
