@@ -60,7 +60,7 @@ export default async function LeaveBalancePage() {
                     <thead className="bg-muted/20 border-b border-border">
                       <tr>
                         <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
-                        <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันลาที่ได้รับ</th>
+                        <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันลาที่ได้รับ (วัน)</th>
                         <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ใช้ไปแล้ว (วัน)</th>
                         <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คงเหลือ (วัน)</th>
                       </tr>
@@ -70,16 +70,17 @@ export default async function LeaveBalancePage() {
                         const remaining = balance.totalDays - balance.usedDays
                         const isLow   = remaining <= 2 && remaining > 0
                         const isEmpty = remaining <= 0
+                        const fmt = (n: number) => parseFloat(n.toFixed(2))
                         return (
                           <tr key={balance.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition">
                             <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">
                               {balance.leaveType.name}
                             </td>
                             <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                              {balance.totalDays} วัน
+                              {fmt(balance.totalDays)}
                             </td>
                             <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                              {balance.usedDays} วัน
+                              {fmt(balance.usedDays)}
                             </td>
                             <td className="px-5 py-4 text-center whitespace-nowrap">
                               <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold border ${
@@ -89,7 +90,7 @@ export default async function LeaveBalancePage() {
                                   ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50'
                                   : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50'
                               }`}>
-                                {remaining} วัน
+                                {fmt(remaining)}
                               </span>
                             </td>
                           </tr>
@@ -131,7 +132,7 @@ export default async function LeaveBalancePage() {
                             )}
                           </td>
                           <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                            {balance.usedDays} วัน
+                            {parseFloat(Number(balance.usedDays).toFixed(2))}
                           </td>
                           <td className="px-5 py-4 text-center whitespace-nowrap">
                             <span className="text-muted-foreground text-sm">ไม่จำกัด</span>

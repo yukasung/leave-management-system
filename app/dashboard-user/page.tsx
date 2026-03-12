@@ -206,51 +206,6 @@ export default async function DashboardUserPage() {
           )}
         </div>
 
-        {/* Leave balance table */}
-        {balances.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold text-foreground">สิทธิ์การลาคงเหลือ</h2>
-              <Link
-                href="/leave-balance"
-                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline cursor-pointer transition-colors"
-              >
-                ดูทั้งหมด <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-            <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 border-b border-border">
-                  <tr>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">สิทธิ์ทั้งหมด (วัน)</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ใช้ไปแล้ว (วัน)</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คงเหลือ (วัน)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {balances.map((b) => {
-                    const rem = b.totalDays - b.usedDays
-                    const pct = b.totalDays > 0 ? (b.usedDays / b.totalDays) * 100 : 0
-                    const remColor =
-                      rem <= 0    ? 'text-red-600 dark:text-red-400'
-                      : pct >= 75 ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-emerald-600 dark:text-emerald-400'
-                    return (
-                      <tr key={b.id} className="hover:bg-muted/40 transition-colors duration-150">
-                        <td className="px-5 py-3 font-medium text-foreground whitespace-nowrap">{b.leaveType.name}</td>
-                        <td className="px-5 py-3 text-center text-muted-foreground whitespace-nowrap">{Number.isInteger(b.totalDays) ? b.totalDays : parseFloat(b.totalDays.toFixed(2))}</td>
-                        <td className="px-5 py-3 text-center text-muted-foreground whitespace-nowrap">{Number.isInteger(b.usedDays) ? b.usedDays : parseFloat(b.usedDays.toFixed(2))}</td>
-                        <td className={`px-5 py-3 text-center font-semibold whitespace-nowrap ${remColor}`}>{Number.isInteger(rem) ? rem : parseFloat(rem.toFixed(2))}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
         {/* Recent requests */}
         <section>
           <div className="flex items-center justify-between mb-3">

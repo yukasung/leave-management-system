@@ -41,7 +41,7 @@ const STATUS_DOT: Record<string, string> = {
 }
 
 import { formatDate } from '@/lib/format-date'
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, Search, Paperclip } from 'lucide-react'
 import { buttonVariants } from '@/lib/button-variants'
 import { cn } from '@/lib/utils'
 
@@ -131,6 +131,8 @@ export default async function HRLeaveRequestsPage({
         leaveEndDateTime: true,
         totalDays: true,
         status: true,
+        documentUrl: true,
+        reason: true,
         user: { select: { name: true, department: { select: { name: true } } } },
         leaveType: { select: { name: true } },
       },
@@ -249,6 +251,7 @@ export default async function HRLeaveRequestsPage({
                         </Link>
                       </th>
                     ))}
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">เอกสารแนบ</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">การดำเนินการ</th>
                   </tr>
                 </thead>
@@ -274,6 +277,21 @@ export default async function HRLeaveRequestsPage({
                           <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[req.status] ?? 'bg-gray-400'}`} />
                           {STATUS_LABELS[req.status] ?? req.status}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                        {req.documentUrl ? (
+                          <a
+                            href={req.documentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="ดูเอกสารแนบ"
+                            className="inline-flex items-center justify-center h-7 w-7 rounded-md text-primary hover:bg-primary/10 transition-colors"
+                          >
+                            <Paperclip className="h-4 w-4" />
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground/30">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         {(req.status === 'PENDING' || req.status === 'IN_REVIEW' || req.status === 'CANCEL_REQUESTED' || req.status === 'APPROVED') ? (
