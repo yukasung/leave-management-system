@@ -6,7 +6,9 @@ import AdminLayout from '@/components/admin-layout'
 import LeaveHistoryFilters from './LeaveHistoryFilters'
 import { formatDate } from '@/lib/format-date'
 import { formatLeaveDuration } from '@/lib/leave-calc'
-import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Eye, FileText, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { StatCard } from '@/components/dashboard-cards'
+import Pagination from '@/components/Pagination'
 import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 10
@@ -189,10 +191,6 @@ export default async function LeaveHistoryPage({
     })}`
   }
 
-  function pageUrl(p: number) {
-    return `/hr/leave-history?${buildQS({ page: p > 1 ? String(p) : undefined })}`
-  }
-
   // ── Sort header helper ───────────────────────────────────────────────────────
   type ColDef = { col: SortKey; label: string; className?: string; center?: boolean }
   const COLUMNS: ColDef[] = [
@@ -206,6 +204,13 @@ export default async function LeaveHistoryPage({
     { col: 'createdAt',  label: 'วันที่สร้าง',       className: 'min-w-25', center: true },
   ]
 
+  // Stat counts for summary cards
+  const [approvedCount, pendingCount, rejectedCount] = await Promise.all([
+    prisma.leaveRequest.count({ where: { ...where, status: 'APPROVED' } }),
+    prisma.leaveRequest.count({ where: { ...where, status: { in: ['PENDING', 'IN_REVIEW'] } } }),
+    prisma.leaveRequest.count({ where: { ...where, status: 'REJECTED' } }),
+  ])
+
   return (
     <AdminLayout title="ประวัติการลาพนักงาน" user={user}>
       <div className="space-y-5 max-w-350 mx-auto">
@@ -214,6 +219,38 @@ export default async function LeaveHistoryPage({
         <div>
           <h1 className="text-xl font-bold text-foreground">ประวัติการลาพนักงาน</h1>
           <p className="text-sm text-muted-foreground mt-0.5">ข้อมูลคำขอลาทั้งหมดในระบบ</p>
+        </div>
+
+        {/* Summary cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard
+            label="ทั้งหมด"
+            value={total.toLocaleString()}
+            sub="คำขอในระบบ"
+            accent="blue"
+            icon={<FileText className="h-4 w-4" />}
+          />
+          <StatCard
+            label="อนุมัติแล้ว"
+            value={approvedCount.toLocaleString()}
+            sub="รายการ"
+            accent="green"
+            icon={<CheckCircle2 className="h-4 w-4" />}
+          />
+          <StatCard
+            label="รออนุมัติ"
+            value={pendingCount.toLocaleString()}
+            sub="รายการ"
+            accent="yellow"
+            icon={<Clock className="h-4 w-4" />}
+          />
+          <StatCard
+            label="ปฏิเสธ"
+            value={rejectedCount.toLocaleString()}
+            sub="รายการ"
+            accent="red"
+            icon={<XCircle className="h-4 w-4" />}
+          />
         </div>
 
         {/* Filters */}
@@ -265,6 +302,10 @@ export default async function LeaveHistoryPage({
                     {/* Approver — no sort */}
                     <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-30">
                       ผู้อนุมัติ
+                    </th>
+                    {/* Detail link — no sort */}
+                    <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-12">
+                      
                     </th>
                   </tr>
                 </thead>
@@ -323,6 +364,16 @@ export default async function LeaveHistoryPage({
                           <span className="italic opacity-40 text-xs">—</span>
                         )}
                       </td>
+                      {/* Detail link */}
+                      <td className="px-3 py-3 text-center">
+                        <Link
+                          href={`/leave-request/${req.id}/edit`}
+                          title="ดูรายละเอียด"
+                          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -330,68 +381,7 @@ export default async function LeaveHistoryPage({
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
-                <p className="text-xs text-muted-foreground">
-                  หน้า {currentPage} จาก {totalPages} ({total.toLocaleString()} รายการ)
-                </p>
-                <div className="flex items-center gap-1">
-                  {currentPage > 1 ? (
-                    <Link
-                      href={pageUrl(currentPage - 1)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Link>
-                  ) : (
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-muted/30 text-muted-foreground/30">
-                      <ChevronLeft className="h-4 w-4" />
-                    </span>
-                  )}
-
-                  {/* Page numbers */}
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let p: number
-                    if (totalPages <= 5) {
-                      p = i + 1
-                    } else if (currentPage <= 3) {
-                      p = i + 1
-                    } else if (currentPage >= totalPages - 2) {
-                      p = totalPages - 4 + i
-                    } else {
-                      p = currentPage - 2 + i
-                    }
-                    return (
-                      <Link
-                        key={p}
-                        href={pageUrl(p)}
-                        className={cn(
-                          'flex h-8 w-8 items-center justify-center rounded-lg border text-xs font-medium transition-colors',
-                          p === currentPage
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
-                        )}
-                      >
-                        {p}
-                      </Link>
-                    )
-                  })}
-
-                  {currentPage < totalPages ? (
-                    <Link
-                      href={pageUrl(currentPage + 1)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Link>
-                  ) : (
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-muted/30 text-muted-foreground/30">
-                      <ChevronRight className="h-4 w-4" />
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
+            <Pagination page={currentPage} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} />
           </div>
         )}
       </div>

@@ -2,10 +2,12 @@ import { prisma }      from '@/lib/prisma'
 import { auth }        from '@/lib/auth'
 import { LeaveStatus } from '@prisma/client'
 import AdminLayout     from '@/components/admin-layout'
+import { StatCard }    from '@/components/dashboard-cards'
 import PendingLeaveFilters from './PendingLeaveFilters'
 import { formatDate }  from '@/lib/format-date'
 import Link            from 'next/link'
 import { cn }          from '@/lib/utils'
+import { AlertTriangle, CalendarClock, Eye, Clock, Search } from 'lucide-react'
 
 type SearchParams = {
   approverId?:   string
@@ -139,13 +141,51 @@ export default async function PendingLeavePage({
 
   return (
     <AdminLayout title="คำขอรออนุมัติ" user={user}>
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-350 mx-auto">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">คำขอรออนุมัติ</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            คำขอลาที่อยู่ระหว่างรอการอนุมัติ
-          </p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-xl font-bold text-foreground">คำขอรออนุมัติ</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">คำขอลาที่อยู่ระหว่างรอการอนุมัติ</p>
+          </div>
+          {overdue > 0 && (
+            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 dark:border-red-800/50 dark:bg-red-950/30 px-3 py-2">
+              <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+              <span className="text-sm font-semibold text-red-700 dark:text-red-400">รอนานเกิน 3 วัน: {overdue} รายการ</span>
+            </div>
+          )}
+        </div>
+
+        {/* Summary cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard
+            label="รออนุมัติทั้งหมด"
+            value={rows.length}
+            sub="รายการ"
+            accent="indigo"
+            icon={<Clock className="h-4 w-4" />}
+          />
+          <StatCard
+            label="รอนานเกิน 3 วัน"
+            value={overdue}
+            sub="ด่วน"
+            accent={overdue > 0 ? 'red' : 'default'}
+            icon={<AlertTriangle className="h-4 w-4" />}
+          />
+          <StatCard
+            label="รออนุมัติ"
+            value={rows.filter(r => r.status === 'PENDING').length}
+            sub="รายการ"
+            accent="yellow"
+            icon={<Clock className="h-4 w-4" />}
+          />
+          <StatCard
+            label="รอ HR"
+            value={rows.filter(r => r.status === 'IN_REVIEW').length}
+            sub="รายการ"
+            accent="blue"
+            icon={<Search className="h-4 w-4" />}
+          />
         </div>
 
         {/* Filters */}
@@ -163,28 +203,32 @@ export default async function PendingLeavePage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">#</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">ชื่อพนักงาน</th>
-                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">แผนก</th>
-                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
-                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">วันที่เริ่ม</th>
-                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">วันที่สิ้นสุด</th>
-                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">จำนวน (วัน)</th>
-                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">
-                    <Link href={buildSortLink(nextDir)} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-8">#</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ชื่อพนักงาน</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">แผนก</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่เริ่ม</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่สิ้นสุด</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวน (วัน)</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+                    <Link href={buildSortLink(nextDir)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
                       วันที่ยื่น
                       <span className="text-xs">{sortDir === 'desc' ? '↓' : '↑'}</span>
                     </Link>
                   </th>
-                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">ผู้อนุมัติ</th>
-                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">สถานะ</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ผู้อนุมัติ</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">สถานะ</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
-                      ไม่มีคำขอที่รออนุมัติ
+                    <td colSpan={11} className="px-4 py-16 text-center">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <CalendarClock className="h-8 w-8 opacity-30" />
+                        <p className="text-sm">ไม่มีคำขอที่รออนุมัติ</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -198,22 +242,39 @@ export default async function PendingLeavePage({
                           : 'hover:bg-muted/40',
                       )}
                     >
-                      <td className="px-4 py-3 text-muted-foreground">{idx + 1}</td>
-                      <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{row.employeeName}</td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">{idx + 1}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <Link href={`/leave-request/${row.id}/edit`} className="font-medium text-foreground hover:text-primary hover:underline transition-colors">{row.employeeName}</Link>
+                        {row.isOverdue && (
+                          <span className="ml-2 inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/40 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:text-red-400">
+                            {row.waitDays}d
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{row.department}</td>
-                      <td className="px-4 py-3 text-center whitespace-nowrap">{row.leaveType}</td>
-                      <td className="px-4 py-3 text-center whitespace-nowrap">{formatDate(row.startDate)}</td>
-                      <td className="px-4 py-3 text-center whitespace-nowrap">{formatDate(row.endDate)}</td>
-                      <td className="px-4 py-3 text-center font-medium">{row.totalDays}</td>
-                      <td className="px-4 py-3 text-center whitespace-nowrap text-muted-foreground">{formatDate(row.createdAt)}</td>
-                      <td className="px-4 py-3 text-center whitespace-nowrap text-muted-foreground">{row.approverName}</td>
+                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{row.leaveType}</td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap text-muted-foreground">{formatDate(row.startDate)}</td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap text-muted-foreground">{formatDate(row.endDate)}</td>
+                      <td className="px-4 py-3 text-center font-semibold text-foreground whitespace-nowrap">{row.totalDays}</td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap text-muted-foreground text-xs">{formatDate(row.createdAt)}</td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap text-muted-foreground text-xs">{row.approverName}</td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className={cn(
-                          'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                          STATUS_CLASSES[row.status] ?? 'bg-gray-100 text-gray-700',
+                          'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                          STATUS_CLASSES[row.status] ?? 'bg-gray-100 text-gray-700 border-gray-200',
                         )}>
+                          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
                           {STATUS_LABELS[row.status] ?? row.status}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Link
+                          href={`/leave-request/${row.id}/edit`}
+                          title="ดูรายละเอียด"
+                          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Link>
                       </td>
                     </tr>
                   ))

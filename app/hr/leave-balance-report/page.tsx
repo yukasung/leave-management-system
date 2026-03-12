@@ -2,9 +2,10 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import AdminLayout from '@/components/admin-layout'
 import LeaveBalanceReportFilters from './LeaveBalanceReportFilters'
-import Pagination from './Pagination'
+import Pagination from '@/components/Pagination'
 import { cn } from '@/lib/utils'
-import { AlertTriangle, XCircle, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle, XCircle, CheckCircle2, Users } from 'lucide-react'
+import { StatCard } from '@/components/dashboard-cards'
 
 type SearchParams = {
   employee?:     string
@@ -98,10 +99,11 @@ export default async function LeaveBalanceReportPage({
     const rem = b.totalDays - b.usedDays
     return rem > 0 && b.totalDays > 0 && (b.usedDays / b.totalDays) >= 0.75
   }).length
+  const normalCount = allSummary.length - exhausted - low
 
   return (
     <AdminLayout title="รายงานยอดวันลาคงเหลือ" user={user}>
-      <div className="space-y-5">
+      <div className="space-y-5 max-w-350 mx-auto">
 
         {/* Header */}
         <div className="flex items-start justify-between">
@@ -109,6 +111,38 @@ export default async function LeaveBalanceReportPage({
             <h1 className="text-xl font-bold text-foreground">รายงานยอดวันลาคงเหลือ</h1>
             <p className="text-sm text-muted-foreground mt-0.5">ปี {year + 543} · สรุปวันลาคงเหลือของพนักงานทุกคน</p>
           </div>
+        </div>
+
+        {/* Summary stat cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard
+            label="ทั้งหมด"
+            value={allSummary.length.toLocaleString()}
+            sub="รายการ"
+            accent="indigo"
+            icon={<Users className="h-4 w-4" />}
+          />
+          <StatCard
+            label="ปกติ (ใช้ < 75%)"
+            value={normalCount.toLocaleString()}
+            sub="รายการ"
+            accent="green"
+            icon={<CheckCircle2 className="h-4 w-4" />}
+          />
+          <StatCard
+            label="เหลือน้อย (≥ 75%)"
+            value={low.toLocaleString()}
+            sub="รายการ"
+            accent={low > 0 ? 'yellow' : 'default'}
+            icon={<AlertTriangle className="h-4 w-4" />}
+          />
+          <StatCard
+            label="หมดโควตา"
+            value={exhausted.toLocaleString()}
+            sub="รายการ"
+            accent={exhausted > 0 ? 'red' : 'default'}
+            icon={<XCircle className="h-4 w-4" />}
+          />
         </div>
 
         {/* Alert summary cards */}

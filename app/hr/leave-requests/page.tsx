@@ -41,9 +41,8 @@ const STATUS_DOT: Record<string, string> = {
 }
 
 import { formatDate } from '@/lib/format-date'
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, Search, Paperclip, Eye } from 'lucide-react'
-import { buttonVariants } from '@/lib/button-variants'
-import { cn } from '@/lib/utils'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Search, Paperclip, Eye } from 'lucide-react'
+import Pagination from '@/components/Pagination'
 
 const PAGE_SIZE = 10
 
@@ -318,52 +317,7 @@ export default async function HRLeaveRequestsPage({
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              แสดง {skip + 1}–{Math.min(skip + PAGE_SIZE, total)} จาก {total} รายการ
-            </p>
-            <div className="flex items-center gap-1">
-              {currentPage > 1 ? (
-                <Link href={pageUrl(currentPage - 1)} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8 w-8 p-0')}>
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </Link>
-              ) : (
-                <button disabled className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8 w-8 p-0')}>
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </button>
-              )}
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                const p = currentPage <= 3
-                  ? i + 1
-                  : currentPage >= totalPages - 2
-                  ? totalPages - 4 + i
-                  : currentPage - 2 + i
-                if (p < 1 || p > totalPages) return null
-                return p === currentPage ? (
-                  <button key={p} className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'h-8 w-8 p-0 text-xs')}>
-                    {p}
-                  </button>
-                ) : (
-                  <Link key={p} href={pageUrl(p)} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8 w-8 p-0 text-xs')}>
-                    {p}
-                  </Link>
-                )
-              })}
-              {currentPage < totalPages ? (
-                <Link href={pageUrl(currentPage + 1)} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8 w-8 p-0')}>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Link>
-              ) : (
-                <button disabled className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8 w-8 p-0')}>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
+            <Pagination page={currentPage} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} />
           </div>
         )}
       </div>

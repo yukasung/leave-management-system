@@ -2,8 +2,9 @@
 
 import { useRouter, useParams } from 'next/navigation'
 import { useState, useCallback } from 'react'
-import { Building2, CalendarDays, Users, TrendingUp, Download } from 'lucide-react'
+import { Building2, CalendarDays, Users, TrendingUp, Download, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { StatCard } from '@/components/dashboard-cards'
 import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
 type LeaveType = { id: string; name: string }
@@ -130,40 +131,7 @@ function HorizontalBarChart({ data }: { data: DeptRow[] }) {
   )
 }
 
-// ── Stat Card ─────────────────────────────────────────────────────────────────
-type AccentKey = 'blue' | 'green' | 'indigo' | 'yellow'
-const accentValue: Record<AccentKey, string> = {
-  blue:   'text-blue-600 dark:text-blue-400',
-  green:  'text-emerald-600 dark:text-emerald-400',
-  indigo: 'text-indigo-600 dark:text-indigo-400',
-  yellow: 'text-amber-600 dark:text-amber-400',
-}
-const iconBg: Record<AccentKey, string> = {
-  blue:   'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400',
-  green:  'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
-  indigo: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400',
-  yellow: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400',
-}
-function StatCard({ label, value, sub, icon, accent }: {
-  label: string; value: string | number; sub?: string; icon: React.ReactNode; accent: AccentKey
-}) {
-  return (
-    <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md hover:-translate-y-px transition-all duration-200">
-      <div className="flex items-start justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-        <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl ring-1 ring-inset ring-black/5 dark:ring-white/10', iconBg[accent])}>
-          {icon}
-        </span>
-      </div>
-      <div>
-        <p className={cn('text-3xl font-bold tracking-tight tabular-nums', accentValue[accent])}>{value}</p>
-        {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
-      </div>
-    </div>
-  )
-}
-
-// ── Main ──────────────────────────────────────────────────────────────────────
+// ── Main ─────────────────────────────────────────────────────────────────────
 export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summary, filters }: Props) {
   const router  = useRouter()
   const params  = useParams()
@@ -216,18 +184,36 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
   const activeDepts = byDepartment.filter((d) => d.requestCount > 0).length
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-350 mx-auto">
 
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground">รายงานการลาตามแผนก</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">วิเคราะห์การใช้วันลาแยกตามแผนก · เฉพาะคำขอที่อนุมัติแล้ว</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">รายงานการลาตามแผนก</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            วิเคราะห์การใช้วันลาแยกตามแผนก
+            {hasFilters && filters.dateFrom && (
+              <span className="ml-2 text-primary font-medium">· {filters.dateFrom}{filters.dateTo ? ` – ${filters.dateTo}` : ''}</span>
+            )}
+          </p>
+        </div>
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors"
+          >
+            <span>×</span> ล้างตัวกรอง
+          </button>
+        )}
       </div>
 
       {/* Filters */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-foreground mb-4">ตัวกรอง</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ตัวกรอง</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">วันที่เริ่มต้น</label>
             <HolidayDatePicker name="dateFrom" value={dateFrom} onChange={setDateFrom} />
@@ -240,7 +226,7 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
             <label className="text-xs font-medium text-muted-foreground">ประเภทการลา</label>
             <select
               value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">ทุกประเภท</option>
               {leaveTypes.map((lt) => (
@@ -249,19 +235,19 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
             </select>
           </div>
         </div>
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 mt-3">
           <button
             onClick={applyFilters}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="h-9 px-5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             ค้นหา
           </button>
           {hasFilters && (
             <button
               onClick={clearFilters}
-              className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-muted-foreground hover:bg-muted transition-colors"
+              className="h-9 px-4 rounded-lg text-sm font-medium border border-border text-muted-foreground hover:bg-muted transition-colors"
             >
-              ล้างตัวกรอง
+              ล้าง
             </button>
           )}
         </div>
@@ -275,41 +261,45 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
         <StatCard label="เฉลี่ยต่อพนักงาน" value={avgPerEmp}                              sub="วัน / คน (ทั้งบริษัท)"             icon={<Users className="h-4 w-4" />}       accent="yellow" />
       </div>
 
-      {/* Chart + Table */}
+        {/* Chart + Table */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Horizontal bar chart */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-foreground">วันลาตามแผนก (Top 12)</h2>
-            <span className="text-xs text-muted-foreground">หน่วย: วัน</span>
+            <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-md bg-muted">หน่วย: วัน</span>
           </div>
-          <HorizontalBarChart data={byDepartment} />
+          <div className="flex-1">
+            <HorizontalBarChart data={byDepartment} />
+          </div>
         </div>
 
         {/* Summary table */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-foreground mb-4">สรุปตามแผนก</h2>
+        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden flex flex-col">
+          <div className="px-5 py-4 border-b border-border">
+            <h2 className="text-sm font-semibold text-foreground">สรุปตามแผนก</h2>
+          </div>
           {byDepartment.length === 0 ? (
             <div className="flex items-center justify-center h-52 text-muted-foreground text-sm">ไม่มีข้อมูล</div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto flex-1">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="pb-2 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">แผนก</th>
-                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">พนักงาน</th>
-                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">คำขอ</th>
-                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">วันรวม</th>
-                    <th className="pb-2 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">เฉลี่ย/คน</th>
+                <thead className="bg-muted/40">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">แผนก</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">พนักงาน</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คำขอ</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันรวม</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">เฉลี่ย/คน</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border">
                   {byDepartment.map((d, i) => {
                     const avg = d.empCount > 0 ? (d.totalDays / d.empCount).toFixed(1) : '—'
                     return (
-                      <tr key={d.id} className="border-b border-border/40 hover:bg-muted/30 transition-colors">
-                        <td className="py-2.5 pr-2">
+                      <tr key={d.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2">
                             <span
                               className="h-2.5 w-2.5 rounded-full shrink-0"
@@ -318,25 +308,25 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
                             <span className="font-medium text-foreground truncate max-w-28" title={d.name}>{d.name}</span>
                           </div>
                         </td>
-                        <td className="py-2.5 text-center tabular-nums text-muted-foreground">{d.empCount}</td>
-                        <td className="py-2.5 text-center tabular-nums text-muted-foreground">{d.requestCount}</td>
-                        <td className="py-2.5 text-center tabular-nums font-medium text-foreground">
+                        <td className="px-4 py-2.5 text-center tabular-nums text-muted-foreground">{d.empCount}</td>
+                        <td className="px-4 py-2.5 text-center tabular-nums text-muted-foreground">{d.requestCount}</td>
+                        <td className="px-4 py-2.5 text-center tabular-nums font-semibold text-foreground">
                           {d.totalDays % 1 === 0 ? d.totalDays : d.totalDays.toFixed(1)}
                         </td>
-                        <td className="py-2.5 text-center tabular-nums text-muted-foreground">{avg}</td>
+                        <td className="px-4 py-2.5 text-center tabular-nums text-muted-foreground">{avg}</td>
                       </tr>
                     )
                   })}
                 </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-border">
-                    <td className="pt-2.5 font-semibold text-foreground">รวม</td>
-                    <td className="pt-2.5 text-center tabular-nums font-semibold text-foreground">{summary.totalEmployees}</td>
-                    <td className="pt-2.5 text-center tabular-nums font-semibold text-foreground">{summary.totalRequests}</td>
-                    <td className="pt-2.5 text-center tabular-nums font-semibold text-foreground">
+                <tfoot className="border-t-2 border-border bg-muted/20">
+                  <tr>
+                    <td className="px-4 py-3 font-semibold text-foreground">รวม</td>
+                    <td className="px-4 py-3 text-center tabular-nums font-semibold text-foreground">{summary.totalEmployees}</td>
+                    <td className="px-4 py-3 text-center tabular-nums font-semibold text-foreground">{summary.totalRequests}</td>
+                    <td className="px-4 py-3 text-center tabular-nums font-semibold text-foreground">
                       {summary.totalDays % 1 === 0 ? summary.totalDays : summary.totalDays.toFixed(1)}
                     </td>
-                    <td className="pt-2.5 text-center tabular-nums font-semibold text-foreground">{avgPerEmp}</td>
+                    <td className="px-4 py-3 text-center tabular-nums font-semibold text-foreground">{avgPerEmp}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -349,7 +339,10 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
       {byDepartment.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <h2 className="text-sm font-semibold text-foreground">รายละเอียดทุกแผนก</h2>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">รายละเอียดทุกแผนก</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{byDepartment.length} แผนก</p>
+            </div>
             <button
               onClick={handleExport}
               disabled={exporting}
