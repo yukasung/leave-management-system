@@ -15,8 +15,7 @@
 
 import { useTransition, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { cancelLeaveRequest, submitLeaveRequest, deleteDraftLeaveRequest } from '@/app/leave-request/actions'
+import { cancelLeaveRequest } from '@/app/leave-request/actions'
 
 type Props = {
   leaveId: string
@@ -27,31 +26,6 @@ export default function LeaveActionsCell({ leaveId, status }: Props) {
   const [pending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null)
   const router = useRouter()
-
-  function handleSubmit() {
-    setFeedback(null)
-    startTransition(async () => {
-      const result = await submitLeaveRequest(leaveId)
-      if (result.success) {
-        setFeedback({ ok: true, msg: result.message ?? 'ส่งคำขอลาเรียบร้อยแล้ว' })
-        router.refresh()
-      } else {
-        setFeedback({ ok: false, msg: result.error ?? 'เกิดข้อผิดพลาด' })
-      }
-    })
-  }
-
-  function handleDeleteDraft() {
-    setFeedback(null)
-    startTransition(async () => {
-      const result = await deleteDraftLeaveRequest(leaveId)
-      if (result.success) {
-        router.refresh()
-      } else {
-        setFeedback({ ok: false, msg: result.error ?? 'เกิดข้อผิดพลาด' })
-      }
-    })
-  }
 
   function handleCancel() {
     setFeedback(null)
@@ -74,49 +48,8 @@ export default function LeaveActionsCell({ leaveId, status }: Props) {
     )
   }
 
-  // ── DRAFT: submit + edit + delete draft ──────────────────────────────────
-  if (status === 'DRAFT') {
-    return (
-      <div className="flex items-center gap-2 justify-center flex-nowrap">
-        <button
-          onClick={handleSubmit}
-          disabled={pending}
-          className="px-3 py-1 text-xs font-semibold bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition disabled:opacity-50"
-        >
-          {pending ? '…' : 'ส่งคำขอ'}
-        </button>
-        <Link
-          href={`/leave-request/${leaveId}/edit`}
-          className="px-3 py-1 text-xs font-semibold bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition"
-        >
-          แก้ไข
-        </Link>
-        <button
-          onClick={handleDeleteDraft}
-          disabled={pending}
-          className="px-3 py-1 text-xs font-semibold bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition disabled:opacity-50"
-        >
-          {pending ? '…' : 'ลบร่าง'}
-        </button>
-      </div>
-    )
-  }
-
-  // ── PENDING / IN_REVIEW: cancel ────────────────────────────────────────────
+  // ── PENDING / IN_REVIEW: request cancellation (goes through HR approval) ──
   if (status === 'PENDING' || status === 'IN_REVIEW') {
-    return (
-      <button
-        onClick={handleCancel}
-        disabled={pending}
-        className="px-3 py-1 text-xs font-semibold bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition disabled:opacity-50"
-      >
-        {pending ? '…' : 'ยกเลิก'}
-      </button>
-    )
-  }
-
-  // ── APPROVED: request cancellation (APPROVED → CANCEL_REQUESTED) ───────────
-  if (status === 'APPROVED') {
     return (
       <button
         onClick={handleCancel}
@@ -127,6 +60,9 @@ export default function LeaveActionsCell({ leaveId, status }: Props) {
       </button>
     )
   }
+
+  // ── APPROVED: only HR/admin can cancel, employee cannot ────────────────────
+  // (no button rendered)
 
   // ── CANCEL_REQUESTED: awaiting HR ──────────────────────────────────────────
   if (status === 'CANCEL_REQUESTED') {

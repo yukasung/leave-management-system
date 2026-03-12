@@ -1,7 +1,8 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { updateProfile } from './actions'
+import { Eye, EyeOff } from 'lucide-react'
+import { updateProfile, changePassword } from './actions'
 import AvatarUploader from '@/app/admin/employees/AvatarUploader'
 
 export type ProfileData = {
@@ -27,6 +28,13 @@ export default function ProfileForm({ data }: { data: ProfileData }) {
     success: false,
     message: '',
   })
+  const [pwdState, pwdAction, pwdPending] = useActionState(changePassword, {
+    success: false,
+    message: '',
+  })
+  const [showCurrent, setShowCurrent] = useState(false)
+  const [showNew,     setShowNew]     = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   // Track name locally for initials
   const [name, setName] = useState(data.name)
@@ -133,6 +141,97 @@ export default function ProfileForm({ data }: { data: ProfileData }) {
               className="px-5 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-sm font-semibold rounded-lg transition"
             >
               {profilePending ? 'กำลังบันทึก…' : 'บันทึกข้อมูล'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* ── Change password card ─────────────────────────────────────── */}
+      <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+        <div className="px-6 py-4 border-b border-border">
+          <h2 className="text-base font-semibold text-foreground">เปลี่ยนรหัสผ่าน</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">กรอกรหัสผ่านปัจจุบันและรหัสผ่านใหม่</p>
+        </div>
+        <form action={pwdAction} className="px-6 py-6 space-y-4">
+          <div>
+            <label className={labelCls} htmlFor="currentPassword">
+              รหัสผ่านปัจจุบัน <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                id="currentPassword"
+                name="currentPassword"
+                type={showCurrent ? 'text' : 'password'}
+                required
+                autoComplete="current-password"
+                className={`${inputCls} pr-10`}
+              />
+              <button type="button" onClick={() => setShowCurrent(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls} htmlFor="newPassword">
+                รหัสผ่านใหม่ <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  id="newPassword"
+                  name="newPassword"
+                  type={showNew ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  placeholder="อย่างน้อย 6 ตัวอักษร"
+                  className={`${inputCls} pr-10`}
+                />
+                <button type="button" onClick={() => setShowNew(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className={labelCls} htmlFor="confirmPassword">
+                ยืนยันรหัสผ่านใหม่ <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirm ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+                  className={`${inputCls} pr-10`}
+                />
+                <button type="button" onClick={() => setShowConfirm(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {pwdState.message && (
+            <p className={`text-sm px-3 py-2 rounded-lg ${
+              pwdState.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+            }`}>
+              {pwdState.message}
+            </p>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={pwdPending}
+              className="px-5 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-sm font-semibold rounded-lg transition"
+            >
+              {pwdPending ? 'กำลังบันทึก…' : 'เปลี่ยนรหัสผ่าน'}
             </button>
           </div>
         </form>

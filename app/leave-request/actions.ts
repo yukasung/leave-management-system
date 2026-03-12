@@ -82,7 +82,7 @@ export async function createLeaveRequest(
   const overlapping = await prisma.leaveRequest.findFirst({
     where: {
       userId: session.user.id,
-      status: { notIn: ['REJECTED', 'CANCELLED'] },
+      status: { notIn: ['DRAFT', 'REJECTED', 'CANCELLED'] },
       leaveStartDateTime: { lte: leaveEndDateTime },
       leaveEndDateTime:   { gte: leaveStartDateTime },
     },
@@ -109,13 +109,14 @@ export async function createLeaveRequest(
       documentUrl,
     })
 
+    await submitLeave(session.user.id, leaveRequestId)
+
     revalidatePath('/leave-request')
     revalidatePath('/my-leaves')
 
     return {
       success: true,
-      leaveRequestId,
-      message: 'บันทึกร่างคำขอลาเรียบร้อยแล้ว กรุณากดยืนยันเพื่อส่งคำขอ',
+      message: 'ส่งคำขอลาเรียบร้อยแล้ว รอการอนุมัติ',
     }
   } catch (e) {
     if (e instanceof LeaveServiceError) {

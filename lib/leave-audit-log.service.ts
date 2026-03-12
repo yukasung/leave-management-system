@@ -15,6 +15,9 @@ import 'server-only'
 
 import { Prisma } from '@prisma/client'
 
+// Accepts both PrismaClient and Prisma.TransactionClient — only needs leaveAuditLog
+type AuditClient = { leaveAuditLog: Prisma.TransactionClient['leaveAuditLog'] }
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type LeaveFieldChange = {
@@ -49,7 +52,7 @@ function str(value: string | Date | null | undefined): string | null {
  * @param changes    - Array of field-level diffs to record
  */
 export async function logLeaveFieldChanges(
-  tx: Prisma.TransactionClient,
+  tx: AuditClient,
   leaveId: string,
   changedBy: string,
   changes: LeaveFieldChange[]

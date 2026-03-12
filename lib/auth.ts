@@ -48,6 +48,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id
         token.isAdmin = (user as { isAdmin: boolean }).isAdmin
         token.isManager = (user as { isManager: boolean }).isManager
+        return token
+      }
+      // Ensure token.id is always set (fall back to token.sub which NextAuth sets automatically)
+      if (!token.id && token.sub) {
+        token.id = token.sub
+      }
+      // Re-validate: if token.id no longer exists in DB (e.g. after DB reset), re-derive from email
+      if (token.id && token.email) {
+        const userExists = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { id: true },
+        })
+        if (!userExists) {
+          const freshUser = await prisma.user.findUnique({
+            where: { email: token.email as string },
+            select: { id: true },
+          })
+          if (freshUser) {
+            token.id = freshUser.id
+            token.sub = freshUser.id
+            // Force re-hydration of flags
+            token.isAdmin = undefined
+            token.isManager = undefined
+          }
+        }
       }
       // Re-hydrate on every token refresh in case the token pre-dates the field
       if (token.id && (token.isAdmin === undefined || token.isManager === undefined)) {
@@ -62,7 +87,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.id as string
+        session.user.id = (token.id ?? token.sub) as string
         session.user.isAdmin = token.isAdmin as boolean
         session.user.isManager = token.isManager as boolean
       }

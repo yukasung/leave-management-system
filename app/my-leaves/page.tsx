@@ -9,7 +9,6 @@ import Link from 'next/link'
 const PAGE_SIZE = 14
 
 const STATUS_BADGE: Record<string, string> = {
-  DRAFT:            'bg-muted text-muted-foreground border-border',
   PENDING:          'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50',
   IN_REVIEW:        'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50',
   APPROVED:         'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50',
@@ -19,7 +18,6 @@ const STATUS_BADGE: Record<string, string> = {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  DRAFT:            'ร่าง',
   PENDING:          'รออนุมัติ',
   IN_REVIEW:        'กำลังพิจารณา',
   APPROVED:         'อนุมัติแล้ว',
@@ -40,9 +38,9 @@ export default async function MyLeaveHistoryPage({
   const page = Math.max(1, parseInt(pageStr ?? '1', 10) || 1)
 
   const [total, requests, dbUser] = await Promise.all([
-    prisma.leaveRequest.count({ where: { userId: session.user.id } }),
+    prisma.leaveRequest.count({ where: { userId: session.user.id, status: { not: 'DRAFT' } } }),
     prisma.leaveRequest.findMany({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, status: { not: 'DRAFT' } },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,

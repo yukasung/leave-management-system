@@ -9,7 +9,6 @@ import { formatDate } from '@/lib/format-date'
 import LeaveActionsCell from '@/app/my-leaves/LeaveActionsCell'
 
 const STATUS_BADGE: Record<string, string> = {
-  DRAFT:            'bg-muted text-muted-foreground border-border',
   PENDING:          'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50',
   IN_REVIEW:        'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50',
   APPROVED:         'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50',
@@ -19,7 +18,6 @@ const STATUS_BADGE: Record<string, string> = {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  DRAFT:            'ร่าง',
   PENDING:          'รออนุมัติ',
   IN_REVIEW:        'กำลังพิจารณา',
   APPROVED:         'อนุมัติแล้ว',
@@ -67,6 +65,7 @@ export default async function LeaveRequestPage({
     prisma.leaveRequest.count({
       where: {
         userId: session.user.id,
+        status: { not: 'DRAFT' },
         leaveStartDateTime: {
           gte: new Date(`${year}-01-01T00:00:00`),
           lt:  new Date(`${year + 1}-01-01T00:00:00`),
@@ -76,6 +75,7 @@ export default async function LeaveRequestPage({
     prisma.leaveRequest.findMany({
       where: {
         userId: session.user.id,
+        status: { not: 'DRAFT' },
         leaveStartDateTime: {
           gte: new Date(`${year}-01-01T00:00:00`),
           lt:  new Date(`${year + 1}-01-01T00:00:00`),

@@ -276,7 +276,7 @@ export default async function HRLeaveRequestsPage({
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">
-                        {(req.status === 'PENDING' || req.status === 'IN_REVIEW' || req.status === 'CANCEL_REQUESTED') ? (
+                        {(req.status === 'PENDING' || req.status === 'IN_REVIEW' || req.status === 'CANCEL_REQUESTED' || req.status === 'APPROVED') ? (
                           <HRActionButtons id={req.id} status={req.status} />
                         ) : (
                           <span className="text-muted-foreground/30">—</span>

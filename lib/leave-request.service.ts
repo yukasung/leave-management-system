@@ -506,51 +506,49 @@ export async function submitLeave(
 
   const approverTarget = await resolveApproverTarget(leave.user.employee)
 
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    // Transition DRAFT → PENDING
-    await tx.leaveRequest.update({
-      where: { id: leaveId },
-      data: { status: LeaveStatus.PENDING },
-    })
+  // Transition DRAFT → PENDING
+  await prisma.leaveRequest.update({
+    where: { id: leaveId },
+    data: { status: LeaveStatus.PENDING },
+  })
 
-    await tx.auditLog.create({
+  await prisma.auditLog.create({
+    data: {
+      userId,
+      action: 'SUBMIT_LEAVE_REQUEST',
+      entityType: 'LeaveRequest',
+      entityId: leaveId,
+      description: `Leave request submitted: ${leave.leaveType.name} — ${leave.totalDays} day(s)`,
+    },
+  })
+
+  await logLeaveFieldChanges(prisma, leaveId, userId, [
+    leaveFieldChange.status('DRAFT', 'PENDING'),
+  ])
+
+  // Assign approver + notify all recipients
+  if (approverTarget) {
+    // Remove any previous approval records for this draft (safety)
+    await prisma.approval.deleteMany({ where: { leaveRequestId: leaveId } })
+
+    await prisma.approval.create({
       data: {
-        userId,
-        action: 'SUBMIT_LEAVE_REQUEST',
-        entityType: 'LeaveRequest',
-        entityId: leaveId,
-        description: `Leave request submitted: ${leave.leaveType.name} — ${leave.totalDays} day(s)`,
+        leaveRequestId: leaveId,
+        approverId:     approverTarget.approverId,
+        level: 1,
+        status: ApprovalStatus.PENDING,
       },
     })
 
-    await logLeaveFieldChanges(tx, leaveId, userId, [
-      leaveFieldChange.status('DRAFT', 'PENDING'),
-    ])
-
-    // Assign approver + notify all recipients
-    if (approverTarget) {
-      // Remove any previous approval records for this draft (safety)
-      await tx.approval.deleteMany({ where: { leaveRequestId: leaveId } })
-
-      await tx.approval.create({
-        data: {
-          leaveRequestId: leaveId,
-          approverId:     approverTarget.approverId,
-          level: 1,
-          status: ApprovalStatus.PENDING,
-        },
-      })
-
-      const notifyMessage = `New leave request: ${leave.leaveType.name} by ${leave.user.name} (${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} day${leave.totalDays !== 1 ? 's' : ''})`
-      await tx.notification.createMany({
-        data: approverTarget.notifyIds.map((uid) => ({
-          userId:  uid,
-          message: notifyMessage,
-          isRead:  false,
-        })),
-      })
-    }
-  })
+    const notifyMessage = `New leave request: ${leave.leaveType.name} by ${leave.user.name} (${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} day${leave.totalDays !== 1 ? 's' : ''})`
+    await prisma.notification.createMany({
+      data: approverTarget.notifyIds.map((uid) => ({
+        userId:  uid,
+        message: notifyMessage,
+        isRead:  false,
+      })),
+    })
+  }
 }
 /**
  * Hard-delete a DRAFT leave request.
@@ -653,141 +651,148 @@ export async function cancelLeave(
         'คำขอยกเลิกอยู่ระหว่างรอการพิจารณาจาก HR กรุณารอการดำเนินการ'
       )
     }
-    // HR/ADMIN confirms cancellation → restore balance
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.leaveRequest.update({
-        where: { id: leaveId },
-        data:  { status: LeaveStatus.CANCELLED },
-      })
+    // HR/ADMIN confirms cancellation → restore balance only if leave was ever APPROVED
+    await prisma.leaveRequest.update({
+      where: { id: leaveId },
+      data:  { status: LeaveStatus.CANCELLED },
+    })
 
-      if (leave.leaveType.deductFromBalance) {
-        await restoreBalance(tx, leave.userId, leave.leaveTypeId, leave.leaveStartDateTime, leave.totalDays)
-      }
+    const wasApproved = await prisma.leaveAuditLog.findFirst({
+      where: { leaveId, fieldChanged: 'status', newValue: 'APPROVED' },
+    })
+    if (wasApproved) {
+      await restoreBalance(prisma, leave.userId, leave.leaveTypeId, leave.leaveStartDateTime, leave.totalDays)
+    }
 
-      await tx.auditLog.create({
-        data: {
-          userId:      callerId,
-          action:      'HR_OVERRIDE_CANCEL_LEAVE',
-          entityType:  'LeaveRequest',
-          entityId:    leaveId,
-          description: `[Admin OVERRIDE] Approved cancellation request: ${leave.leaveType.name} — ${leave.totalDays} day(s) restored`,
-        },
-      })
+    await prisma.auditLog.create({
+      data: {
+        userId:      callerId,
+        action:      'HR_OVERRIDE_CANCEL_LEAVE',
+        entityType:  'LeaveRequest',
+        entityId:    leaveId,
+        description: `[Admin OVERRIDE] Approved cancellation request: ${leave.leaveType.name} — ${leave.totalDays} day(s) restored`,
+      },
+    })
 
-      await logLeaveFieldChanges(tx, leaveId, callerId, [
-        leaveFieldChange.status('CANCEL_REQUESTED', 'CANCELLED'),
-      ])
+    await logLeaveFieldChanges(prisma, leaveId, callerId, [
+      leaveFieldChange.status('CANCEL_REQUESTED', 'CANCELLED'),
+    ])
 
-      await tx.notification.create({
-        data: {
-          userId:  leave.userId,
-          message: `คำขอยกเลิกการลา "${leave.leaveType.name}" ได้รับการอนุมัติแล้ว` +
-                   (leave.leaveType.deductFromBalance ? ` (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)` : ''),
-          isRead:  false,
-        },
-      })
+    await prisma.notification.create({
+      data: {
+        userId:  leave.userId,
+        message: `คำขอยกเลิกการลา "${leave.leaveType.name}" ได้รับการอนุมัติแล้ว` +
+                 (leave.leaveType.deductFromBalance ? ` (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)` : ''),
+        isRead:  false,
+      },
     })
 
     return { requestedCancellation: false }
   }
 
-  // ── APPROVED — non-privileged owner → request cancellation ───────────────
+  // ── APPROVED — non-privileged owner cannot cancel; only HR/admin may ───────────
   if (status === LeaveStatus.APPROVED && !callerIsPrivileged) {
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.leaveRequest.update({
-        where: { id: leaveId },
-        data:  { status: LeaveStatus.CANCEL_REQUESTED },
-      })
+    throw new LeaveServiceError('คำขอลาที่อนุมัติแล้วไม่สามารถยกเลิกเองได้ กรุณาติดต่อ HR หรือ Admin')
+  }
 
-      await tx.auditLog.create({
-        data: {
-          userId:      callerId,
-          action:      'REQUEST_CANCEL_LEAVE',
-          entityType:  'LeaveRequest',
-          entityId:    leaveId,
-          description: `Employee requested cancellation of approved leave: ${leave.leaveType.name} — ${leave.totalDays} day(s)`,
-        },
-      })
-
-      await logLeaveFieldChanges(tx, leaveId, callerId, [
-        leaveFieldChange.status('APPROVED', 'CANCEL_REQUESTED'),
-      ])
-
-      // Notify all HR users
-      const hrUsers = await tx.user.findMany({
-        where:  { employee: { isAdmin: true } },
-        select: { id: true },
-      })
-      if (hrUsers.length > 0) {
-        await tx.notification.createMany({
-          data: hrUsers.map((hr) => ({
-            userId:  hr.id,
-            message: `${leave.user.name} ขอยกเลิกการลา "${leave.leaveType.name}" (${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน) — รออนุมัติการยกเลิก`,
-            isRead:  false,
-          })),
-        })
-      }
+  // ── PENDING / IN_REVIEW — non-privileged owner → request cancellation ───────────────
+  if (
+    !callerIsPrivileged &&
+    (status === LeaveStatus.PENDING ||
+     status === LeaveStatus.IN_REVIEW)
+  ) {
+    await prisma.leaveRequest.update({
+      where: { id: leaveId },
+      data:  { status: LeaveStatus.CANCEL_REQUESTED },
     })
+
+    await prisma.auditLog.create({
+      data: {
+        userId:      callerId,
+        action:      'REQUEST_CANCEL_LEAVE',
+        entityType:  'LeaveRequest',
+        entityId:    leaveId,
+        description: `Employee requested cancellation of leave: ${leave.leaveType.name} — ${leave.totalDays} day(s) (was ${status})`,
+      },
+    })
+
+    await logLeaveFieldChanges(prisma, leaveId, callerId, [
+      leaveFieldChange.status(status, 'CANCEL_REQUESTED'),
+    ])
+
+    // Notify all HR users
+    const hrUsers = await prisma.user.findMany({
+      where:  { employee: { isAdmin: true } },
+      select: { id: true },
+    })
+    if (hrUsers.length > 0) {
+      await prisma.notification.createMany({
+        data: hrUsers.map((hr) => ({
+          userId:  hr.id,
+          message: `${leave.user.name} ขอยกเลิกการลา "${leave.leaveType.name}" (${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน) — รออนุมัติการยกเลิก`,
+          isRead:  false,
+        })),
+      })
+    }
 
     return { requestedCancellation: true }
   }
 
-  // ── APPROVED — HR/ADMIN → immediate cancellation + balance restore ────────
-  // Also handles: DRAFT, PENDING, IN_REVIEW for any authorised caller
-  const needsBalanceRestore =
-    status === LeaveStatus.APPROVED && leave.leaveType.deductFromBalance
+  // ── HR/ADMIN → immediate cancellation + balance restore ────────
+  // Handles: PENDING, IN_REVIEW, APPROVED, DRAFT
+  const needsBalanceRestore = status === LeaveStatus.APPROVED
   const auditAction = status === LeaveStatus.APPROVED
     ? 'HR_OVERRIDE_CANCEL_LEAVE'
     : 'CANCEL_LEAVE'
 
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    await tx.leaveRequest.update({
-      where: { id: leaveId },
-      data:  { status: LeaveStatus.CANCELLED },
-    })
+  await prisma.leaveRequest.update({
+    where: { id: leaveId },
+    data:  { status: LeaveStatus.CANCELLED },
+  })
 
-    if (needsBalanceRestore) {
-      await restoreBalance(tx, leave.userId, leave.leaveTypeId, leave.leaveStartDateTime, leave.totalDays)
-    }
+  if (needsBalanceRestore) {
+    await restoreBalance(prisma, leave.userId, leave.leaveTypeId, leave.leaveStartDateTime, leave.totalDays)
+  }
 
-    await tx.auditLog.create({
+  await prisma.auditLog.create({
+    data: {
+      userId:      callerId,
+      action:      auditAction,
+      entityType:  'LeaveRequest',
+      entityId:    leaveId,
+      description: (status === LeaveStatus.APPROVED
+        ? `[Admin OVERRIDE] Cancelled approved leave`
+        : `Leave cancelled (status was ${status})`) +
+        `: ${leave.leaveType.name} — ${leave.totalDays} day(s)` +
+        (needsBalanceRestore ? ' [balance restored]' : ''),
+    },
+  })
+
+  await logLeaveFieldChanges(prisma, leaveId, callerId, [
+    leaveFieldChange.status(status, 'CANCELLED'),
+  ])
+
+  // Notify owner if someone else (HR/ADMIN) cancelled on their behalf
+  if (callerId !== leave.userId) {
+    await prisma.notification.create({
       data: {
-        userId:      callerId,
-        action:      auditAction,
-        entityType:  'LeaveRequest',
-        entityId:    leaveId,
-        description: (status === LeaveStatus.APPROVED
-          ? `[Admin OVERRIDE] Cancelled approved leave`
-          : `Leave cancelled (status was ${status})`) +
-          `: ${leave.leaveType.name} — ${leave.totalDays} day(s)` +
-          (needsBalanceRestore ? ' [balance restored]' : ''),
+        userId:  leave.userId,
+        message: `คำขอลา "${leave.leaveType.name}" ของคุณถูกยกเลิกโดย Admin` +
+                 (needsBalanceRestore ? ` (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)` : ''),
+        isRead:  false,
       },
     })
-
-    await logLeaveFieldChanges(tx, leaveId, callerId, [
-      leaveFieldChange.status(status, 'CANCELLED'),
-    ])
-
-    // Notify owner if someone else (HR/ADMIN) cancelled on their behalf
-    if (callerId !== leave.userId) {
-      await tx.notification.create({
-        data: {
-          userId:  leave.userId,
-          message: `คำขอลา "${leave.leaveType.name}" ของคุณถูกยกเลิกโดย Admin` +
-                   (needsBalanceRestore ? ` (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)` : ''),
-          isRead:  false,
-        },
-      })
-    }
-  })
+  }
 
   return { requestedCancellation: false }
 }
 
 // ── Private: restore leave balance ───────────────────────────────────────────
 
+type BalanceClient = { leaveBalance: Prisma.TransactionClient['leaveBalance'] }
+
 async function restoreBalance(
-  tx: Prisma.TransactionClient,
+  tx: BalanceClient,
   userId: string,
   leaveTypeId: string,
   leaveStartDateTime: Date,

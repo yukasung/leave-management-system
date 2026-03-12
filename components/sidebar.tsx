@@ -47,7 +47,6 @@ const USER_NAV_ITEMS = [
   { href: '/leave-request',   icon: CalendarPlus,    label: 'ขอลา'           },
   { href: '/my-leaves',       icon: CalendarDays,    label: 'การลาของฉัน'   },
   { href: '/leave-balance',   icon: Wallet,          label: 'ยอดวันลา'      },
-  { href: '/profile',         icon: UserCircle,      label: 'โปรไฟล์'        },
 ]
 
 const SETTINGS_SUB_ITEMS = [
@@ -154,7 +153,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
           )
         })}
 
-        {/* Manager: คำขอลาที่รออนุมัติ */}
+        {/* Manager: คำขอลาที่รออนุมัติ — renders before โปรไฟล์ */}
         {isManager && (() => {
           const itemPath = '/manager/leave-requests'
           const active = pathname === itemPath || pathname.startsWith(itemPath + '/')
@@ -181,6 +180,40 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
                 )}
               />
               {!collapsed && <span className="truncate">คำขอลา</span>}
+              {!collapsed && active && (
+                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary/70" />
+              )}
+            </Link>
+          )
+        })()}
+
+        {/* โปรไฟล์ — always last in user nav */}
+        {(() => {
+          const itemPath = '/profile'
+          const active = pathname === itemPath || pathname.startsWith(itemPath + '/')
+          return (
+            <Link
+              href={href(itemPath)}
+              title={collapsed ? 'โปรไฟล์' : undefined}
+              className={cn(
+                'group relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
+                'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                active
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                collapsed ? 'justify-center px-2' : 'px-2.5',
+              )}
+            >
+              {active && !collapsed && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-5 rounded-r-full bg-primary" />
+              )}
+              <UserCircle
+                className={cn(
+                  'h-4 w-4 shrink-0 transition-colors',
+                  active ? 'text-primary' : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground',
+                )}
+              />
+              {!collapsed && <span className="truncate">โปรไฟล์</span>}
               {!collapsed && active && (
                 <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary/70" />
               )}

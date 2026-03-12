@@ -14,57 +14,52 @@ export async function hrApproveLeaveRequest(id: string): Promise<ActionResult> {
       return { success: false, message: 'คุณไม่มีสิทธิ์ดำเนินการนี้' }
     }
 
-    await prisma.$transaction(async (tx) => {
-      const oldLeave = await tx.leaveRequest.findUnique({
-        where: { id },
-        select: { status: true },
-      })
+    const oldLeave = await prisma.leaveRequest.findUnique({
+      where: { id },
+      select: { status: true },
+    })
 
-      const request = await tx.leaveRequest.update({
-        where: { id },
-        data: { status: 'APPROVED' },
-      })
+    const request = await prisma.leaveRequest.update({
+      where: { id },
+      data: { status: 'APPROVED' },
+    })
 
-      const year = new Date(request.leaveStartDateTime).getFullYear()
+    const year = new Date(request.leaveStartDateTime).getFullYear()
 
-      await tx.leaveBalance.updateMany({
-        where: {
-          userId: request.userId,
-          leaveTypeId: request.leaveTypeId,
-          year,
-        },
-        data: { usedDays: { increment: request.totalDays } },
-      })
+    await prisma.leaveBalance.updateMany({
+      where: { userId: request.userId, leaveTypeId: request.leaveTypeId, year },
+      data: { usedDays: { increment: request.totalDays } },
+    })
 
-      await tx.auditLog.create({
-        data: {
-          userId: session.user.id,
-          action: 'APPROVE_LEAVE',
-          entityType: 'LeaveRequest',
-          entityId: id,
-          description: 'HR อนุมัติคำขอลาแล้ว',
-        },
-      })
+    await prisma.auditLog.create({
+      data: {
+        userId: session.user.id,
+        action: 'APPROVE_LEAVE',
+        entityType: 'LeaveRequest',
+        entityId: id,
+        description: 'HR อนุมัติคำขอลาแล้ว',
+      },
+    })
 
-      await logLeaveFieldChanges(tx, id, session.user.id, [
-        leaveFieldChange.status(oldLeave?.status ?? null, 'APPROVED'),
-      ])
+    await logLeaveFieldChanges(prisma, id, session.user.id, [
+      leaveFieldChange.status(oldLeave?.status ?? null, 'APPROVED'),
+    ])
 
-      await tx.notification.create({
-        data: {
-          userId: request.userId,
-          message: 'คำขอลาของคุณได้รับการอนุมัติแล้ว',
-          isRead: false,
-        },
-      })
+    await prisma.notification.create({
+      data: {
+        userId: request.userId,
+        message: 'คำขอลาของคุณได้รับการอนุมัติแล้ว',
+        isRead: false,
+      },
     })
 
     revalidatePath('/hr/leave-requests')
     revalidatePath('/leave-balance')
 
     return { success: true, message: 'อนุมัติคำขอเรียบร้อยแล้ว' }
-  } catch {
-    return { success: false, message: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' }
+  } catch (e) {
+    console.error('[hrApproveLeaveRequest]', e)
+    return { success: false, message: e instanceof Error ? e.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' }
   }
 }
 
@@ -76,38 +71,36 @@ export async function hrRejectLeaveRequest(id: string): Promise<ActionResult> {
       return { success: false, message: 'คุณไม่มีสิทธิ์ดำเนินการนี้' }
     }
 
-    await prisma.$transaction(async (tx) => {
-      const oldLeave = await tx.leaveRequest.findUnique({
-        where: { id },
-        select: { status: true },
-      })
+    const oldLeave = await prisma.leaveRequest.findUnique({
+      where: { id },
+      select: { status: true },
+    })
 
-      const request = await tx.leaveRequest.update({
-        where: { id },
-        data: { status: 'REJECTED' },
-      })
+    const request = await prisma.leaveRequest.update({
+      where: { id },
+      data: { status: 'REJECTED' },
+    })
 
-      await tx.auditLog.create({
-        data: {
-          userId: session.user.id,
-          action: 'REJECT_LEAVE',
-          entityType: 'LeaveRequest',
-          entityId: id,
-          description: 'HR ปฏิเสธคำขอลา',
-        },
-      })
+    await prisma.auditLog.create({
+      data: {
+        userId: session.user.id,
+        action: 'REJECT_LEAVE',
+        entityType: 'LeaveRequest',
+        entityId: id,
+        description: 'HR ปฏิเสธคำขอลา',
+      },
+    })
 
-      await logLeaveFieldChanges(tx, id, session.user.id, [
-        leaveFieldChange.status(oldLeave?.status ?? null, 'REJECTED'),
-      ])
+    await logLeaveFieldChanges(prisma, id, session.user.id, [
+      leaveFieldChange.status(oldLeave?.status ?? null, 'REJECTED'),
+    ])
 
-      await tx.notification.create({
-        data: {
-          userId: request.userId,
-          message: 'คำขอลาของคุณถูกปฏิเสธแล้ว',
-          isRead: false,
-        },
-      })
+    await prisma.notification.create({
+      data: {
+        userId: request.userId,
+        message: 'คำขอลาของคุณถูกปฏิเสธแล้ว',
+        isRead: false,
+      },
     })
 
     revalidatePath('/hr/leave-requests')
@@ -125,60 +118,63 @@ export async function hrApproveCancellation(id: string): Promise<ActionResult> {
     if (!session?.user?.id) return { success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }
     if (!session.user.isAdmin) return { success: false, message: 'คุณไม่มีสิทธิ์ดำเนินการนี้' }
 
-    await prisma.$transaction(async (tx) => {
-      const leave = await tx.leaveRequest.findUnique({
-        where: { id },
-        select: {
-          status: true,
-          userId: true,
-          leaveTypeId: true,
-          leaveStartDateTime: true,
-          totalDays: true,
-          leaveType: { select: { name: true, deductFromBalance: true } },
-        },
+    const leave = await prisma.leaveRequest.findUnique({
+      where: { id },
+      select: {
+        status: true,
+        userId: true,
+        leaveTypeId: true,
+        leaveStartDateTime: true,
+        totalDays: true,
+        leaveType: { select: { name: true, deductFromBalance: true } },
+      },
+    })
+    if (!leave) return { success: false, message: 'ไม่พบคำขอลา' }
+    if (leave.status !== 'CANCEL_REQUESTED') return { success: false, message: 'สถานะไม่ถูกต้อง' }
+
+    await prisma.leaveRequest.update({ where: { id }, data: { status: 'CANCELLED' } })
+
+    // Only restore balance if this leave was actually APPROVED at some point
+    // (PENDING → CANCEL_REQUESTED never had usedDays incremented)
+    const wasApproved = await prisma.leaveAuditLog.findFirst({
+      where: { leaveId: id, fieldChanged: 'status', newValue: 'APPROVED' },
+    })
+    if (wasApproved) {
+      const cancelYear = new Date(leave.leaveStartDateTime).getFullYear()
+      await prisma.leaveBalance.updateMany({
+        where: { userId: leave.userId, leaveTypeId: leave.leaveTypeId, year: cancelYear },
+        data: { usedDays: { decrement: leave.totalDays } },
       })
-      if (!leave) throw new Error('ไม่พบคำขอลา')
-      if (leave.status !== 'CANCEL_REQUESTED') throw new Error('สถานะไม่ถูกต้อง')
+    }
 
-      await tx.leaveRequest.update({ where: { id }, data: { status: 'CANCELLED' } })
+    await prisma.auditLog.create({
+      data: {
+        userId: session.user.id,
+        action: 'HR_OVERRIDE_CANCEL_LEAVE',
+        entityType: 'LeaveRequest',
+        entityId: id,
+        description: `HR อนุมัติการยกเลิกลา: ${leave.leaveType.name} — ${leave.totalDays} วัน`,
+      },
+    })
 
-      if (leave.leaveType.deductFromBalance) {
-        const year = new Date(leave.leaveStartDateTime).getFullYear()
-        await tx.leaveBalance.updateMany({
-          where: { userId: leave.userId, leaveTypeId: leave.leaveTypeId, year },
-          data: { usedDays: { decrement: leave.totalDays } },
-        })
-      }
+    await logLeaveFieldChanges(prisma, id, session.user.id, [
+      leaveFieldChange.status('CANCEL_REQUESTED', 'CANCELLED'),
+    ])
 
-      await tx.auditLog.create({
-        data: {
-          userId: session.user.id,
-          action: 'HR_OVERRIDE_CANCEL_LEAVE',
-          entityType: 'LeaveRequest',
-          entityId: id,
-          description: `HR อนุมัติการยกเลิกลา: ${leave.leaveType.name} — ${leave.totalDays} วัน`,
-        },
-      })
-
-      await logLeaveFieldChanges(tx, id, session.user.id, [
-        leaveFieldChange.status('CANCEL_REQUESTED', 'CANCELLED'),
-      ])
-
-      await tx.notification.create({
-        data: {
-          userId: leave.userId,
-          message: `คำขอยกเลิกการลา "${leave.leaveType.name}" ได้รับการอนุมัติแล้ว` +
-            (leave.leaveType.deductFromBalance ? ` (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)` : ''),
-          isRead: false,
-        },
-      })
+    await prisma.notification.create({
+      data: {
+        userId: leave.userId,
+        message: `คำขอยกเลิกการลา "${leave.leaveType.name}" ได้รับการอนุมัติแล้ว (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)`,
+        isRead: false,
+      },
     })
 
     revalidatePath('/hr/leave-requests')
     revalidatePath('/leave-balance')
     return { success: true, message: 'อนุมัติการยกเลิกเรียบร้อยแล้ว' }
   } catch (e) {
-    return { success: false, message: e instanceof Error ? e.message : 'เกิดข้อผิดพลาด' }
+    console.error('[hrApproveCancellation]', e)
+    return { success: false, message: e instanceof Error ? e.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' }
   }
 }
 
@@ -189,41 +185,106 @@ export async function hrRejectCancellation(id: string): Promise<ActionResult> {
     if (!session?.user?.id) return { success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }
     if (!session.user.isAdmin) return { success: false, message: 'คุณไม่มีสิทธิ์ดำเนินการนี้' }
 
-    await prisma.$transaction(async (tx) => {
-      const leave = await tx.leaveRequest.findUnique({
-        where: { id },
-        select: { status: true, userId: true, leaveType: { select: { name: true } } },
-      })
-      if (!leave) throw new Error('ไม่พบคำขอลา')
-      if (leave.status !== 'CANCEL_REQUESTED') throw new Error('สถานะไม่ถูกต้อง')
+    const leave = await prisma.leaveRequest.findUnique({
+      where: { id },
+      select: { status: true, userId: true, leaveType: { select: { name: true } } },
+    })
+    if (!leave) return { success: false, message: 'ไม่พบคำขอลา' }
+    if (leave.status !== 'CANCEL_REQUESTED') return { success: false, message: 'สถานะไม่ถูกต้อง' }
 
-      await tx.leaveRequest.update({ where: { id }, data: { status: 'APPROVED' } })
+    // Find the status that existed before CANCEL_REQUESTED was set
+    const prevAudit = await prisma.leaveAuditLog.findFirst({
+      where: { leaveId: id, fieldChanged: 'status', newValue: 'CANCEL_REQUESTED' },
+      orderBy: { timestamp: 'desc' },
+    })
+    const revertTo = (prevAudit?.oldValue ?? 'APPROVED') as string
 
-      await tx.auditLog.create({
-        data: {
-          userId: session.user.id,
-          action: 'REJECT_LEAVE',
-          entityType: 'LeaveRequest',
-          entityId: id,
-          description: `HR ปฏิเสธคำขอยกเลิกลา: ${leave.leaveType.name}`,
-        },
-      })
+    await prisma.leaveRequest.update({ where: { id }, data: { status: revertTo } })
 
-      await logLeaveFieldChanges(tx, id, session.user.id, [
-        leaveFieldChange.status('CANCEL_REQUESTED', 'APPROVED'),
-      ])
+    await prisma.auditLog.create({
+      data: {
+        userId: session.user.id,
+        action: 'REJECT_LEAVE',
+        entityType: 'LeaveRequest',
+        entityId: id,
+        description: `HR ปฏิเสธคำขอยกเลิกลา: ${leave.leaveType.name} (คืนสถานะเป็น ${revertTo})`,
+      },
+    })
 
-      await tx.notification.create({
-        data: {
-          userId: leave.userId,
-          message: `คำขอยกเลิกการลา "${leave.leaveType.name}" ถูกปฏิเสธ — การลายังคงมีผล`,
-          isRead: false,
-        },
-      })
+    await logLeaveFieldChanges(prisma, id, session.user.id, [
+      leaveFieldChange.status('CANCEL_REQUESTED', revertTo),
+    ])
+
+    await prisma.notification.create({
+      data: {
+        userId: leave.userId,
+        message: `คำขอยกเลิกการลา "${leave.leaveType.name}" ถูกปฏิเสธ — การลายังคงมีผล`,
+        isRead: false,
+      },
     })
 
     revalidatePath('/hr/leave-requests')
     return { success: true, message: 'ปฏิเสธคำขอยกเลิกเรียบร้อยแล้ว' }
+  } catch (e) {
+    return { success: false, message: e instanceof Error ? e.message : 'เกิดข้อผิดพลาด' }
+  }
+}
+
+// Admin/HR force-cancel an APPROVED leave
+export async function hrAdminCancelApproved(id: string): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }
+    if (!session.user.isAdmin) return { success: false, message: 'คุณไม่มีสิทธิ์ดำเนินการนี้' }
+
+    const leave = await prisma.leaveRequest.findUnique({
+      where: { id },
+      select: {
+        status: true,
+        userId: true,
+        leaveTypeId: true,
+        leaveStartDateTime: true,
+        totalDays: true,
+        leaveType: { select: { name: true } },
+      },
+    })
+    if (!leave) return { success: false, message: 'ไม่พบคำขอลา' }
+    if (leave.status !== 'APPROVED') return { success: false, message: 'ยกเลิกได้เฉพาะคำขอลาที่อนุมัติแล้วเท่านั้น' }
+
+    await prisma.leaveRequest.update({ where: { id }, data: { status: 'CANCELLED' } })
+
+    // Restore usedDays (leave was APPROVED so usedDays was incremented)
+    const cancelYear = new Date(leave.leaveStartDateTime).getFullYear()
+    await prisma.leaveBalance.updateMany({
+      where: { userId: leave.userId, leaveTypeId: leave.leaveTypeId, year: cancelYear },
+      data: { usedDays: { decrement: leave.totalDays } },
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: session.user.id,
+        action: 'HR_OVERRIDE_CANCEL_LEAVE',
+        entityType: 'LeaveRequest',
+        entityId: id,
+        description: `[Admin] ยกเลิกวันลาที่อนุมัติ: ${leave.leaveType.name} — ${leave.totalDays} วัน`,
+      },
+    })
+
+    await logLeaveFieldChanges(prisma, id, session.user.id, [
+      leaveFieldChange.status('APPROVED', 'CANCELLED'),
+    ])
+
+    await prisma.notification.create({
+      data: {
+        userId: leave.userId,
+        message: `วันลา "${leave.leaveType.name}" ของคุณถูกยกเลิกโดย Admin (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)`,
+        isRead: false,
+      },
+    })
+
+    revalidatePath('/hr/leave-requests')
+    revalidatePath('/leave-balance')
+    return { success: true, message: 'ยกเลิกวันลาเรียบร้อยแล้ว' }
   } catch (e) {
     return { success: false, message: e instanceof Error ? e.message : 'เกิดข้อผิดพลาด' }
   }

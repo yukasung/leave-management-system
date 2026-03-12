@@ -1,10 +1,9 @@
 ﻿'use client'
 
-import { useActionState, useState, useEffect, useRef, useTransition, useCallback } from 'react'
-import { createLeaveRequest, submitLeaveRequest, type FormState } from './actions'
+import { useActionState, useState, useEffect, useRef, useCallback } from 'react'
+import { createLeaveRequest, type FormState } from './actions'
 import { calculateLeaveDuration, WORK_START_HOUR, WORK_START_MIN, WORK_END_HOUR, WORK_END_MIN } from '@/lib/leave-calc'
 import { buildPolicySummary, type LeaveTypePolicy } from '@/lib/leave-policy-utils'
-import { formatDate } from '@/lib/format-date'
 import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
 type BalanceInfo = { totalDays: number; usedDays: number }
@@ -31,29 +30,15 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   const [state, formAction, pending] = useActionState(createLeaveRequest, initialState)
 
   // ── Two-step flow state ────────────────────────────────────────────────────
-  type Phase = 'form' | 'confirm' | 'done'
+  type Phase = 'form' | 'done'
   const [phase, setPhase] = useState<Phase>('form')
-  const [submitPending, startSubmit] = useTransition()
-  const [submitError, setSubmitError] = useState<string | null>(null)
-  const [submitMessage, setSubmitMessage] = useState<string | null>(null)
 
-  // Snapshot for confirmation screen
-  const [snapshot, setSnapshot] = useState<{
-    leaveTypeName: string
-    leaveStartDateTime: string  // ISO string
-    leaveEndDateTime:   string
-    displayLabel: string
-    totalDays: number
-    reason: string
-    documentName: string
-  } | null>(null)
-
-  // Move to confirmation phase when DRAFT is saved successfully
+  // Move to done phase when leave request is submitted successfully
   useEffect(() => {
-    if (state.success && state.leaveRequestId) {
-      setPhase('confirm')
+    if (state.success) {
+      setPhase('done')
     }
-  }, [state.success, state.leaveRequestId])
+  }, [state.success])
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -180,17 +165,6 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
 
   // Capture snapshot then dispatch form action
   function handleFormAction(formData: FormData) {
-    if (preview && !preview.error) {
-      setSnapshot({
-        leaveTypeName:      selectedType?.name ?? '',
-        leaveStartDateTime,
-        leaveEndDateTime,
-        displayLabel:       preview.displayLabel,
-        totalDays:          preview.totalDays,
-        reason:             (formData.get('reason') as string) || '',
-        documentName,
-      })
-    }
     formAction(formData)
   }
 
@@ -204,24 +178,8 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
     !(needsAttachment && !documentUrl)
 
   // ── Handle final submit (DRAFT → PENDING) ─────────────────────────────────
-  function handleConfirmSubmit() {
-    if (!state.leaveRequestId) return
-    setSubmitError(null)
-    startSubmit(async () => {
-      const result = await submitLeaveRequest(state.leaveRequestId!)
-      if (result.success) {
-        setSubmitMessage(result.message ?? 'ส่งคำขอลาเรียบร้อยแล้ว')
-        setPhase('done')
-      } else {
-        setSubmitError(result.error ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่')
-      }
-    })
-  }
-
   function handleStartOver() {
     setPhase('form')
-    setSnapshot(null)
-    setSubmitError(null)
     setLeaveTypeId('')
     setStartDate(today)
     setEndDate(today)
@@ -229,83 +187,6 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
     setEndTime(DEFAULT_END_TIME)
     setDocumentUrl('')
     setDocumentName('')
-  }
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // Phase: Confirmation screen
-  // ════════════════════════════════════════════════════════════════════════════
-  if (phase === 'confirm' && snapshot) {
-    const startDT = new Date(snapshot.leaveStartDateTime)
-    const endDT   = new Date(snapshot.leaveEndDateTime)
-    const isSameDay = snapshot.leaveStartDateTime.slice(0, 10) === snapshot.leaveEndDateTime.slice(0, 10)
-    const timeRange = isSameDay
-      ? `${snapshot.leaveStartDateTime.slice(11, 16)} – ${snapshot.leaveEndDateTime.slice(11, 16)} น.`
-      : `${snapshot.leaveStartDateTime.slice(11, 16)} น. – ${snapshot.leaveEndDateTime.slice(11, 16)} น.`
-    return (
-      <div className="max-w-xl mx-auto mt-10 bg-card rounded-2xl shadow-md p-8">
-        <h1 className="text-2xl font-bold text-foreground mb-1">ยืนยันการส่งคำขอลา</h1>
-        <p className="text-sm text-muted-foreground mb-6">ตรวจสอบรายละเอียดก่อนส่งคำขอ</p>
-
-        {submitError && (
-          <div className="mb-5 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
-            ⚠ {submitError}
-          </div>
-        )}
-
-        {/* Summary card */}
-        <div className="rounded-xl border border-border bg-muted/40 divide-y divide-border mb-6 text-sm">
-          <Row label="ประเภทการลา" value={snapshot.leaveTypeName} />
-          <Row
-            label="วันที่"
-            value={
-              isSameDay
-                ? formatDate(startDT)
-                : `${formatDate(startDT)} – ${formatDate(endDT)}`
-            }
-          />
-          <Row label="เวลา" value={timeRange} />
-          <Row
-            label="จำนวน"
-            value={
-              <span className="font-semibold text-base text-foreground">
-                {snapshot.displayLabel}
-              </span>
-            }
-          />
-          {snapshot.reason && <Row label="เหตุผล" value={snapshot.reason} />}
-          {snapshot.documentName && <Row label="เอกสารแนบ" value={snapshot.documentName} />}
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={handleStartOver}
-            disabled={submitPending}
-            className="flex-1 py-2.5 border border-border text-foreground font-semibold rounded-lg hover:bg-muted/40 transition disabled:opacity-50"
-          >
-            กรอกใหม่
-          </button>
-          <button
-            type="button"
-            onClick={handleConfirmSubmit}
-            disabled={submitPending}
-            className="flex-1 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground font-semibold rounded-lg transition"
-          >
-            {submitPending ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                </svg>
-                กำลังส่งคำขอ…
-              </span>
-            ) : (
-              'ยืนยันส่งคำขอลา'
-            )}
-          </button>
-        </div>
-      </div>
-    )
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -320,7 +201,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
           </svg>
         </div>
         <h2 className="text-xl font-bold text-foreground mb-2">ส่งคำขอลาเรียบร้อยแล้ว</h2>
-        <p className="text-sm text-muted-foreground mb-6">{submitMessage}</p>
+        <p className="text-sm text-muted-foreground mb-6">{state.message ?? 'ส่งคำขอลาเรียบร้อยแล้ว รอการอนุมัติ'}</p>
         <button
           type="button"
           onClick={handleStartOver}
@@ -338,7 +219,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   return (
     <div className="max-w-xl mx-auto mt-10 bg-card rounded-2xl shadow-md p-8">
       <h1 className="text-2xl font-bold text-foreground mb-1">แบบฟอร์มขอลา</h1>
-      <p className="text-sm text-muted-foreground mb-6">กรอกข้อมูลการลาและกดบันทึกร่าง จากนั้นยืนยันเพื่อส่งคำขอ</p>
+      <p className="text-sm text-muted-foreground mb-6">กรอกข้อมูลและกดส่งคำขอลา</p>
 
       {state.errors?.general && (
         <div className="mb-5 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
@@ -577,10 +458,10 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
-              กำลังบันทึกร่าง...
+              กำลังส่งคำขอ...
             </span>
           ) : (
-            'บันทึกร่างคำขอลา'
+            'ส่งคำขอลา'
           )}
         </button>
       </form>
@@ -588,12 +469,3 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   )
 }
 
-// ── Helper component ──────────────────────────────────────────────────────────
-
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex items-start gap-3 px-4 py-3">
-      <span className="w-36 shrink-0 text-muted-foreground">{label}</span>
-      <span className="text-foreground font-medium">{value}</span>    </div>
-  )
-}
