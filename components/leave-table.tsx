@@ -115,9 +115,9 @@ export function LeaveTable({
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                     {row.employee.name.slice(0, 2).toUpperCase()}
                   </div>
-                  <span className="text-sm font-medium text-foreground">
+                  <Link href={`/leave-request/${row.id}/edit`} className="text-sm font-medium text-foreground hover:text-primary hover:underline transition-colors">
                     {row.employee.name}
-                  </span>
+                  </Link>
                 </div>
               </TableCell>
               {/* Leave Type */}
@@ -157,7 +157,7 @@ export function LeaveTable({
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center gap-1">
                     <Link
-                      href={`/hr/leave-requests?highlight=${row.id}`}
+                      href={`/leave-request/${row.id}/edit`}
                       className="text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                     >
                       ดูรายละเอียด

@@ -231,21 +231,23 @@ export default function HolidayImportClient() {
 
           {botStage === 'previewed' && preview && preview.total > 0 && (
             <>
-              <button
-                onClick={() => handleBOTImport('upsert')}
-                title={`เพิ่มวันหยุดที่ยังไม่มี และอัปเดตชื่อของวันหยุด BOT ที่เปลี่ยนแปลง
+              {saved.length > 0 && (
+                <button
+                  onClick={() => handleBOTImport('upsert')}
+                  title={`เพิ่มวันหยุดที่ยังไม่มี และอัปเดตชื่อของวันหยุด BOT ที่เปลี่ยนแปลง
 วันหยุดที่เพิ่มด้วยตนเอง (Manual) จะไม่ถูกแตะต้อง`}
-                className="inline-flex items-center gap-2 bg-green-600 hover:lg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-              >
-                อัปเดตข้อมูล (Upsert)
-              </button>
+                  className="inline-flex items-center gap-2 bg-green-600 hover:lg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  อัปเดตข้อมูล (Upsert)
+                </button>
+              )}
               <button
                 onClick={() => handleBOTImport('replace')}
                 title={`ลบวันหยุด BOT ทั้งหมดในปีนี้ออกก่อน แล้วนำเข้าข้อมูลใหม่ทั้งหมด
 วันหยุดที่เพิ่มด้วยตนเอง (Manual) จะไม่ถูกลบ`}
                 className="inline-flex items-center gap-2 bg-red-600 hover:lg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
               >
-                นำเข้าใหม่ทั้งหมด (Replace)
+                {saved.length === 0 ? 'นำเข้าข้อมูล' : 'นำเข้าใหม่ทั้งหมด (Replace)'}
               </button>
             </>
           )}

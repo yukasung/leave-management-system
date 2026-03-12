@@ -41,7 +41,7 @@ const STATUS_DOT: Record<string, string> = {
 }
 
 import { formatDate } from '@/lib/format-date'
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, Search, Paperclip } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, Search, Paperclip, Eye } from 'lucide-react'
 import { buttonVariants } from '@/lib/button-variants'
 import { cn } from '@/lib/utils'
 
@@ -74,7 +74,7 @@ export default async function HRLeaveRequestsPage({
     isAdmin:   true,
   }
 
-  const activeStatus = (status ?? 'PENDING').toUpperCase()
+  const activeStatus = (status ?? 'ALL').toUpperCase()
   const currentPage  = Math.max(1, parseInt(pageParam ?? '1', 10))
   const skip         = (currentPage - 1) * PAGE_SIZE
   const currentYear  = new Date().getFullYear()
@@ -144,14 +144,14 @@ export default async function HRLeaveRequestsPage({
 
   function buildQuery(overrides: Record<string, string | undefined> = {}) {
     const q = new URLSearchParams()
-    const merged = { status: activeStatus !== 'PENDING' ? activeStatus : undefined, search: search || undefined, year: selectedYear !== currentYear ? String(selectedYear) : undefined, sort: sortKey !== 'createdAt' ? sortKey : undefined, dir: sortDir !== 'desc' ? sortDir : undefined, ...overrides }
+    const merged = { status: activeStatus !== 'ALL' ? activeStatus : undefined, search: search || undefined, year: selectedYear !== currentYear ? String(selectedYear) : undefined, sort: sortKey !== 'createdAt' ? sortKey : undefined, dir: sortDir !== 'desc' ? sortDir : undefined, ...overrides }
     for (const [k, v] of Object.entries(merged)) if (v) q.set(k, v)
     const qs = q.toString()
     return `/hr/leave-requests${qs ? `?${qs}` : ''}`
   }
 
   function pageUrl(p: number) { return buildQuery({ page: p > 1 ? String(p) : undefined }) }
-  function tabUrl(tab: string) { return buildQuery({ status: tab !== 'PENDING' ? tab : undefined, page: undefined }) }
+  function tabUrl(tab: string) { return buildQuery({ status: tab !== 'ALL' ? tab : undefined, page: undefined }) }
   function sortUrl(col: string) {
     const newDir = sortKey === col && sortDir === 'desc' ? 'asc' : 'desc'
     return buildQuery({ sort: col !== 'createdAt' ? col : undefined, dir: newDir !== 'desc' ? newDir : undefined, page: undefined })
@@ -196,7 +196,7 @@ export default async function HRLeaveRequestsPage({
 
         {/* Search */}
         <form method="get" action="/hr/leave-requests" className="rounded-xl border border-border bg-card p-4 shadow-sm flex items-center gap-2">
-          {activeStatus !== 'PENDING' && <input type="hidden" name="status" value={activeStatus} />}
+          {activeStatus !== 'ALL' && <input type="hidden" name="status" value={activeStatus} />}
           <div className="relative min-w-56">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <input
@@ -259,7 +259,11 @@ export default async function HRLeaveRequestsPage({
                   {requests.map((req, index) => (
                     <tr key={req.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{skip + index + 1}</td>
-                      <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{req.user.name}</td>
+                      <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
+                        <Link href={`/leave-request/${req.id}/edit`} className="hover:text-primary hover:underline transition-colors">
+                          {req.user.name}
+                        </Link>
+                      </td>
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                         {req.user.department?.name ?? (
                           <span className="italic text-muted-foreground/50">ไม่ระบุ</span>
@@ -294,11 +298,20 @@ export default async function HRLeaveRequestsPage({
                         )}
                       </td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">
-                        {(req.status === 'PENDING' || req.status === 'IN_REVIEW' || req.status === 'CANCEL_REQUESTED' || req.status === 'APPROVED') ? (
-                          <HRActionButtons id={req.id} status={req.status} />
-                        ) : (
-                          <span className="text-muted-foreground/30">—</span>
-                        )}
+                        <div className="inline-flex items-center justify-center gap-1">
+                          <Link
+                            href={`/leave-request/${req.id}/edit`}
+                            title="ดูรายละเอียด"
+                            className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                          {(req.status === 'PENDING' || req.status === 'IN_REVIEW' || req.status === 'CANCEL_REQUESTED' || req.status === 'APPROVED') ? (
+                            <HRActionButtons id={req.id} status={req.status} />
+                          ) : (
+                            <span className="text-muted-foreground/30">—</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

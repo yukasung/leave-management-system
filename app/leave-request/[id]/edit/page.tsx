@@ -32,16 +32,37 @@ export default async function EditLeavePage({
   if (!leave) notFound()
 
   const isPrivileged = session.user.isAdmin
+  const isManager   = session.user.isManager
 
-  // Only the owner (or HR/ADMIN) may visit this page
-  if (leave.userId !== session.user.id && !isPrivileged) {
+  // Check if caller is an approver of this leave
+  let isApprover = false
+  if (isManager && !isPrivileged && leave.userId !== session.user.id) {
+    const approval = await prisma.approval.findFirst({
+      where: { leaveRequestId: leave.id, approverId: session.user.id },
+    })
+    if (!approval) {
+      // Also check if employee's manager is current user
+      const employee = await prisma.employee.findFirst({
+        where: { userId: leave.userId, managerId: session.user.id },
+      })
+      isApprover = !!employee
+    } else {
+      isApprover = true
+    }
+  }
+
+  // Only the owner, HR/ADMIN, or manager/approver may visit this page
+  if (leave.userId !== session.user.id && !isPrivileged && !isApprover) {
     redirect('/my-leaves')
   }
 
-  // Fields are editable only for DRAFT (any caller) or APPROVED (HR/ADMIN override)
-  const isEditable =
-    leave.status === 'DRAFT' ||
-    (leave.status === 'APPROVED' && isPrivileged)
+  // Fields are editable only for DRAFT
+  const isEditable = leave.status === 'DRAFT'
+
+  // Admin can perform actions (approve/reject/cancel) from the detail view
+  const canAdminAction =
+    isPrivileged &&
+    ['PENDING', 'IN_REVIEW', 'APPROVED', 'CANCEL_REQUESTED'].includes(leave.status)
 
   const year = new Date().getFullYear()
   const [leaveTypes, balances] = await Promise.all([
@@ -97,7 +118,7 @@ export default async function EditLeavePage({
   }
 
   return (
-    <AdminLayout title="แก้ไขคำขอลา" user={user}>
+    <AdminLayout title={isEditable ? 'แก้ไขคำขอลา' : 'รายละเอียดคำขอลา'} user={user}>
       <div className="max-w-2xl mx-auto">
         <EditLeaveForm
           leaveId={leave.id}
@@ -115,6 +136,9 @@ export default async function EditLeavePage({
           usageByType={usageByType}
           isEditable={isEditable}
           isPrivileged={isPrivileged}
+          canApprove={isApprover && (leave.status === 'PENDING' || leave.status === 'IN_REVIEW')}
+          canAdminAction={canAdminAction}
+          backHref={isApprover ? '/manager/leave-requests' : isPrivileged ? '/hr/leave-requests' : '/my-leaves'}
         />
       </div>
     </AdminLayout>

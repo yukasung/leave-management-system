@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
+import { Eye } from 'lucide-react'
 import { approveLeaveRequest, rejectLeaveRequest } from './actions'
 import { formatLeaveDuration } from '@/lib/leave-calc'
 import { formatDate } from '@/lib/format-date'
@@ -78,7 +80,7 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
           {requests.map((req) => (
             <tr key={req.id} className="hover:bg-muted/40 transition text-center">
               <td className="px-5 py-4 whitespace-nowrap text-left">
-                <p className="font-medium text-foreground">{req.user.name}</p>
+                <Link href={`/leave-request/${req.id}/edit`} className="font-medium text-foreground hover:text-primary hover:underline transition-colors">{req.user.name}</Link>
                 <p className="text-xs text-muted-foreground/60">{req.user.email}</p>
               </td>
               <td className="px-5 py-4 text-foreground whitespace-nowrap">{req.leaveType.name}</td>
@@ -97,7 +99,14 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
                 {formatDate(req.createdAt)}
               </td>
               <td className="px-5 py-4 whitespace-nowrap">
-                <div className="flex justify-center">
+                <div className="flex justify-center items-center gap-2">
+                  <Link
+                    href={`/leave-request/${req.id}/edit`}
+                    title="ดูรายละเอียด"
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Link>
                   <ActionButtons id={req.id} />
                 </div>
               </td>

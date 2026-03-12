@@ -278,7 +278,9 @@ export default async function LeaveHistoryPage({
                         )}
                       </td>
                       {/* Name */}
-                      <td className="px-3 py-3 font-medium text-foreground whitespace-nowrap">{req.user.name}</td>
+                      <td className="px-3 py-3 font-medium text-foreground whitespace-nowrap">
+                        <Link href={`/leave-request/${req.id}/edit`} className="hover:text-primary hover:underline transition-colors">{req.user.name}</Link>
+                      </td>
                       {/* Department */}
                       <td className="px-3 py-3 text-center text-muted-foreground whitespace-nowrap">
                         {req.user.department?.name ?? <span className="italic opacity-40">—</span>}

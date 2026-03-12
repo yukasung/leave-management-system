@@ -15,6 +15,8 @@ import { useActionState, useState, useEffect, useRef, useTransition, useCallback
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { updateLeaveRequest, submitLeaveRequest, type FormState } from './actions'
+import { approveLeaveRequest, rejectLeaveRequest } from '@/app/manager/leave-requests/actions'
+import { hrApproveLeaveRequest, hrRejectLeaveRequest, hrAdminCancelApproved, hrApproveCancellation } from '@/app/hr/leave-requests/actions'
 import { calculateLeaveDuration, WORK_START_HOUR, WORK_START_MIN, WORK_END_HOUR, WORK_END_MIN } from '@/lib/leave-calc'
 import { buildPolicySummary, type LeaveTypePolicy } from '@/lib/leave-policy-utils'
 import HolidayDatePicker from '@/app/components/HolidayDatePicker'
@@ -41,6 +43,9 @@ type Props = {
   usageByType:    Record<string, number>
   isEditable:     boolean
   isPrivileged:   boolean
+  canApprove?:    boolean
+  canAdminAction?: boolean
+  backHref?:      string
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -66,13 +71,14 @@ const HR_APPROVED_BANNER = {
 
 export default function EditLeaveForm({
   leaveId, existing, leaveTypes, balanceByType, usageByType,
-  isEditable, isPrivileged,
+  isEditable, isPrivileged, canApprove, canAdminAction, backHref = '/my-leaves',
 }: Props) {
   const boundAction = updateLeaveRequest.bind(null, leaveId)
   const [state, formAction, pending] = useActionState<FormState, FormData>(boundAction, {})
   const router = useRouter()
   const [submitting, startSubmitTransition] = useTransition()
   const [submitError, setSubmitError] = useState('')
+  const [adminActionDone, setAdminActionDone] = useState<{ ok: boolean; label: string; msg: string } | null>(null)
 
   function handleSubmit() {
     setSubmitError('')
@@ -276,20 +282,295 @@ export default function EditLeaveForm({
     ? HR_APPROVED_BANNER
     : null
 
+  // ── Read-only detail view (non-editable) ───────────────────────────────────
+  if (!isEditable) {
+    const selectedTypeName = leaveTypes.find((lt) => lt.id === existing.leaveTypeId)?.name ?? '—'
+
+    const formatDT = (dt: string) => {
+      if (!dt) return '—'
+      const [datePart, timePart] = dt.split('T')
+      if (!datePart) return { date: '—', time: '' }
+      const [y, m, d] = datePart.split('-').map(Number)
+      const MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
+      return { date: `${d} ${MONTHS[m - 1]} ${y + 543}`, time: timePart ? `${timePart} น.` : '' }
+    }
+    const startDT = formatDT(existing.leaveStartDateTime)
+    const endDT   = formatDT(existing.leaveEndDateTime)
+    const totalDaysStr = preview?.displayLabel ?? `${parseFloat(Number(existing.totalDays).toFixed(2))} วัน`
+    const fileName = existing.documentUrl ? existing.documentUrl.split('/').pop() ?? 'ดูเอกสาร' : null
+
+    // Timeline steps config
+    type StepStatus = 'done' | 'active' | 'pending' | 'error'
+    const TIMELINE_STEPS: { label: string; key: string; icon: string }[] = [
+      { key: 'SUBMITTED', label: 'ยื่นคำขอ',    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+      { key: 'PENDING',   label: 'รออนุมัติ',   icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+      { key: 'IN_REVIEW', label: 'พิจารณา',     icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' },
+      { key: 'RESULT',    label: 'ผลลัพธ์',     icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+    ]
+
+    const getStepStatus = (key: string): StepStatus => {
+      const s = existing.status
+      if (key === 'SUBMITTED') return 'done'
+      if (key === 'PENDING') {
+        if (s === 'PENDING') return 'active'
+        return 'done'
+      }
+      if (key === 'IN_REVIEW') {
+        if (s === 'IN_REVIEW') return 'active'
+        if (s === 'PENDING') return 'pending'
+        return 'done'
+      }
+      if (key === 'RESULT') {
+        if (s === 'APPROVED') return 'done'
+        if (s === 'REJECTED' || s === 'CANCELLED') return 'error'
+        if (s === 'CANCEL_REQUESTED') return 'active'
+        return 'pending'
+      }
+      return 'pending'
+    }
+
+    const RESULT_LABELS: Record<string, string> = {
+      APPROVED: 'อนุมัติ', REJECTED: 'ไม่อนุมัติ',
+      CANCELLED: 'ยกเลิก', CANCEL_REQUESTED: 'รอยกเลิก', IN_REVIEW: 'ผลลัพธ์', PENDING: 'ผลลัพธ์',
+    }
+    const stepLabel = (key: string) => key === 'RESULT'
+      ? (RESULT_LABELS[existing.status] ?? 'ผลลัพธ์') : TIMELINE_STEPS.find(s => s.key === key)?.label ?? ''
+
+    const stepColorClass = (status: StepStatus) => ({
+      done:    'bg-emerald-500 border-emerald-500 text-white',
+      active:  'bg-primary border-primary text-primary-foreground',
+      pending: 'bg-background border-border text-muted-foreground',
+      error:   'bg-red-500 border-red-500 text-white',
+    }[status])
+
+    const lineColorClass = (fromKey: string): string => {
+      const from = getStepStatus(fromKey)
+      return from === 'done' ? 'bg-emerald-400' : from === 'active' ? 'bg-primary/40' : 'bg-border'
+    }
+
+    return (
+      <div className="max-w-lg mx-auto mt-8 space-y-4">
+        {/* Card */}
+        <div className="bg-card rounded-2xl shadow-md border border-border overflow-hidden">
+
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <svg className="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <h1 className="text-base font-bold text-foreground">รายละเอียดคำขอลา</h1>
+            </div>
+            <Link href={backHref} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors">
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              ย้อนกลับ
+            </Link>
+          </div>
+
+          {/* Horizontal Timeline — hidden for approvers and admins */}
+          {!canApprove && !isPrivileged && (
+            <div className="px-6 pt-6 pb-4">
+              <div className="flex items-center">
+                {TIMELINE_STEPS.map((step, idx) => {
+                  const status = getStepStatus(step.key)
+                  const isLast = idx === TIMELINE_STEPS.length - 1
+                  return (
+                    <div key={step.key} className="flex items-center flex-1 last:flex-none">
+                      <div className="flex flex-col items-center gap-1.5 min-w-0">
+                        <div className={`h-9 w-9 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${stepColorClass(status)}`}>
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={step.icon} />
+                          </svg>
+                        </div>
+                        <span className={`text-[11px] font-medium text-center leading-tight whitespace-nowrap ${
+                          status === 'done' ? 'text-emerald-600 dark:text-emerald-400'
+                          : status === 'active' ? 'text-primary font-semibold'
+                          : status === 'error' ? 'text-red-500'
+                          : 'text-muted-foreground'
+                        }`}>
+                          {stepLabel(step.key)}
+                        </span>
+                      </div>
+                      {!isLast && (
+                        <div className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-all ${lineColorClass(step.key)}`} />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Divider */}
+          <div className="h-px bg-border mx-6" />
+
+          {/* Info rows */}
+          <div className="px-6 py-5 space-y-3">
+            {/* Leave type */}
+            <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
+              <div className="h-8 w-8 rounded-lg bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0">
+                <svg className="h-4 w-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">ประเภทการลา</p>
+                <p className="text-sm font-semibold text-foreground truncate">{selectedTypeName}</p>
+              </div>
+            </div>
+
+            {/* Date range */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
+                <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
+                  <svg className="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">วันที่เริ่ม</p>
+                  <p className="text-sm font-semibold text-foreground">{startDT.date}</p>
+                  {startDT.time && <p className="text-xs text-muted-foreground">{startDT.time}</p>}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
+                <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
+                  <svg className="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">วันที่สิ้นสุด</p>
+                  <p className="text-sm font-semibold text-foreground">{endDT.date}</p>
+                  {endDT.time && <p className="text-xs text-muted-foreground">{endDT.time}</p>}
+                </div>
+              </div>
+            </div>
+
+            {/* Total days */}
+            <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
+              <div className="h-8 w-8 rounded-lg bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center shrink-0">
+                <svg className="h-4 w-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">จำนวนวันลา</p>
+                <p className="text-sm font-semibold text-foreground">{totalDaysStr}</p>
+              </div>
+            </div>
+
+            {/* Reason */}
+            <div className="flex items-start gap-3 rounded-xl bg-muted/40 px-4 py-3">
+              <div className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center shrink-0 mt-0.5">
+                <svg className="h-4 w-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground mb-0.5">เหตุผล</p>
+                <p className="text-sm font-medium text-foreground wrap-break-word">
+                  {existing.reason || <span className="text-muted-foreground/50 font-normal">ไม่ระบุ</span>}
+                </p>
+              </div>
+            </div>
+
+            {/* Attachment */}
+            {fileName ? (
+              <a
+                href={existing.documentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-4 py-3 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors group"
+              >
+                <div className="h-8 w-8 rounded-lg bg-emerald-200 dark:bg-emerald-900/60 flex items-center justify-center shrink-0">
+                  <svg className="h-4 w-4 text-emerald-700 dark:text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">เอกสารแนบ</p>
+                  <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200 truncate group-hover:underline">{fileName}</p>
+                </div>
+                <svg className="h-4 w-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            ) : (
+              <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
+                <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                  <svg className="h-4 w-4 text-muted-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">เอกสารแนบ</p>
+                  <p className="text-sm text-muted-foreground/50">ไม่มีเอกสาร</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-border bg-muted/20 flex items-center justify-between gap-3">
+            <Link
+              href={backHref}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-background border border-border text-foreground text-sm font-semibold rounded-lg hover:bg-muted transition"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              ย้อนกลับ
+            </Link>
+            {canApprove && (
+              <ApproveRejectButtons leaveId={leaveId} />
+            )}
+            {adminActionDone ? (
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold ${
+                adminActionDone.ok ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-red-50 border border-red-200 text-red-600'
+              }`}>
+                {adminActionDone.ok ? (
+                  <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                {adminActionDone.ok ? `${adminActionDone.label}เรียบร้อยแล้ว` : adminActionDone.msg}
+              </div>
+            ) : canAdminAction && (
+              <AdminActionButtons leaveId={leaveId} status={existing.status} onDone={setAdminActionDone} />
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-xl mx-auto mt-10 bg-card rounded-2xl shadow-md p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-2xl font-bold text-foreground">
-          {isEditable ? 'แก้ไขคำขอลา' : 'รายละเอียดคำขอลา'}
-        </h1>
+        <h1 className="text-2xl font-bold text-foreground">แก้ไขคำขอลา</h1>
         <Link href="/my-leaves" className="text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300">
           ← ย้อนกลับ
         </Link>
       </div>
-      <p className="text-sm text-muted-foreground mb-5">
-        {isEditable ? 'แก้ไขรายละเอียดการลาและกดบันทึก' : 'คำขอลานี้ไม่สามารถแก้ไขได้ในขณะนี้'}
-      </p>
+      <p className="text-sm text-muted-foreground mb-5">แก้ไขรายละเอียดการลาและกดบันทึก</p>
 
       {/* Status / warning banner */}
       {banner && (
@@ -561,6 +842,186 @@ export default function EditLeaveForm({
           )}
         </div>
       </form>
+    </div>
+  )
+}
+
+// ── Approve / Reject buttons for approver view ────────────────────────────────
+
+function ApproveRejectButtons({ leaveId }: { leaveId: string }) {
+  const [isPending, startTransition] = useTransition()
+  const [result, setResult] = useState<{ ok: boolean; label: string; msg: string } | null>(null)
+
+  function handle(action: (id: string) => Promise<{ success: boolean; message?: string }>, label: string) {
+    setResult(null)
+    startTransition(async () => {
+      const res = await action(leaveId)
+      setResult({ ok: res.success, label, msg: res.message ?? (res.success ? 'ดำเนินการสำเร็จ' : 'เกิดข้อผิดพลาด') })
+    })
+  }
+
+  if (result) {
+    return (
+      <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold ${result.ok ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-red-50 border border-red-200 text-red-600'}`}>
+        {result.ok ? (
+          <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ) : (
+          <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )}
+        {result.ok ? `${result.label}เรียบร้อยแล้ว` : result.msg}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        disabled={isPending}
+        onClick={() => handle(approveLeaveRequest, 'อนุมัติ')}
+        className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
+      >
+        {isPending ? (
+          <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+        ) : (
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+        อนุมัติ
+      </button>
+      <button
+        disabled={isPending}
+        onClick={() => handle(rejectLeaveRequest, 'ไม่อนุมัติ')}
+        className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
+      >
+        {isPending ? (
+          <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+        ) : (
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )}
+        ไม่อนุมัติ
+      </button>
+    </div>
+  )
+}
+
+// ── Admin action buttons (HR/Admin only) ──────────────────────────────────────
+function AdminActionButtons({ leaveId, status, onDone }: {
+  leaveId: string
+  status: string
+  onDone: (result: { ok: boolean; label: string; msg: string }) => void
+}) {
+  const [isPending, startTransition] = useTransition()
+  const [confirmCancel, setConfirmCancel] = useState(false)
+
+  function handle(action: (id: string) => Promise<{ success: boolean; message?: string }>, label: string) {
+    startTransition(async () => {
+      const res = await action(leaveId)
+      onDone({ ok: res.success, label, msg: res.message ?? (res.success ? 'ดำเนินการสำเร็จ' : 'เกิดข้อผิดพลาด') })
+    })
+  }
+
+  const Spinner = () => (
+    <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+    </svg>
+  )
+
+  // APPROVED — only cancel (with confirm)
+  if (status === 'APPROVED') {
+    if (confirmCancel) {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-foreground font-medium">ยืนยันการยกเลิก?</span>
+          <button
+            disabled={isPending}
+            onClick={() => handle(hrAdminCancelApproved, 'ยกเลิก')}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
+          >
+            {isPending ? <Spinner /> : 'ยืนยัน'}
+          </button>
+          <button
+            disabled={isPending}
+            onClick={() => setConfirmCancel(false)}
+            className="inline-flex items-center px-4 py-2 bg-background border border-border text-foreground text-sm font-semibold rounded-lg hover:bg-muted transition disabled:opacity-50"
+          >
+            ยกเลิก
+          </button>
+        </div>
+      )
+    }
+    return (
+      <button
+        disabled={isPending}
+        onClick={() => setConfirmCancel(true)}
+        className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
+      >
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        ยกเลิก
+      </button>
+    )
+  }
+
+  // CANCEL_REQUESTED — approve cancellation
+  if (status === 'CANCEL_REQUESTED') {
+    return (
+      <button
+        disabled={isPending}
+        onClick={() => handle(hrApproveCancellation, 'อนุมัติยกเลิก')}
+        className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
+      >
+        {isPending ? <Spinner /> : (
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+        อนุมัติยกเลิก
+      </button>
+    )
+  }
+
+  // PENDING / IN_REVIEW — approve, reject, cancel
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        disabled={isPending}
+        onClick={() => handle(hrApproveLeaveRequest, 'อนุมัติ')}
+        className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
+      >
+        {isPending ? <Spinner /> : (
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+        อนุมัติ
+      </button>
+      <button
+        disabled={isPending}
+        onClick={() => handle(hrRejectLeaveRequest, 'ปฏิเสธ')}
+        className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
+      >
+        {isPending ? <Spinner /> : (
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )}
+        ไม่อนุมัติ
+      </button>
     </div>
   )
 }
