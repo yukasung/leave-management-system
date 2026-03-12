@@ -14,7 +14,7 @@
 import { useActionState, useState, useEffect, useRef, useTransition, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { updateLeaveRequest, submitLeaveRequest, type FormState } from './actions'
+import { updateLeaveRequest, submitLeaveRequest, cancelLeaveRequest, type FormState } from './actions'
 import { approveLeaveRequest, rejectLeaveRequest } from '@/app/manager/leave-requests/actions'
 import { hrApproveLeaveRequest, hrRejectLeaveRequest, hrAdminCancelApproved, hrApproveCancellation } from '@/app/hr/leave-requests/actions'
 import { calculateLeaveDuration, WORK_START_HOUR, WORK_START_MIN, WORK_END_HOUR, WORK_END_MIN } from '@/lib/leave-calc'
@@ -79,6 +79,9 @@ export default function EditLeaveForm({
   const [submitting, startSubmitTransition] = useTransition()
   const [submitError, setSubmitError] = useState('')
   const [adminActionDone, setAdminActionDone] = useState<{ ok: boolean; label: string; msg: string } | null>(null)
+  const [cancelPending, startCancelTransition] = useTransition()
+  const [cancelDone, setCancelDone] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [cancelConfirm, setCancelConfirm] = useState(false)
 
   function handleSubmit() {
     setSubmitError('')
@@ -554,6 +557,64 @@ export default function EditLeaveForm({
               </div>
             ) : canAdminAction && (
               <AdminActionButtons leaveId={leaveId} status={existing.status} onDone={setAdminActionDone} />
+            )}
+
+            {/* Employee: request cancellation (non-privileged, non-approver) */}
+            {!isPrivileged && !canApprove && (['PENDING', 'IN_REVIEW', 'APPROVED'].includes(existing.status) || cancelDone) && (
+              cancelDone ? (
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold ${
+                  cancelDone.ok ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-red-50 border border-red-200 text-red-600'
+                }`}>
+                  {cancelDone.ok ? (
+                    <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                  {cancelDone.msg}
+                </div>
+              ) : cancelConfirm ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">ยืนยันขอยกเลิก?</span>
+                  <button
+                    type="button"
+                    onClick={() => setCancelConfirm(false)}
+                    className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted transition"
+                  >
+                    ไม่
+                  </button>
+                  <button
+                    type="button"
+                    disabled={cancelPending}
+                    onClick={() => startCancelTransition(async () => {
+                      const res = await cancelLeaveRequest(leaveId)
+                      if (res.error) {
+                        setCancelDone({ ok: false, msg: res.error })
+                      } else {
+                        setCancelDone({ ok: true, msg: res.message ?? 'ส่งคำขอยกเลิกแล้ว' })
+                      }
+                      setCancelConfirm(false)
+                    })}
+                    className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                  >
+                    {cancelPending ? 'กำลังส่ง…' : 'ยืนยัน'}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setCancelConfirm(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-400 text-sm font-semibold rounded-lg hover:bg-red-100 dark:hover:bg-red-950/50 transition"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  ขอยกเลิก
+                </button>
+              )
             )}
           </div>
         </div>
