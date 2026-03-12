@@ -153,6 +153,60 @@ async function main() {
     data: { departmentId: department.id },
   })
 
+  // Employee records — required so auth.ts can read isAdmin / isManager
+  await prisma.employee.upsert({
+    where: { employeeCode: 'ADMIN001' },
+    update: { isAdmin: true, isManager: false, userId: admin.id },
+    create: {
+      employeeCode: 'ADMIN001',
+      firstName: 'Admin',
+      lastName: 'System',
+      email: 'admin@company.com',
+      position: 'System Administrator',
+      isAdmin: true,
+      isManager: false,
+      isProbation: false,
+      isActive: true,
+      userId: admin.id,
+    },
+  })
+
+  await prisma.employee.upsert({
+    where: { employeeCode: 'MGR001' },
+    update: { isAdmin: false, isManager: true, userId: manager.id, departmentId: department.id },
+    create: {
+      employeeCode: 'MGR001',
+      firstName: 'Manager',
+      lastName: 'System',
+      email: 'manager@company.com',
+      position: 'IT Manager',
+      isAdmin: false,
+      isManager: true,
+      isProbation: false,
+      isActive: true,
+      userId: manager.id,
+      departmentId: department.id,
+    },
+  })
+
+  await prisma.employee.upsert({
+    where: { employeeCode: 'EMP001' },
+    update: { userId: employee.id, departmentId: department.id },
+    create: {
+      employeeCode: 'EMP001',
+      firstName: 'Employee',
+      lastName: 'System',
+      email: 'employee@company.com',
+      position: 'Developer',
+      isAdmin: false,
+      isManager: false,
+      isProbation: false,
+      isActive: true,
+      userId: employee.id,
+      departmentId: department.id,
+    },
+  })
+
   // Leave balances — only for types that deduct from balance
   const leaveTypes = await prisma.leaveType.findMany({
     where: { deductFromBalance: true },

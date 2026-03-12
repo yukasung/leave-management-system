@@ -79,7 +79,6 @@ export default async function LeaveTypesPage() {
                   <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ต้องแนบเอกสาร</th>
                   <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">หักยอด</th>
                   <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ลาช่วงทดลองงาน</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คำขอ</th>
                   <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จัดการ</th>
                 </tr>
               </thead>
@@ -101,11 +100,6 @@ export default async function LeaveTypesPage() {
                     </td>
                     <td className="px-5 py-4 text-center whitespace-nowrap">
                       <BoolBadge value={lt.allowDuringProbation} yes="อนุญาต" no="ไม่อนุญาต" />
-                    </td>
-                    <td className="px-5 py-4 text-center whitespace-nowrap">
-                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted text-foreground font-semibold text-xs">
-                        {lt._count.leaveRequests}
-                      </span>
                     </td>
                     <td className="px-5 py-4 text-right whitespace-nowrap">
                       <Link

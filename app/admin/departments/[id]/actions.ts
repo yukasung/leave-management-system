@@ -33,22 +33,20 @@ export async function updateDepartment(
     return { success: false, message: 'ชื่อแผนกนี้มีอยู่แล้ว', errors: { name: 'ชื่อแผนกซ้ำ' } }
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.department.update({
-      where: { id },
-      data: { name },
-    })
-
-    await tx.auditLog.create({
-      data: {
-        userId: session.user.id,
-        action: 'UPDATE_DEPARTMENT',
-        entityType: 'Department',
-        entityId: id,
-        description: `Updated department: ${name}`,
-      },
-    })
+  await prisma.department.update({
+    where: { id },
+    data: { name },
   })
+
+  await prisma.auditLog.create({
+    data: {
+      userId: session.user.id,
+      action: 'UPDATE_DEPARTMENT',
+      entityType: 'Department',
+      entityId: id,
+      description: `Updated department: ${name}`,
+    },
+  }).catch(() => { /* non-critical */ })
 
   revalidatePath('/admin/departments')
   return { success: true, message: 'บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว' }
@@ -70,19 +68,17 @@ export async function deleteDepartment(id: string): Promise<DepartmentFormState>
 
   const dept = await prisma.department.findUnique({ where: { id }, select: { name: true } })
 
-  await prisma.$transaction(async (tx) => {
-    await tx.department.delete({ where: { id } })
+  await prisma.department.delete({ where: { id } })
 
-    await tx.auditLog.create({
-      data: {
-        userId: session.user.id,
-        action: 'DELETE_DEPARTMENT',
-        entityType: 'Department',
-        entityId: id,
-        description: `Deleted department: ${dept?.name ?? id}`,
-      },
-    })
-  })
+  await prisma.auditLog.create({
+    data: {
+      userId: session.user.id,
+      action: 'DELETE_DEPARTMENT',
+      entityType: 'Department',
+      entityId: id,
+      description: `Deleted department: ${dept?.name ?? id}`,
+    },
+  }).catch(() => { /* non-critical */ })
 
   revalidatePath('/admin/departments')
   return { success: true, message: 'ลบแผนกเรียบร้อยแล้ว' }

@@ -31,21 +31,19 @@ export async function createDepartment(
     return { success: false, message: 'ชื่อแผนกนี้มีอยู่แล้ว', errors: { name: 'ชื่อแผนกซ้ำ' } }
   }
 
-  await prisma.$transaction(async (tx) => {
-    const dept = await tx.department.create({
-      data: { name, managerId },
-    })
-
-    await tx.auditLog.create({
-      data: {
-        userId: session.user.id,
-        action: 'CREATE_DEPARTMENT',
-        entityType: 'Department',
-        entityId: dept.id,
-        description: `Created department: ${name}`,
-      },
-    })
+  const dept = await prisma.department.create({
+    data: { name, managerId },
   })
+
+  await prisma.auditLog.create({
+    data: {
+      userId: session.user.id,
+      action: 'CREATE_DEPARTMENT',
+      entityType: 'Department',
+      entityId: dept.id,
+      description: `Created department: ${name}`,
+    },
+  }).catch(() => { /* non-critical */ })
 
   revalidatePath('/admin/departments')
   return { success: true, message: `เพิ่มแผนก "${name}" เรียบร้อยแล้ว` }

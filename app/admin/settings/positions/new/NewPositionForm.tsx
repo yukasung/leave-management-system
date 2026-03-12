@@ -4,15 +4,16 @@ import { useActionState, useEffect } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { createPosition, type PositionFormState } from './actions'
 
+type Department = { id: string; name: string }
 const initial: PositionFormState = { success: false, message: '' }
 
-export default function NewPositionForm() {
+export default function NewPositionForm({ departments }: { departments: Department[] }) {
   const router = useRouter()
   const [state, action, pending] = useActionState(createPosition, initial)
 
   useEffect(() => {
     if (state.success) {
-      const t = setTimeout(() => router.push('/admin/settings'), 1200)
+      const t = setTimeout(() => router.push('/admin/settings/positions'), 1200)
       return () => clearTimeout(t)
     }
   }, [state.success, router])
@@ -22,9 +23,24 @@ export default function NewPositionForm() {
       {state.message && (
         <div className={`rounded-lg px-4 py-3 text-sm font-medium ${state.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
           {state.message}
-          {state.success && <span className="ml-2 text-green-500">กำลังกลับไปหน้าตั้งค่า…</span>}
+          {state.success && <span className="ml-2 text-green-500">กำลังกลับ…</span>}
         </div>
       )}
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1">แผนก <span className="text-red-500">*</span></label>
+        <select
+          name="departmentId"
+          required
+          defaultValue=""
+          className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <option value="" disabled>— เลือกแผนก —</option>
+          {departments.map((d) => (
+            <option key={d.id} value={d.id}>{d.name}</option>
+          ))}
+        </select>
+      </div>
 
       <div>
         <label className="block text-sm font-medium text-foreground mb-1">

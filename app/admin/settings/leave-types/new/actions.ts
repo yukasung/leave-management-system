@@ -35,7 +35,7 @@ export async function createLeaveType(
     return { success: false, message: 'ชื่อประเภทการลานี้มีอยู่แล้ว', errors: { name: 'ชื่อซ้ำ' } }
   }
 
-  await prisma.leaveType.create({
+  const leaveType = await prisma.leaveType.create({
     data: {
       name,
       maxDaysPerYear: maxDaysPerYear ? parseFloat(maxDaysPerYear as string) : null,
@@ -46,6 +46,26 @@ export async function createLeaveType(
     },
   })
 
+  // Auto-create LeaveBalance for all users for the current year if this type has a quota
+  if (leaveType.maxDaysPerYear != null) {
+    const currentYear = new Date().getFullYear()
+    const users = await prisma.user.findMany({
+      where: { employee: { isNot: null } },
+      select: { id: true },
+    })
+    await prisma.leaveBalance.createMany({
+      data: users.map((u) => ({
+        userId: u.id,
+        leaveTypeId: leaveType.id,
+        year: currentYear,
+        totalDays: leaveType.maxDaysPerYear!,
+        usedDays: 0,
+      })),
+      skipDuplicates: true,
+    })
+  }
+
   revalidatePath('/admin/settings')
+  revalidatePath('/hr/leave-balance-report')
   return { success: true, message: `เพิ่มประเภทการลา "${name}" เรียบร้อยแล้ว` }
 }

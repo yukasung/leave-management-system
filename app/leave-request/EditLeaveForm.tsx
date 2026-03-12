@@ -320,8 +320,7 @@ export default function EditLeaveForm({
             name="leaveTypeId"
             value={leaveTypeId}
             onChange={(e) => setLeaveTypeId(e.target.value)}
-            disabled={disabled}
-            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
+            disabled={disabled}            required            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
           >
             <option value="" disabled>-- เลือกประเภทการลา --</option>
             {leaveTypes.map((lt) => (

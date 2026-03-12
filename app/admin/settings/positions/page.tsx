@@ -17,16 +17,32 @@ export default async function PositionsPage() {
     )
   }
 
-  const [positions, dbUser] = await Promise.all([
+  const [positionsRaw, departments, dbUser] = await Promise.all([
     prisma.position.findMany({
       orderBy: { name: 'asc' },
-      include: { _count: { select: { employees: true } } },
+      include: {
+        _count: { select: { employees: true } },
+      },
+    }),
+    prisma.department.findMany({
+      select: { id: true, name: true },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { avatarUrl: true },
     }),
   ])
+
+  const deptMap = new Map(departments.map((d) => [d.id, d.name]))
+
+  const positions = positionsRaw
+    .map((p) => ({ ...p, departmentName: p.departmentId ? (deptMap.get(p.departmentId) ?? null) : null }))
+    .sort((a, b) => {
+      const deptA = a.departmentName ?? '\uffff'
+      const deptB = b.departmentName ?? '\uffff'
+      if (deptA !== deptB) return deptA.localeCompare(deptB, 'th')
+      return a.name.localeCompare(b.name, 'th')
+    })
 
   const user = {
     name:      session.user.name ?? '',
@@ -75,6 +91,7 @@ export default async function PositionsPage() {
                 <tr>
                   <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ชื่อตำแหน่ง</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">แผนก</th>
                   <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวนพนักงาน</th>
                   <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จัดการ</th>
                 </tr>
@@ -84,6 +101,9 @@ export default async function PositionsPage() {
                   <tr key={pos.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
                     <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">{idx + 1}</td>
                     <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">{pos.name}</td>
+                    <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
+                      {pos.departmentName ?? <span className="italic opacity-40">—</span>}
+                    </td>
                     <td className="px-5 py-4 text-center whitespace-nowrap">
                       <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
                         {pos._count.employees}

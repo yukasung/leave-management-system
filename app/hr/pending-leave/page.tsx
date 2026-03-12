@@ -176,7 +176,6 @@ export default async function PendingLeavePage({
                       <span className="text-xs">{sortDir === 'desc' ? '↓' : '↑'}</span>
                     </Link>
                   </th>
-                  <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">รอมา (วัน)</th>
                   <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">ผู้อนุมัติ</th>
                   <th className="px-4 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap">สถานะ</th>
                 </tr>
@@ -184,7 +183,7 @@ export default async function PendingLeavePage({
               <tbody className="divide-y divide-border">
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">
+                    <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
                       ไม่มีคำขอที่รออนุมัติ
                     </td>
                   </tr>
@@ -207,17 +206,6 @@ export default async function PendingLeavePage({
                       <td className="px-4 py-3 text-center whitespace-nowrap">{formatDate(row.endDate)}</td>
                       <td className="px-4 py-3 text-center font-medium">{row.totalDays}</td>
                       <td className="px-4 py-3 text-center whitespace-nowrap text-muted-foreground">{formatDate(row.createdAt)}</td>
-                      <td className={cn(
-                        'px-4 py-3 text-center font-semibold',
-                        row.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-foreground',
-                      )}>
-                        {row.waitDays}
-                        {row.isOverdue && (
-                          <span className="ml-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
-                            เร่งด่วน
-                          </span>
-                        )}
-                      </td>
                       <td className="px-4 py-3 text-center whitespace-nowrap text-muted-foreground">{row.approverName}</td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className={cn(

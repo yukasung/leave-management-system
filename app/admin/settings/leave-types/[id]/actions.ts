@@ -69,10 +69,8 @@ export async function deleteLeaveType(id: string): Promise<LeaveTypeFormState> {
   }
 
   // Delete related leave balances first, then delete the leave type
-  await prisma.$transaction(async (tx) => {
-    await tx.leaveBalance.deleteMany({ where: { leaveTypeId: id } })
-    await tx.leaveType.delete({ where: { id } })
-  })
+  await prisma.leaveBalance.deleteMany({ where: { leaveTypeId: id } })
+  await prisma.leaveType.delete({ where: { id } })
 
   revalidatePath('/admin/settings')
   return { success: true, message: 'ลบประเภทการลาเรียบร้อยแล้ว' }

@@ -8,7 +8,7 @@ import { User, Mail, Phone, Hash } from 'lucide-react'
 
 type Department = { id: string; name: string; manager: { employee: { id: string } | null } | null }
 type ManagerOption  = { id: string; firstName: string; lastName: string; position: string; department: { name: string } | null }
-type PositionOption = { id: string; name: string }
+type PositionOption = { id: string; name: string; departmentId?: string | null }
 
 const initialState: CreateEmployeeState = {}
 
@@ -39,6 +39,10 @@ export default function NewEmployeeForm({
   }, [state.success, router])
 
   const e = state.errors ?? {}
+
+  const filteredPositions = selectedDeptId
+    ? positions.filter((p) => p.departmentId === selectedDeptId || !p.departmentId)
+    : positions
 
   return (
     <form action={formAction} className="space-y-6">
@@ -77,6 +81,7 @@ export default function NewEmployeeForm({
               name="employeeCode"
               placeholder="เช่น EMP-001"
               autoComplete="off"
+              required
               className={`${inputCls(!!e.employeeCode)} pl-9`}
             />
           </div>
@@ -97,6 +102,7 @@ export default function NewEmployeeForm({
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
                 placeholder="ชื่อ"
+                required
                 className={`${inputCls(!!e.firstName)} pl-9`}
               />
             </div>
@@ -114,6 +120,7 @@ export default function NewEmployeeForm({
                 value={lastName}
                 onChange={e => setLastName(e.target.value)}
                 placeholder="นามสกุล"
+                required
                 className={`${inputCls(!!e.lastName)} pl-9`}
               />
             </div>
@@ -134,6 +141,7 @@ export default function NewEmployeeForm({
                 name="email"
                 placeholder="employee@company.com"
                 autoComplete="off"
+                required
                 className={`${inputCls(!!e.email)} pl-9`}
               />
             </div>
@@ -167,15 +175,16 @@ export default function NewEmployeeForm({
           {/* Department */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">
-              แผนก
+              แผนก <Required />
             </label>
             <select
               name="departmentId"
               value={selectedDeptId}
               onChange={(ev) => handleDeptChange(ev.target.value)}
               className={selectCls(!!e.departmentId)}
+              required
             >
-              <option value="">— ไม่ระบุแผนก —</option>
+              <option value="" disabled>— เลือกแผนก —</option>
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
@@ -194,9 +203,10 @@ export default function NewEmployeeForm({
               name="positionId"
               className={selectCls(!!e.positionId)}
               defaultValue=""
+              required
             >
-              <option value="">— เลือกตำแหน่งงาน —</option>
-              {positions.map((p) => (
+              <option value="" disabled>— เลือกตำแหน่งงาน —</option>
+              {filteredPositions.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>

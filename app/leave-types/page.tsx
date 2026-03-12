@@ -129,9 +129,6 @@ export default async function LeaveTypesPage() {
                       อนุญาตช่วงทดลองงาน
                     </TableHead>
                     <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      คำขอ
-                    </TableHead>
-                    <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       จัดการ
                     </TableHead>
                   </TableRow>
@@ -162,9 +159,6 @@ export default async function LeaveTypesPage() {
                         <div className="flex justify-center">
                           <BoolIcon value={lt.allowDuringProbation} />
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center text-sm text-muted-foreground">
-                        {lt._count.leaveRequests}
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1">

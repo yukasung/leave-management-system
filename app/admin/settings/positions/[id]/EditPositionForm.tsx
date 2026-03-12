@@ -4,10 +4,11 @@ import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { updatePosition, deletePosition, type PositionFormState } from './actions'
 
-type PositionData = { id: string; name: string; _count: { employees: number } }
+type Department  = { id: string; name: string }
+type PositionData = { id: string; name: string; departmentId?: string | null; _count: { employees: number } }
 const initial: PositionFormState = { success: false, message: '' }
 
-export default function EditPositionForm({ position }: { position: PositionData }) {
+export default function EditPositionForm({ position, departments }: { position: PositionData; departments: Department[] }) {
   const router = useRouter()
   const [state, action, pending] = useActionState(updatePosition.bind(null, position.id), initial)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -15,17 +16,22 @@ export default function EditPositionForm({ position }: { position: PositionData 
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
-    if (state.success) { const t = setTimeout(() => router.push('/admin/settings'), 1200); return () => clearTimeout(t) }
+    if (state.success) { const t = setTimeout(() => router.push('/admin/settings/positions'), 1200); return () => clearTimeout(t) }
   }, [state.success, router])
 
   useEffect(() => {
-    if (deleteState?.success) { const t = setTimeout(() => router.push('/admin/settings'), 1200); return () => clearTimeout(t) }
+    if (deleteState?.success) { const t = setTimeout(() => router.push('/admin/settings/positions'), 1200); return () => clearTimeout(t) }
   }, [deleteState?.success, router])
 
   async function handleDelete() {
     setDeleting(true)
-    setDeleteState(await deletePosition(position.id))
-    setDeleting(false)
+    const result = await deletePosition(position.id)
+    if (result.success) {
+      router.push('/admin/settings/positions')
+    } else {
+      setDeleteState(result)
+      setDeleting(false)
+    }
   }
 
   return (
@@ -34,9 +40,24 @@ export default function EditPositionForm({ position }: { position: PositionData 
         {state.message && (
           <div className={`rounded-lg px-4 py-3 text-sm font-medium ${state.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
             {state.message}
-            {state.success && <span className="ml-2 text-green-500">กำลังกลับไปหน้าตั้งค่า…</span>}
+            {state.success && <span className="ml-2 text-green-500">กำลังกลับ…</span>}
           </div>
         )}
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">แผนก <span className="text-red-500">*</span></label>
+          <select
+            name="departmentId"
+            required
+            defaultValue={position.departmentId ?? ''}
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="" disabled>— เลือกแผนก —</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
@@ -92,7 +113,7 @@ export default function EditPositionForm({ position }: { position: PositionData 
               className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors">
               {deleting ? 'กำลังลบ…' : 'ยืนยัน ลบเลย'}
             </button>
-            <button type="button" onClick={() => setDeleteConfirm(false)} className="text-sm text-muted-foreground hover:text-foreground underline">ยกเลิก</button>
+            <button type="button" onClick={() => setDeleteConfirm(false)} className="border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors">ยกเลิก</button>
           </div>
         )}
       </div>

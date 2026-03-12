@@ -346,7 +346,7 @@ export default function HolidayImportClient() {
             />
           </div>
           <div className="flex-1 min-w-56">
-            <label className="block text-sm font-medium text-foreground ml-1">ชื่อวันหยุด</label>
+            <label className="block text-sm font-medium text-foreground ml-1">ชื่อวันหยุด <span className="text-red-500">*</span></label>
             <input
               type="text"
               required

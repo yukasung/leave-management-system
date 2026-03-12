@@ -12,7 +12,7 @@ export default async function EditPositionPage({ params }: { params: Promise<{ i
   if (!session.user.isAdmin) redirect('/dashboard')
 
   const { id } = await params
-  const [position, dbUser] = await Promise.all([
+  const [position, dbUser, departments] = await Promise.all([
     prisma.position.findUnique({
       where: { id },
       include: { _count: { select: { employees: true } } },
@@ -21,6 +21,7 @@ export default async function EditPositionPage({ params }: { params: Promise<{ i
       where: { id: session.user.id },
       select: { avatarUrl: true },
     }),
+    prisma.department.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
   ])
   if (!position) notFound()
 
@@ -41,7 +42,7 @@ export default async function EditPositionPage({ params }: { params: Promise<{ i
         </nav>
         <h2 className="text-lg font-semibold text-foreground">แก้ไขตำแหน่งงาน</h2>
         <div className="rounded-xl border border-border bg-card shadow-sm p-6">
-          <EditPositionForm position={position} />
+          <EditPositionForm position={position} departments={departments} />
         </div>
       </div>
     </AdminLayout>

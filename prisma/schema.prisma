@@ -34,16 +34,19 @@ model Department {
   manager   User?      @relation("DepartmentManager", fields: [managerId], references: [id])
   users     User[]     @relation("DepartmentMembers")
   employees Employee[]
+  positions Position[]
   createdAt DateTime   @default(now())
 
   @@index([name])
 }
 
 model Position {
-  id        String     @id @default(uuid())
-  name      String     @unique
-  employees Employee[]
-  createdAt DateTime   @default(now())
+  id           String      @id @default(uuid())
+  name         String      @unique
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  employees    Employee[]
+  createdAt    DateTime    @default(now())
 
   @@index([name])
 }

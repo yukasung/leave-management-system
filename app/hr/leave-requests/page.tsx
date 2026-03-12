@@ -235,8 +235,8 @@ export default async function HRLeaveRequestsPage({
                       { col: 'startDate', label: 'วันที่เริ่ม',  center: true },
                       { col: 'endDate',   label: 'วันที่สิ้นสุด', center: true },
                       { col: 'totalDays', label: 'จำนวนวัน',    center: true },
-                      { col: 'status',    label: 'สถานะ',        center: true },
                       { col: 'createdAt', label: 'วันที่ขอ',      center: true },
+                      { col: 'status',    label: 'สถานะ',        center: true },
                     ] as const).map(({ col, label, center }) => (
                       <th key={col} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap ${center ? 'text-center' : 'text-left'}`}>
                         <Link href={sortUrl(col)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
@@ -266,6 +266,7 @@ export default async function HRLeaveRequestsPage({
                       <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveStartDateTime)}</td>
                       <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveEndDateTime)}</td>
                       <td className="px-4 py-3 text-center font-semibold text-foreground whitespace-nowrap">{parseFloat(Number(req.totalDays).toFixed(2))}</td>
+                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.createdAt)}</td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
                           STATUS_BADGE_NEW[req.status] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400 dark:border-gray-700'
@@ -274,7 +275,6 @@ export default async function HRLeaveRequestsPage({
                           {STATUS_LABELS[req.status] ?? req.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.createdAt)}</td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         {(req.status === 'PENDING' || req.status === 'IN_REVIEW' || req.status === 'CANCEL_REQUESTED') ? (
                           <HRActionButtons id={req.id} status={req.status} />

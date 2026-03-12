@@ -57,7 +57,8 @@ export async function updateEmployee(
     // ── Validation ────────────────────────────────────────────────────────────
     const errors: UpdateEmployeeState['errors'] = {}
 
-    if (!positionId) errors.positionId = 'กรุณาเลือกตำแหน่ง'
+    if (!departmentId) errors.departmentId = 'กรุณาเลือกแผนก'
+    if (!positionId)   errors.positionId   = 'กรุณาเลือกตำแหน่ง'
 
     if (Object.keys(errors).length > 0) {
       return { success: false, errors }

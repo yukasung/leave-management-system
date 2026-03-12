@@ -43,8 +43,12 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
   async function handleDelete() {
     setDeleting(true)
     const result = await deleteLeaveType(leaveType.id)
-    setDeleteState(result)
-    setDeleting(false)
+    if (result.success) {
+      router.push('/admin/settings/leave-types')
+    } else {
+      setDeleteState(result)
+      setDeleting(false)
+    }
   }
 
   return (

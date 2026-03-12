@@ -360,8 +360,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             id="leaveTypeId"
             name="leaveTypeId"
             value={leaveTypeId}
-            onChange={(e) => setLeaveTypeId(e.target.value)}
-            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            onChange={(e) => setLeaveTypeId(e.target.value)}            required            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="" disabled>-- เลือกประเภทการลา --</option>
             {leaveTypes.map((lt) => (

@@ -56,7 +56,7 @@ export default async function EditEmployeePage({
     }),
     prisma.position.findMany({
       orderBy: { name: 'asc' },
-      select: { id: true, name: true },
+      select: { id: true, name: true, departmentId: true },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },

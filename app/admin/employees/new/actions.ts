@@ -50,11 +50,12 @@ export async function createEmployee(
     // ── Validation ───────────────────────────────────────────────────────────────────
     const errors: CreateEmployeeState['errors'] = {}
 
-    if (!employeeCode) errors.employeeCode = 'กรุณากรอกรหัสพนักงาน'
-    if (!firstName)    errors.firstName    = 'กรุณากรอกชื่อ'
-    if (!lastName)     errors.lastName     = 'กรุณากรอกนามสกุล'
-    if (!email)        errors.email        = 'กรุณากรอกอีเมล'
-    if (!positionId)   errors.positionId   = 'กรุณาเลือกตำแหน่ง'
+    if (!employeeCode)  errors.employeeCode  = 'กรุณากรอกรหัสพนักงาน'
+    if (!firstName)     errors.firstName     = 'กรุณากรอกชื่อ'
+    if (!lastName)      errors.lastName      = 'กรุณากรอกนามสกุล'
+    if (!email)         errors.email         = 'กรุณากรอกอีเมล'
+    if (!departmentId)  errors.departmentId  = 'กรุณาเลือกแผนก'
+    if (!positionId)    errors.positionId    = 'กรุณาเลือกตำแหน่ง'
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.email = 'รูปแบบอีเมลไม่ถูกต้อง'

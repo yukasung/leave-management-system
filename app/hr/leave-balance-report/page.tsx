@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import AdminLayout from '@/components/admin-layout'
 import LeaveBalanceReportFilters from './LeaveBalanceReportFilters'
+import Pagination from './Pagination'
 import { cn } from '@/lib/utils'
 import { AlertTriangle, XCircle, CheckCircle2 } from 'lucide-react'
 
@@ -10,7 +11,10 @@ type SearchParams = {
   departmentId?: string
   leaveTypeId?:  string
   year?:         string
+  page?:         string
 }
+
+const PAGE_SIZE = 20
 
 export default async function LeaveBalanceReportPage({
   searchParams,
@@ -37,9 +41,10 @@ export default async function LeaveBalanceReportPage({
     isAdmin:   true,
   }
 
-  const { employee, departmentId, leaveTypeId, year: yearParam } = await searchParams
+  const { employee, departmentId, leaveTypeId, year: yearParam, page: pageParam } = await searchParams
   const currentYear = new Date().getFullYear()
   const year = yearParam ? parseInt(yearParam, 10) : currentYear
+  const page = Math.max(1, pageParam ? parseInt(pageParam, 10) : 1)
 
   // Collect available years from the balance table
   const allYears = await prisma.leaveBalance.findMany({
@@ -59,10 +64,13 @@ export default async function LeaveBalanceReportPage({
     },
   }
 
-  const [balances, departments, leaveTypes] = await Promise.all([
+  const [total, balances, departments, leaveTypes] = await Promise.all([
+    prisma.leaveBalance.count({ where }),
     prisma.leaveBalance.findMany({
       where,
       orderBy: [{ user: { name: 'asc' } }, { leaveType: { name: 'asc' } }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: {
         user: {
           select: {
@@ -78,9 +86,15 @@ export default async function LeaveBalanceReportPage({
     prisma.leaveType.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
   ])
 
-  // Summary counts
-  const exhausted = balances.filter((b) => b.totalDays - b.usedDays <= 0).length
-  const low       = balances.filter((b) => {
+  const totalPages = Math.ceil(total / PAGE_SIZE)
+
+  // Summary counts across ALL matching records (not just current page)
+  const allSummary = await prisma.leaveBalance.findMany({
+    where,
+    select: { totalDays: true, usedDays: true },
+  })
+  const exhausted = allSummary.filter((b) => b.totalDays - b.usedDays <= 0).length
+  const low       = allSummary.filter((b) => {
     const rem = b.totalDays - b.usedDays
     return rem > 0 && b.totalDays > 0 && (b.usedDays / b.totalDays) >= 0.75
   }).length
@@ -130,12 +144,12 @@ export default async function LeaveBalanceReportPage({
           departments={departments}
           leaveTypes={leaveTypes}
           yearOptions={yearOptions}
-          total={balances.length}
+          total={total}
           current={{ employee, departmentId, leaveTypeId, year }}
         />
 
         {/* Table */}
-        {balances.length === 0 ? (
+        {total === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16 text-center">
             <p className="text-muted-foreground">ไม่พบข้อมูลยอดวันลา</p>
           </div>
@@ -158,6 +172,7 @@ export default async function LeaveBalanceReportPage({
                 </thead>
                 <tbody className="divide-y divide-border">
                   {balances.map((b, index) => {
+                    const rowIndex  = (page - 1) * PAGE_SIZE + index + 1
                     const remaining = b.totalDays - b.usedDays
                     const pct       = b.totalDays > 0 ? (b.usedDays / b.totalDays) * 100 : 0
                     const isEmpty   = remaining <= 0
@@ -176,7 +191,7 @@ export default async function LeaveBalanceReportPage({
                             : 'hover:bg-primary/3 dark:hover:bg-primary/10',
                         )}
                       >
-                        <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{index + 1}</td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{rowIndex}</td>
 
                         {/* Name + code */}
                         <td className="px-4 py-3 whitespace-nowrap">
@@ -263,6 +278,9 @@ export default async function LeaveBalanceReportPage({
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination */}
+            <Pagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} />
 
             {/* Legend */}
             <div className="flex items-center gap-4 border-t border-border px-4 py-3 flex-wrap">

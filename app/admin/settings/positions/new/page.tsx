@@ -10,10 +10,13 @@ export default async function NewPositionPage() {
   if (!session?.user?.id) redirect('/login')
   if (!session.user.isAdmin) redirect('/dashboard')
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { avatarUrl: true },
-  })
+  const [dbUser, departments] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { avatarUrl: true },
+    }),
+    prisma.department.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+  ])
 
   const user = {
     name:      session.user.name ?? '',
@@ -32,7 +35,7 @@ export default async function NewPositionPage() {
         </nav>
         <h2 className="text-lg font-semibold text-foreground">เพิ่มตำแหน่งงานใหม่</h2>
         <div className="rounded-xl border border-border bg-card shadow-sm p-6">
-          <NewPositionForm />
+          <NewPositionForm departments={departments} />
         </div>
       </div>
     </AdminLayout>

@@ -61,7 +61,7 @@ export default function ProfileForm({ data }: { data: ProfileData }) {
             </div>
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls} htmlFor="name">ชื่อที่แสดง</label>
+                <label className={labelCls} htmlFor="name">ชื่อที่แสดง <span className="text-red-500">*</span></label>
                 <input
                   id="name"
                   name="name"

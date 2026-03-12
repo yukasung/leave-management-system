@@ -7,7 +7,7 @@ import AvatarUploader from '../AvatarUploader'
 
 type Department   = { id: string; name: string; manager: { employee: { id: string } | null } | null }
 type ManagerOption  = { id: string; firstName: string; lastName: string; position: string; department: { name: string } | null }
-type PositionOption = { id: string; name: string }
+type PositionOption = { id: string; name: string; departmentId?: string | null }
 
 export type EmployeeData = {
   id:           string
@@ -85,6 +85,10 @@ export default function EditEmployeeForm({
   }
 
   const e = state.errors ?? {}
+
+  const filteredPositions = selectedDeptId
+    ? positions.filter((p) => p.departmentId === selectedDeptId || !p.departmentId)
+    : positions
 
   return (
     <div className="space-y-6">
@@ -178,14 +182,15 @@ export default function EditEmployeeForm({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">แผนก</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">แผนก <Required /></label>
                   <select
                     name="departmentId"
                     value={selectedDeptId}
                     onChange={(ev) => handleDeptChange(ev.target.value)}
                     className={selectCls(!!e.departmentId)}
+                    required
                   >
-                    <option value="">— ไม่ระบุแผนก —</option>
+                    <option value="" disabled>— เลือกแผนก —</option>
                     {departments.map((d) => (
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
@@ -200,9 +205,10 @@ export default function EditEmployeeForm({
                     name="positionId"
                     defaultValue={employee.positionId ?? ''}
                     className={selectCls(!!e.positionId)}
+                    required
                   >
-                    <option value="">— เลือกตำแหน่งงาน —</option>
-                    {positions.map((p) => (
+                    <option value="" disabled>— เลือกตำแหน่งงาน —</option>
+                    {filteredPositions.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>

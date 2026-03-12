@@ -22,6 +22,7 @@ import {
   UserCircle,
   BarChart2,
   Clock,
+  CalendarCog,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -31,9 +32,7 @@ const ADMIN_TOP_ITEMS = [
 ]
 
 const ADMIN_BOTTOM_ITEMS = [
-  { href: '/admin/employees',   icon: Users,     label: 'พนักงาน'     },
-  { href: '/admin/departments', icon: Building2, label: 'แผนก'        },
-  { href: '/leave-types',       icon: Tags,      label: 'ประเภทการลา' },
+  { href: '/admin/employees',   icon: Users,     label: 'พนักงาน' },
 ]
 
 const LEAVE_REPORT_ITEMS = [
@@ -52,9 +51,11 @@ const USER_NAV_ITEMS = [
 ]
 
 const SETTINGS_SUB_ITEMS = [
+  { href: '/admin/departments',          icon: Building2,     label: 'แผนก'          },
+  { href: '/admin/settings/positions',   icon: Briefcase,     label: 'ตำแหน่งงาน'  },
   { href: '/admin/holiday-management',   icon: Umbrella,      label: 'วันหยุด'       },
   { href: '/admin/settings/leave-types', icon: ClipboardList, label: 'ประเภทการลา' },
-  { href: '/admin/settings/positions',   icon: Briefcase,     label: 'ตำแหน่งงาน'  },
+  { href: '/hr/leave-year-reset',        icon: CalendarCog,   label: 'รีเซ็ตยอดวันลา' },
 ]
 
 export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmin?: boolean; isManager?: boolean }) {
@@ -83,7 +84,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
 
   const REPORT_PATHS = ['/hr/leave-summary', '/hr/leave-history', '/hr/leave-balance-report', '/hr/department-leave', '/hr/pending-leave']
   const isReportsActive = REPORT_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
-  const isSettingsActive = pathname === '/admin/settings' || pathname.startsWith('/admin/settings/') || pathname === '/admin/holiday-management' || pathname.startsWith('/admin/holiday-management/')
+  const isSettingsActive = pathname === '/admin/settings' || pathname.startsWith('/admin/settings/') || pathname === '/admin/holiday-management' || pathname.startsWith('/admin/holiday-management/') || pathname === '/hr/leave-year-reset' || pathname === '/admin/departments' || pathname.startsWith('/admin/departments/')
   const [reportsOpen, setReportsOpen] = useState(isReportsActive)
   const [settingsOpen, setSettingsOpen] = useState(isSettingsActive)
 
