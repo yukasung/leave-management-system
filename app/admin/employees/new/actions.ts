@@ -127,7 +127,7 @@ export async function createEmployee(
     // ── Create User account + LeaveBalances for current year ─────────────────
     const currentYear = new Date().getFullYear()
     const [leaveTypes, existingUser] = await Promise.all([
-      prisma.leaveType.findMany({ select: { id: true, maxDaysPerYear: true } }),
+      prisma.leaveType.findMany({ where: { maxDaysPerYear: { not: null } }, select: { id: true, maxDaysPerYear: true } }),
       prisma.user.findUnique({ where: { email }, select: { id: true } }),
     ])
 

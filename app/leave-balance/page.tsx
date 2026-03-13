@@ -7,7 +7,9 @@ export default async function LeaveBalancePage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  const [balances, dbUser] = await Promise.all([
+  const currentYear = new Date().getFullYear()
+
+  const [balances, specialLeaveTypes, usedSpecial, dbUser] = await Promise.all([
     prisma.leaveBalance.findMany({
       where: { userId: session.user.id },
       orderBy: { leaveType: { name: 'asc' } },
@@ -17,11 +19,36 @@ export default async function LeaveBalancePage() {
         },
       },
     }),
+    // Special leave types have no yearly quota — fetched directly
+    prisma.leaveType.findMany({
+      where: { maxDaysPerYear: null },
+      select: { id: true, name: true, maxDaysPerRequest: true },
+      orderBy: { name: 'asc' },
+    }),
+    // Sum of approved days per special leave type this year
+    prisma.leaveRequest.groupBy({
+      by: ['leaveTypeId'],
+      where: {
+        userId: session.user.id,
+        status: 'APPROVED',
+        leaveStartDateTime: {
+          gte: new Date(currentYear, 0, 1),
+          lte: new Date(currentYear, 11, 31, 23, 59, 59),
+        },
+        leaveType: { maxDaysPerYear: null },
+      },
+      _sum: { totalDays: true },
+    }),
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { avatarUrl: true },
     }),
   ])
+
+  // Map leaveTypeId → usedDays for special types
+  const specialUsedMap = new Map(
+    usedSpecial.map((r) => [r.leaveTypeId, r._sum.totalDays ?? 0])
+  )
 
   const user = {
     name:      session.user.name ?? '',
@@ -40,13 +67,12 @@ export default async function LeaveBalancePage() {
           <p className="text-sm text-muted-foreground mt-0.5">ปี {new Date().getFullYear() + 543}</p>
         </div>
 
-        {balances.length === 0 ? (
+        {balances.length === 0 && specialLeaveTypes.length === 0 ? (
           <div className="rounded-xl border border-border bg-card shadow-sm py-20 text-center text-muted-foreground">
             ยังไม่มีข้อมูลวันลาสะสม
           </div>
         ) : (() => {
-          const quotaBalances   = balances.filter((b) => b.leaveType.maxDaysPerYear !== null)
-          const specialBalances = balances.filter((b) => b.leaveType.maxDaysPerYear === null)
+          const quotaBalances = balances  // All balances are now annual-quota types
 
           return (
             <div className="space-y-6">
@@ -102,7 +128,7 @@ export default async function LeaveBalancePage() {
               )}
 
               {/* ── Section 2: Per-occasion leave types (no annual cap) ── */}
-              {specialBalances.length > 0 && (
+              {specialLeaveTypes.length > 0 && (
                 <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
                   <div className="px-5 py-3 bg-muted/40 border-b border-border">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ประเภทลาตามสิทธิ์พิเศษ</p>
@@ -117,28 +143,31 @@ export default async function LeaveBalancePage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {specialBalances.map((balance) => (
-                        <tr key={balance.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition">
-                          <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">
-                            {balance.leaveType.name}
-                          </td>
-                          <td className="px-5 py-4 text-center whitespace-nowrap">
-                            {balance.leaveType.maxDaysPerRequest != null ? (
-                              <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold border bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50">
-                                สูงสุด {balance.leaveType.maxDaysPerRequest} วัน
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">ไม่จำกัด</span>
-                            )}
-                          </td>
-                          <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                            {parseFloat(Number(balance.usedDays).toFixed(2))}
-                          </td>
-                          <td className="px-5 py-4 text-center whitespace-nowrap">
-                            <span className="text-muted-foreground text-sm">ไม่จำกัด</span>
-                          </td>
-                        </tr>
-                      ))}
+                      {specialLeaveTypes.map((lt) => {
+                        const used = parseFloat((specialUsedMap.get(lt.id) ?? 0).toFixed(2))
+                        return (
+                          <tr key={lt.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition">
+                            <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">
+                              {lt.name}
+                            </td>
+                            <td className="px-5 py-4 text-center whitespace-nowrap">
+                              {lt.maxDaysPerRequest != null ? (
+                                <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold border bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50">
+                                  สูงสุด {lt.maxDaysPerRequest} วัน
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">ไม่จำกัด</span>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
+                              {used}
+                            </td>
+                            <td className="px-5 py-4 text-center whitespace-nowrap">
+                              <span className="text-muted-foreground text-sm">ไม่จำกัด</span>
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
