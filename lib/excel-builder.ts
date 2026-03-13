@@ -99,14 +99,16 @@ export function buildExcelReport(
   // ── Column widths ────────────────────────────────────────────────────────
   ws['!cols'] = columns.map((col) => ({ wch: col.width ?? 14 }))
 
-  // ── Center-align 'index' columns ────────────────────────────────────────
+  // ── Center-align index / number / date / status columns ─────────────────
   const centerStyle = { alignment: { horizontal: 'center', vertical: 'center' } }
   const headerRowIdx = 4          // 0-based row of the header row
   const dataStartIdx = 5          // 0-based row of first data row (header + 1)
   const totalRows    = aoa.length // includes meta rows + header + data + summary
 
+  const CENTER_TYPES = new Set<ColumnType>(['index', 'number', 'date', 'status'])
+
   columns.forEach((col, colIdx) => {
-    if (col.type !== 'index') return
+    if (!CENTER_TYPES.has(col.type)) return
     for (let rowIdx = headerRowIdx; rowIdx < totalRows; rowIdx++) {
       const cellAddr = XLSX.utils.encode_cell({ r: rowIdx, c: colIdx })
       if (ws[cellAddr]) ws[cellAddr].s = centerStyle
