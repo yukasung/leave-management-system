@@ -28,7 +28,6 @@ function makeTx() {
     leaveBalance:  { findUnique: vi.fn().mockResolvedValue(null), updateMany: vi.fn() },
     auditLog:      { create: vi.fn() },
     approval:      { deleteMany: vi.fn(), create: vi.fn() },
-    notification:  { create: vi.fn(), createMany: vi.fn() },
     user:          { findMany: vi.fn().mockResolvedValue([]) },
   }
 }
@@ -43,7 +42,6 @@ const mockLeaveRequestUpdate     = vi.fn().mockResolvedValue({ status: 'PENDING'
 const mockUserFindMany           = vi.fn().mockResolvedValue([])
 const mockApprovalDeleteMany     = vi.fn().mockResolvedValue({})
 const mockApprovalCreate         = vi.fn().mockResolvedValue({})
-const mockNotificationCreateMany = vi.fn().mockResolvedValue({})
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -53,7 +51,6 @@ vi.mock('@/lib/prisma', () => ({
     user:           { findUnique: mockFindUniqueUser, findFirst: mockFindFirstUser, findMany: mockUserFindMany },
     auditLog:       { create: mockAuditCreate },
     approval:       { deleteMany: mockApprovalDeleteMany, create: mockApprovalCreate },
-    notification:   { createMany: mockNotificationCreateMany, create: vi.fn().mockResolvedValue({}) },
     leaveBalance:   { findUnique: vi.fn().mockResolvedValue(null), updateMany: vi.fn() },
     leaveAuditLog:  { findFirst: vi.fn().mockResolvedValue(null) },
   },
@@ -188,14 +185,14 @@ describe('createDraft — guard clauses', () => {
 
   it('throws when user is on probation and leave type disallows it', async () => {
     mockFindUniqueLeaveType.mockResolvedValue(leaveType({ allowDuringProbation: false }))
-    mockFindUniqueUser.mockResolvedValue({ isProbation: true, name: 'Bob', employee: { managerId: null } })
+    mockFindUniqueUser.mockResolvedValue({ name: 'Bob', employee: { managerId: null, isProbation: true, approvers: [] } })
     await expect(createDraft(baseInput())).rejects.toThrow(LeaveServiceError)
     await expect(createDraft(baseInput())).rejects.toThrow('ทดลองงาน')
   })
 
   it('does NOT throw when user is NOT on probation and leave type disallows probation', async () => {
     mockFindUniqueLeaveType.mockResolvedValue(leaveType({ allowDuringProbation: false }))
-    mockFindUniqueUser.mockResolvedValue({ isProbation: false, name: 'Alice', employee: { managerId: null } })
+    mockFindUniqueUser.mockResolvedValue({ name: 'Alice', employee: { managerId: null, isProbation: false, approvers: [] } })
     const tx = makeTx()
     tx.leaveRequest.create = vi.fn().mockResolvedValue({ id: 'leave-new' })
     mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))

@@ -13,7 +13,6 @@ model User {
   password      String?
   avatarUrl     String?
   phone         String?
-  isProbation   Boolean  @default(false)
   departmentId  String?
   department    Department? @relation("DepartmentMembers", fields: [departmentId], references: [id])
   managedDepartments Department[] @relation("DepartmentManager")
@@ -22,7 +21,6 @@ model User {
   approvals     Approval[]
   auditLogs         AuditLog[]
   leaveAuditChanges LeaveAuditLog[] @relation("LeaveAuditChangedBy")
-  notifications     Notification[]
   employee      Employee?
   createdAt     DateTime @default(now())
 }
@@ -105,7 +103,6 @@ model Approval {
   approverId    String
   level         Int
   status        ApprovalStatus @default(PENDING)
-  approvedAt    DateTime?
 
   leaveRequest  LeaveRequest @relation(fields: [leaveRequestId], references: [id])
   approver      User @relation(fields: [approverId], references: [id])
@@ -125,16 +122,6 @@ enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
-}
-
-model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  user      User @relation(fields: [userId], references: [id])
 }
 
 model AuditLog {

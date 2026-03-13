@@ -92,14 +92,6 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
       leaveFieldChange.status(oldLeave?.status ?? null, 'APPROVED'),
     ])
 
-    await prisma.notification.create({
-      data: {
-        userId: request.userId,
-        message: `คำขอลา ${Number.isInteger(request.totalDays) ? request.totalDays : parseFloat(request.totalDays.toFixed(2))} วันของคุณได้รับการอนุมัติแล้ว`,
-        isRead: false,
-      },
-    })
-
     // Fire-and-forget email to employee
     void (async () => {
       try {
@@ -159,14 +151,6 @@ export async function rejectLeaveRequest(id: string): Promise<ActionResult> {
     await logLeaveFieldChanges(prisma, id, session.user.id, [
       leaveFieldChange.status(oldLeave?.status ?? null, 'REJECTED'),
     ])
-
-    await prisma.notification.create({
-      data: {
-        userId: request.userId,
-        message: 'คำขอลาของคุณถูกปฏิเสธแล้ว',
-        isRead: false,
-      },
-    })
 
     revalidatePath('/manager/leave-requests')
     revalidatePath('/hr/leave-requests')

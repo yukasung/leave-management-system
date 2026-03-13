@@ -132,9 +132,8 @@ export async function createDraft(
   const requestingUser = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      isProbation: true,
       name: true,
-      employee: { select: { managerId: true, approvers: { select: { userId: true } } } },
+      employee: { select: { managerId: true, isProbation: true, approvers: { select: { userId: true } } } },
     },
   })
 
@@ -165,7 +164,7 @@ export async function createDraft(
   }
 
   // ── Policy: probation ─────────────────────────────────────────────────────
-  if (requestingUser?.isProbation && !leaveType.allowDuringProbation) {
+  if (requestingUser?.employee?.isProbation && !leaveType.allowDuringProbation) {
     const msg = `ไม่สามารถลา "${leaveType.name}" ได้ในช่วงทดลองงาน`
     await logPolicyRejection(userId, msg)
     throw new LeaveServiceError(msg)
@@ -377,16 +376,6 @@ export async function updateLeave(
         leaveFieldChange.leaveEndDateTime(leave.leaveEndDateTime, leaveEndDateTime),
       ])
 
-      // 6. Notify leave owner of the HR correction
-      await tx.notification.create({
-        data: {
-          userId:  leave.userId,
-          message:
-            `คำขอลาของคุณถูกแก้ไขโดย Admin: ` +
-            `${newLeaveType.name} จำนวน ${totalDays} วัน`,
-          isRead: false,
-        },
-      })
     })
 
     return
@@ -539,15 +528,6 @@ export async function submitLeave(
         level: 1,
         status: ApprovalStatus.PENDING,
       },
-    })
-
-    const notifyMessage = `New leave request: ${leave.leaveType.name} by ${leave.user.name} (${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} day${leave.totalDays !== 1 ? 's' : ''})`
-    await prisma.notification.createMany({
-      data: approverTarget.notifyIds.map((uid) => ({
-        userId:  uid,
-        message: notifyMessage,
-        isRead:  false,
-      })),
     })
 
     // Fire-and-forget email to approvers + all admins
@@ -717,15 +697,6 @@ export async function cancelLeave(
       leaveFieldChange.status('CANCEL_REQUESTED', 'CANCELLED'),
     ])
 
-    await prisma.notification.create({
-      data: {
-        userId:  leave.userId,
-        message: `คำขอยกเลิกการลา "${leave.leaveType.name}" ได้รับการอนุมัติแล้ว` +
-                 (leave.leaveType.deductFromBalance ? ` (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)` : ''),
-        isRead:  false,
-      },
-    })
-
     return { requestedCancellation: false }
   }
 
@@ -758,21 +729,6 @@ export async function cancelLeave(
     await logLeaveFieldChanges(prisma, leaveId, callerId, [
       leaveFieldChange.status(status, 'CANCEL_REQUESTED'),
     ])
-
-    // Notify all HR users
-    const hrUsers = await prisma.user.findMany({
-      where:  { employee: { isAdmin: true } },
-      select: { id: true },
-    })
-    if (hrUsers.length > 0) {
-      await prisma.notification.createMany({
-        data: hrUsers.map((hr) => ({
-          userId:  hr.id,
-          message: `${leave.user.name} ขอยกเลิกการลา "${leave.leaveType.name}" (${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน) — รออนุมัติการยกเลิก`,
-          isRead:  false,
-        })),
-      })
-    }
 
     return { requestedCancellation: true }
   }
@@ -810,18 +766,6 @@ export async function cancelLeave(
   await logLeaveFieldChanges(prisma, leaveId, callerId, [
     leaveFieldChange.status(status, 'CANCELLED'),
   ])
-
-  // Notify owner if someone else (HR/ADMIN) cancelled on their behalf
-  if (callerId !== leave.userId) {
-    await prisma.notification.create({
-      data: {
-        userId:  leave.userId,
-        message: `คำขอลา "${leave.leaveType.name}" ของคุณถูกยกเลิกโดย Admin` +
-                 (needsBalanceRestore ? ` (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)` : ''),
-        isRead:  false,
-      },
-    })
-  }
 
   return { requestedCancellation: false }
 }

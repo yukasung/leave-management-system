@@ -55,14 +55,6 @@ export async function hrApproveLeaveRequest(id: string): Promise<ActionResult> {
       leaveFieldChange.status(oldLeave?.status ?? null, 'APPROVED'),
     ])
 
-    await prisma.notification.create({
-      data: {
-        userId: request.userId,
-        message: 'คำขอลาของคุณได้รับการอนุมัติแล้ว',
-        isRead: false,
-      },
-    })
-
     // Fire-and-forget email to employee
     void (async () => {
       try {
@@ -125,14 +117,6 @@ export async function hrRejectLeaveRequest(id: string): Promise<ActionResult> {
       leaveFieldChange.status(oldLeave?.status ?? null, 'REJECTED'),
     ])
 
-    await prisma.notification.create({
-      data: {
-        userId: request.userId,
-        message: 'คำขอลาของคุณถูกปฏิเสธแล้ว',
-        isRead: false,
-      },
-    })
-
     revalidatePath('/hr/leave-requests')
 
     return { success: true, message: 'ปฏิเสธคำขอเรียบร้อยแล้ว' }
@@ -191,14 +175,6 @@ export async function hrApproveCancellation(id: string): Promise<ActionResult> {
       leaveFieldChange.status('CANCEL_REQUESTED', 'CANCELLED'),
     ])
 
-    await prisma.notification.create({
-      data: {
-        userId: leave.userId,
-        message: `คำขอยกเลิกการลา "${leave.leaveType.name}" ได้รับการอนุมัติแล้ว (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)`,
-        isRead: false,
-      },
-    })
-
     revalidatePath('/hr/leave-requests')
     revalidatePath('/leave-balance')
     return { success: true, message: 'อนุมัติการยกเลิกเรียบร้อยแล้ว' }
@@ -244,14 +220,6 @@ export async function hrRejectCancellation(id: string): Promise<ActionResult> {
     await logLeaveFieldChanges(prisma, id, session.user.id, [
       leaveFieldChange.status('CANCEL_REQUESTED', revertTo),
     ])
-
-    await prisma.notification.create({
-      data: {
-        userId: leave.userId,
-        message: `คำขอยกเลิกการลา "${leave.leaveType.name}" ถูกปฏิเสธ — การลายังคงมีผล`,
-        isRead: false,
-      },
-    })
 
     revalidatePath('/hr/leave-requests')
     return { success: true, message: 'ปฏิเสธคำขอยกเลิกเรียบร้อยแล้ว' }
@@ -303,14 +271,6 @@ export async function hrAdminCancelApproved(id: string): Promise<ActionResult> {
     await logLeaveFieldChanges(prisma, id, session.user.id, [
       leaveFieldChange.status('APPROVED', 'CANCELLED'),
     ])
-
-    await prisma.notification.create({
-      data: {
-        userId: leave.userId,
-        message: `วันลา "${leave.leaveType.name}" ของคุณถูกยกเลิกโดย Admin (คืน ${Number.isInteger(leave.totalDays) ? leave.totalDays : parseFloat(leave.totalDays.toFixed(2))} วัน)`,
-        isRead: false,
-      },
-    })
 
     revalidatePath('/hr/leave-requests')
     revalidatePath('/leave-balance')
