@@ -92,6 +92,12 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
       leaveFieldChange.status(oldLeave?.status ?? null, 'APPROVED'),
     ])
 
+    // Mark the calling approver's Approval row (and any pending ones) as APPROVED
+    await prisma.approval.updateMany({
+      where: { leaveRequestId: id, approverId: callerId, status: 'PENDING' },
+      data:  { status: 'APPROVED' },
+    })
+
     // Fire-and-forget email to employee
     void (async () => {
       try {
@@ -151,6 +157,12 @@ export async function rejectLeaveRequest(id: string): Promise<ActionResult> {
     await logLeaveFieldChanges(prisma, id, session.user.id, [
       leaveFieldChange.status(oldLeave?.status ?? null, 'REJECTED'),
     ])
+
+    // Mark the calling approver's Approval row as REJECTED
+    await prisma.approval.updateMany({
+      where: { leaveRequestId: id, approverId: session.user.id, status: 'PENDING' },
+      data:  { status: 'REJECTED' },
+    })
 
     revalidatePath('/manager/leave-requests')
     revalidatePath('/hr/leave-requests')
