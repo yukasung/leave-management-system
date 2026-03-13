@@ -535,7 +535,6 @@ export default function EditLeaveForm({
                       return (
                         <div key={a.level} className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-muted-foreground w-12 shrink-0">ลำดับ {a.level}</span>
                             <span className="text-sm font-medium text-foreground">{a.approverName}</span>
                           </div>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${badgeCls}`}>
