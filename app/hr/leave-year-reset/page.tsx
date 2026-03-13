@@ -1,18 +1,13 @@
 import { prisma }     from '@/lib/prisma'
 import { auth }       from '@/lib/auth'
+import { redirect }   from 'next/navigation'
 import AdminLayout    from '@/components/admin-layout'
 import LeaveYearResetClient from './LeaveYearResetClient'
 import { getYearSummary } from './actions'
 
 export default async function LeaveYearResetPage() {
   const session = await auth()
-  if (!session?.user?.isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-red-500 text-lg font-semibold">ไม่มีสิทธิ์เข้าถึง</p>
-      </div>
-    )
-  }
+  if (!session?.user?.isAdmin) redirect('/login')
 
   const dbUser = await prisma.user.findUnique({
     where:  { id: session.user.id },

@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import type { ActionResult } from '@/lib/types'
 import { logLeaveFieldChanges, leaveFieldChange } from '@/lib/leave-audit-log.service'
+import { sendMail, buildLeaveApprovedEmail } from '@/lib/mailer'
 
 export async function hrApproveLeaveRequest(id: string): Promise<ActionResult> {
   try {
@@ -22,6 +23,15 @@ export async function hrApproveLeaveRequest(id: string): Promise<ActionResult> {
     const request = await prisma.leaveRequest.update({
       where: { id },
       data: { status: 'APPROVED' },
+      select: {
+        userId: true,
+        leaveTypeId: true,
+        leaveStartDateTime: true,
+        leaveEndDateTime: true,
+        totalDays: true,
+        user: { select: { email: true, name: true } },
+        leaveType: { select: { name: true } },
+      },
     })
 
     const year = new Date(request.leaveStartDateTime).getFullYear()
@@ -52,6 +62,26 @@ export async function hrApproveLeaveRequest(id: string): Promise<ActionResult> {
         isRead: false,
       },
     })
+
+    // Fire-and-forget email to employee
+    void (async () => {
+      try {
+        const email = request.user?.email
+        if (email) {
+          const { subject, html, text } = buildLeaveApprovedEmail({
+            employeeName:       request.user?.name ?? '',
+            leaveTypeName:      request.leaveType?.name ?? '',
+            totalDays:          request.totalDays,
+            leaveStartDateTime: request.leaveStartDateTime,
+            leaveEndDateTime:   request.leaveEndDateTime,
+            leaveRequestId:     id,
+          })
+          await sendMail({ to: email, subject, html, text })
+        }
+      } catch (err) {
+        console.error('[hrApproveLeaveRequest] email failed:', err)
+      }
+    })()
 
     revalidatePath('/hr/leave-requests')
     revalidatePath('/leave-balance')

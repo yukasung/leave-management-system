@@ -42,8 +42,9 @@ export async function createEmployee(
     const avatarUrl    = (formData.get('avatarUrl')    as string | null)?.trim() || null
     const departmentId = (formData.get('departmentId') as string | null)?.trim() || null
     const positionId   = (formData.get('positionId')   as string | null)?.trim() || null
-    const isAdmin      = formData.get('isAdmin') === 'on'
-    const isManager    = formData.get('isManager') === 'on'
+    const role         = formData.get('role') as string | null
+    const isAdmin      = role === 'admin'
+    const isManager    = role === 'manager'
     const approverIds  = (formData.getAll('approverIds') as string[]).filter(Boolean)
     const isProbation  = formData.get('isProbation') === 'on'
 

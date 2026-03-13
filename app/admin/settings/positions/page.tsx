@@ -1,21 +1,13 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { Link } from '@/i18n/navigation'
+import { redirect } from 'next/navigation'
 import AdminLayout from '@/components/admin-layout'
 
 export default async function PositionsPage() {
   const session = await auth()
 
-  if (!session || !session.user.isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-500 text-xl font-semibold">ไม่มีสิทธิ์เข้าถึง</p>
-          <p className="text-muted-foreground text-sm mt-1">เฉพาะผู้ดูแลระบบเท่านั้น</p>
-        </div>
-      </div>
-    )
-  }
+  if (!session || !session.user.isAdmin) redirect('/login')
 
   const [positionsRaw, departments, dbUser] = await Promise.all([
     prisma.position.findMany({

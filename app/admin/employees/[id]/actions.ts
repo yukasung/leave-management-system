@@ -31,8 +31,9 @@ export async function updateEmployee(
     const positionId   = (formData.get('positionId')   as string | null)?.trim() || null
     const phone        = (formData.get('phone')        as string | null)?.trim() || null
     const avatarUrl    = (formData.get('avatarUrl')    as string | null)?.trim() || null
-    const isAdmin      = formData.get('isAdmin') === 'on'
-    const isManager    = formData.get('isManager') === 'on'
+    const role         = formData.get('role') as string | null
+    const isAdmin      = role === 'admin'
+    const isManager    = role === 'manager'
     const approverIds  = (formData.getAll('approverIds') as string[]).filter(Boolean)
     const departmentId = (formData.get('departmentId') as string | null)?.trim() || null
     const isProbation  = formData.get('isProbation') === 'on'

@@ -282,38 +282,28 @@ export default function NewEmployeeForm({
           สิทธิ์ระบบ
         </legend>
         <div className="space-y-4">
-          <label className="flex items-start gap-3 cursor-pointer select-none group">
-            <input
-              type="checkbox"
-              name="isManager"
-              className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-primary"
-            />
-            <span>
-              <span className="text-sm font-medium text-foreground group-hover:text-foreground">
-                ผู้อนุมัติการลา
+          {([
+            { value: 'none',    label: 'พนักงานทั่วไป',    hint: 'ไม่มีสิทธิ์พิเศษเพิ่มเติม' },
+            { value: 'manager', label: 'ผู้อนุมัติการลา', hint: 'สามารถอนุมัติหรือปฏิเสธคำขอลาของพนักงานในสายงาน' },
+            { value: 'admin',   label: 'ผู้ดูแลระบบ',     hint: 'สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้อนุมัติการลา' },
+          ] as const).map(({ value, label, hint }) => (
+            <label key={value} className="flex items-start gap-3 cursor-pointer select-none group">
+              <input
+                type="radio"
+                name="role"
+                value={value}
+                defaultChecked={value === 'none'}
+                className="mt-0.5 h-4 w-4 border-input text-primary focus:ring-primary"
+              />
+              <span>
+                <span className="text-sm font-medium text-foreground group-hover:text-foreground">
+                  {label}
+                </span>
+                <br />
+                <span className="text-xs text-muted-foreground/60">{hint}</span>
               </span>
-              <br />
-              <span className="text-xs text-muted-foreground/60">
-                สามารถอนุมัติหรือปฏิเสธคำขอลาของพนักงานในสายงาน
-              </span>
-            </span>
-          </label>
-          <label className="flex items-start gap-3 cursor-pointer select-none group">
-            <input
-              type="checkbox"
-              name="isAdmin"
-              className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-primary"
-            />
-            <span>
-              <span className="text-sm font-medium text-foreground group-hover:text-foreground">
-                ผู้ดูแลระบบ
-              </span>
-              <br />
-              <span className="text-xs text-muted-foreground/60">
-                สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้อนุมัติการลา
-              </span>
-            </span>
-          </label>
+            </label>
+          ))}
         </div>
       </fieldset>
 

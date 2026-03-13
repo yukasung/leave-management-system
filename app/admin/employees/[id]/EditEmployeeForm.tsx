@@ -275,18 +275,30 @@ export default function EditEmployeeForm({
                 <span className="w-1 h-4 rounded-full bg-primary inline-block" />
                 <h3 className="text-sm font-semibold text-foreground">สิทธิ์ระบบ</h3>
               </div>
-              <CheckboxField
-                name="isManager"
-                defaultChecked={employee.isManager}
-                label="ผู้อนุมัติการลา"
-                hint="สามารถอนุมัติหรือปฏิเสธคำขอลาของพนักงานในสายงาน"
-              />
-              <CheckboxField
-                name="isAdmin"
-                defaultChecked={employee.isAdmin}
-                label="ผู้ดูแลระบบ"
-                hint="สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้อนุมัติการลา"
-              />
+              {([
+                { value: 'none',    label: 'พนักงานทั่วไป',     hint: 'ไม่มีสิทธิ์พิเศษเพิ่มเติม' },
+                { value: 'manager', label: 'ผู้อนุมัติการลา',  hint: 'สามารถอนุมัติหรือปฏิเสธคำขอลาของพนักงานในสายงาน' },
+                { value: 'admin',   label: 'ผู้ดูแลระบบ',      hint: 'สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้อนุมัติการลา' },
+              ] as const).map(({ value, label, hint }) => (
+                <label key={value} className="flex items-start gap-3 cursor-pointer select-none group">
+                  <input
+                    type="radio"
+                    name="role"
+                    value={value}
+                    defaultChecked={
+                      value === 'admin'   ? employee.isAdmin :
+                      value === 'manager' ? (!employee.isAdmin && employee.isManager) :
+                      (!employee.isAdmin && !employee.isManager)
+                    }
+                    className="mt-0.5 h-4 w-4 border-input text-primary focus:ring-primary"
+                  />
+                  <span>
+                    <span className="text-sm font-medium text-foreground">{label}</span>
+                    <br />
+                    <span className="text-xs text-muted-foreground/60">{hint}</span>
+                  </span>
+                </label>
+              ))}
             </div>
 
             {/* Actions */}

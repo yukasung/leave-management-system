@@ -20,7 +20,7 @@ export default async function NewEmployeePage() {
       },
     }),
     prisma.employee.findMany({
-      where: { isActive: true, isManager: true },
+      where: { isActive: true, isManager: true, isAdmin: false },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
       select: { id: true, firstName: true, lastName: true, position: true, department: { select: { name: true } } },
     }),

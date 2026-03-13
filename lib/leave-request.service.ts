@@ -10,6 +10,7 @@ import { getUsedLeaveDaysThisYear } from './leave-policy'
 import { Prisma, LeaveStatus, ApprovalStatus } from '@prisma/client'
 import { isPrivileged } from './role-guard'
 import { logLeaveFieldChanges, leaveFieldChange } from './leave-audit-log.service'
+import { sendMail, buildLeaveRequestEmail } from './mailer'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -548,6 +549,44 @@ export async function submitLeave(
         isRead:  false,
       })),
     })
+
+    // Fire-and-forget email to approvers + all admins
+    void (async () => {
+      try {
+        const [approverRows, adminRows] = await Promise.all([
+          prisma.user.findMany({
+            where:  { id: { in: approverTarget.notifyIds } },
+            select: { email: true },
+          }),
+          prisma.user.findMany({
+            where:  { employee: { isAdmin: true, isActive: true } },
+            select: { email: true },
+          }),
+        ])
+
+        const recipients = [
+          ...new Set([
+            ...approverRows.map((u) => u.email),
+            ...adminRows.map((u) => u.email),
+          ]),
+        ].filter((e): e is string => !!e)
+
+        if (recipients.length > 0) {
+          const { subject, html, text } = buildLeaveRequestEmail({
+            employeeName:       leave.user.name ?? '',
+            leaveTypeName:      leave.leaveType.name,
+            totalDays:          leave.totalDays,
+            leaveStartDateTime: leave.leaveStartDateTime,
+            leaveEndDateTime:   leave.leaveEndDateTime,
+            reason:             leave.reason,
+            leaveRequestId:     leaveId,
+          })
+          await sendMail({ to: recipients, subject, html, text })
+        }
+      } catch (err) {
+        console.error('[submitLeave] email notification failed:', err)
+      }
+    })()
   }
 }
 /**

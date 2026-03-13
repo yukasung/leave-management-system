@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { LeaveStatus } from '@prisma/client'
 import { auth } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 import { HRActionButtons } from './HRActionButtons'
 import AdminLayout from '@/components/admin-layout'
 
@@ -54,13 +55,7 @@ export default async function HRLeaveRequestsPage({
   const { status, search, page: pageParam, year: yearParam, sort: sortParam, dir: dirParam } = await searchParams
   const session = await auth()
 
-  if (!session || !session.user.isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-red-500 text-lg font-semibold">ไม่มีสิทธิ์เข้าถึง</p>
-      </div>
-    )
-  }
+  if (!session || !session.user.isAdmin) redirect('/login')
 
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },

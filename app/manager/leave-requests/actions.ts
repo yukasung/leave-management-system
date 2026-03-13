@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import type { ActionResult } from '@/lib/types'
 import { logLeaveFieldChanges, leaveFieldChange } from '@/lib/leave-audit-log.service'
+import { sendMail, buildLeaveApprovedEmail } from '@/lib/mailer'
 
 export async function approveLeaveRequest(id: string): Promise<ActionResult> {
   try {
@@ -63,7 +64,10 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
         userId: true,
         leaveTypeId: true,
         leaveStartDateTime: true,
+        leaveEndDateTime: true,
         totalDays: true,
+        user: { select: { email: true, name: true } },
+        leaveType: { select: { name: true } },
       },
     })
 
@@ -95,6 +99,26 @@ export async function approveLeaveRequest(id: string): Promise<ActionResult> {
         isRead: false,
       },
     })
+
+    // Fire-and-forget email to employee
+    void (async () => {
+      try {
+        const email = request.user?.email
+        if (email) {
+          const { subject, html, text } = buildLeaveApprovedEmail({
+            employeeName:       request.user?.name ?? '',
+            leaveTypeName:      request.leaveType?.name ?? '',
+            totalDays:          request.totalDays,
+            leaveStartDateTime: request.leaveStartDateTime,
+            leaveEndDateTime:   request.leaveEndDateTime,
+            leaveRequestId:     id,
+          })
+          await sendMail({ to: email, subject, html, text })
+        }
+      } catch (err) {
+        console.error('[approveLeaveRequest] email failed:', err)
+      }
+    })()
 
     revalidatePath('/manager/leave-requests')
     revalidatePath('/hr/leave-requests')
