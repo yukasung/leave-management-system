@@ -5,7 +5,7 @@ import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import type { ActionResult } from '@/lib/types'
 import { logLeaveFieldChanges, leaveFieldChange } from '@/lib/leave-audit-log.service'
-import { sendMail, buildLeaveApprovedEmail } from '@/lib/mailer'
+import { sendMail, buildLeaveApprovedEmail, buildLeaveCancelApprovedEmail } from '@/lib/mailer'
 
 export async function hrApproveLeaveRequest(id: string): Promise<ActionResult> {
   try {
@@ -139,8 +139,10 @@ export async function hrApproveCancellation(id: string): Promise<ActionResult> {
         userId: true,
         leaveTypeId: true,
         leaveStartDateTime: true,
+        leaveEndDateTime: true,
         totalDays: true,
         leaveType: { select: { name: true, deductFromBalance: true } },
+        user: { select: { name: true, email: true } },
       },
     })
     if (!leave) return { success: false, message: 'ไม่พบคำขอลา' }
@@ -174,6 +176,26 @@ export async function hrApproveCancellation(id: string): Promise<ActionResult> {
     await logLeaveFieldChanges(prisma, id, session.user.id, [
       leaveFieldChange.status('CANCEL_REQUESTED', 'CANCELLED'),
     ])
+
+    // Fire-and-forget email to the employee
+    void (async () => {
+      try {
+        const email = leave.user?.email
+        if (email) {
+          const { subject, html, text } = buildLeaveCancelApprovedEmail({
+            employeeName:       leave.user?.name ?? '',
+            leaveTypeName:      leave.leaveType.name,
+            totalDays:          leave.totalDays,
+            leaveStartDateTime: leave.leaveStartDateTime,
+            leaveEndDateTime:   leave.leaveEndDateTime,
+            leaveRequestId:     id,
+          })
+          await sendMail({ to: email, subject, html, text })
+        }
+      } catch (err) {
+        console.error('[hrApproveCancellation] email failed:', err)
+      }
+    })()
 
     revalidatePath('/hr/leave-requests')
     revalidatePath('/leave-balance')
