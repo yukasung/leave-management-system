@@ -12,7 +12,7 @@
  *   Last   – Summary / total row (bold, thicker top border) — optional
  */
 
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx-js-style'
 import { NextResponse } from 'next/server'
 
 // ── Types ────────────────────────────────────────────────────────────────────
