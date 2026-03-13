@@ -12,26 +12,9 @@ import {
   ArrowRight,
   User,
 } from 'lucide-react'
+import { STATUS_BADGE, STATUS_LABEL as STATUS_LABEL_MAP } from '@/lib/leave-status'
 
-const STATUS_BADGE: Record<string, string> = {
-  DRAFT:            'bg-muted text-muted-foreground border-border',
-  PENDING:          'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50',
-  IN_REVIEW:        'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50',
-  APPROVED:         'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50',
-  REJECTED:         'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/50',
-  CANCELLED:        'bg-muted text-muted-foreground border-border',
-  CANCEL_REQUESTED: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-800/50',
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT:            'ร่าง',
-  PENDING:          'รออนุมัติ',
-  IN_REVIEW:        'กำลังพิจารณา',
-  APPROVED:         'อนุมัติแล้ว',
-  REJECTED:         'ไม่อนุมัติ',
-  CANCELLED:        'ยกเลิกแล้ว',
-  CANCEL_REQUESTED: 'ขอยกเลิก (รอ HR)',
-}
+const STATUS_LABEL: Record<string, string> = STATUS_LABEL_MAP
 
 export default async function DashboardUserPage() {
   const session = await auth()

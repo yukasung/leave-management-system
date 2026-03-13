@@ -6,17 +6,18 @@ import { updateProfile, changePassword } from './actions'
 import AvatarUploader from '@/app/admin/employees/AvatarUploader'
 
 export type ProfileData = {
-  userId:      string
-  name:        string
-  email:       string
-  isAdmin:     boolean
-  department:  string | null
+  userId:       string
+  name:         string
+  email:        string
+  isAdmin:      boolean
+  department:   string | null
   // from linked Employee
-  firstName:   string | null
-  lastName:    string | null
-  phone:       string | null
-  avatarUrl:   string | null
-  position:    string | null
+  employeeCode: string | null
+  firstName:    string | null
+  lastName:     string | null
+  phone:        string | null
+  avatarUrl:    string | null
+  position:     string | null
 }
 
 const inputCls =
@@ -96,6 +97,12 @@ export default function ProfileForm({ data }: { data: ProfileData }) {
 
           {/* Read-only info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-muted-foreground bg-muted/40 rounded-xl p-4">
+            {data.employeeCode && (
+              <div>
+                <span className="font-medium text-muted-foreground block mb-0.5">รหัสพนักงาน</span>
+                <span className="font-mono">{data.employeeCode}</span>
+              </div>
+            )}
             <div>
               <span className="font-medium text-muted-foreground block mb-0.5">อีเมล</span>
               {data.email}

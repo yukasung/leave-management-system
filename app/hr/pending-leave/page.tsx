@@ -8,6 +8,15 @@ import { formatDate }  from '@/lib/format-date'
 import Link            from 'next/link'
 import { cn }          from '@/lib/utils'
 import { AlertTriangle, CalendarClock } from 'lucide-react'
+import { STATUS_BADGE, STATUS_LABEL as STATUS_LABEL_ALL } from '@/lib/leave-status'
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING:          STATUS_LABEL_ALL.PENDING,
+  IN_REVIEW:        STATUS_LABEL_ALL.IN_REVIEW,
+  CANCEL_REQUESTED: STATUS_LABEL_ALL.CANCEL_REQUESTED,
+}
+
+const STATUS_CLASSES = STATUS_BADGE
 
 type SearchParams = {
   approverId?:   string
@@ -15,18 +24,6 @@ type SearchParams = {
   dateFrom?:     string
   dateTo?:       string
   dir?:          string
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING:          'รออนุมัติ',
-  IN_REVIEW:        'รอ HR',
-  CANCEL_REQUESTED: 'ขอยกเลิก',
-}
-
-const STATUS_CLASSES: Record<string, string> = {
-  PENDING:          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
-  IN_REVIEW:        'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-  CANCEL_REQUESTED: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
 }
 
 export default async function PendingLeavePage({

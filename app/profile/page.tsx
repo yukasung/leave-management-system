@@ -21,6 +21,7 @@ export default async function ProfilePage() {
       department: { select: { name: true } },
       employee: {
         select: {
+          employeeCode: true,
           firstName: true,
           lastName:  true,
           position:  true,
@@ -33,16 +34,17 @@ export default async function ProfilePage() {
   if (!user) redirect('/login')
 
   const data: ProfileData = {
-    userId:     user.id,
-    name:       user.name,
-    email:      user.email,
-    isAdmin:    user.employee?.isAdmin ?? false,
-    avatarUrl:  user.avatarUrl ?? null,
-    phone:      user.phone      ?? null,
-    department: user.department?.name ?? null,
-    firstName:  user.employee?.firstName ?? null,
-    lastName:   user.employee?.lastName  ?? null,
-    position:   user.employee?.position  ?? null,
+    userId:       user.id,
+    name:         user.name,
+    email:        user.email,
+    isAdmin:      user.employee?.isAdmin ?? false,
+    avatarUrl:    user.avatarUrl ?? null,
+    phone:        user.phone      ?? null,
+    department:   user.department?.name ?? null,
+    employeeCode: user.employee?.employeeCode ?? null,
+    firstName:    user.employee?.firstName ?? null,
+    lastName:     user.employee?.lastName  ?? null,
+    position:     user.employee?.position  ?? null,
   }
 
   const layoutUser = {
