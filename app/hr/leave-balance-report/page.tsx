@@ -208,12 +208,12 @@ export default async function LeaveBalanceReportPage({
 
                         {/* Entitlement */}
                         <td className="px-4 py-3 text-center tabular-nums text-foreground font-medium whitespace-nowrap">
-                          {b.totalDays % 1 === 0 ? b.totalDays : b.totalDays.toFixed(1)}
+                          {parseFloat(b.totalDays.toFixed(2))}
                         </td>
 
                         {/* Used */}
                         <td className="px-4 py-3 text-center tabular-nums text-muted-foreground whitespace-nowrap">
-                          {b.usedDays % 1 === 0 ? b.usedDays : b.usedDays.toFixed(1)}
+                          {parseFloat(b.usedDays.toFixed(2))}
                         </td>
 
                         {/* Remaining */}
@@ -224,7 +224,7 @@ export default async function LeaveBalanceReportPage({
                             isLow   ? 'text-amber-600 dark:text-amber-400' :
                                       'text-emerald-600 dark:text-emerald-400',
                           )}>
-                            {remaining <= 0 ? 0 : remaining % 1 === 0 ? remaining : remaining.toFixed(1)}
+                            {remaining <= 0 ? 0 : parseFloat(remaining.toFixed(2))}
                           </span>
                         </td>
                       </tr>
