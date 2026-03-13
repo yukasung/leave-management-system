@@ -12,7 +12,6 @@ const SIDEBAR_ROUTES = [
   '/employees',
   '/leave-types',
   '/hr/leave-requests',
-  '/hr/audit-logs',
   '/admin/settings',
   '/admin/departments',
   '/admin/employees',
@@ -75,7 +74,6 @@ function getNavGroups(currentUser: CurrentUser): NavGroup[] {
         { href: '/admin/departments',        label: 'จัดการแผนก'         },
         { href: '/admin/settings',           label: 'ตั้งค่าระบบ'        },
         { href: '/admin/holiday-management', label: 'วันหยุดนักขัตฤกษ์' },
-        { href: '/hr/audit-logs',            label: 'Audit Log'          },
       ],
     })
   }

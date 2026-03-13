@@ -16,7 +16,7 @@ type SearchParams = {
   page?:         string
 }
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 12
 
 export default async function LeaveBalanceReportPage({
   searchParams,

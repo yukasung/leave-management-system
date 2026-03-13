@@ -7,7 +7,7 @@ import PendingLeaveFilters from './PendingLeaveFilters'
 import { formatDate }  from '@/lib/format-date'
 import Link            from 'next/link'
 import { cn }          from '@/lib/utils'
-import { AlertTriangle, CalendarClock, Eye } from 'lucide-react'
+import { AlertTriangle, CalendarClock } from 'lucide-react'
 
 type SearchParams = {
   approverId?:   string
@@ -180,7 +180,6 @@ export default async function PendingLeavePage({
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ผู้อนุมัติ</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">สถานะ</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -206,7 +205,7 @@ export default async function PendingLeavePage({
                     >
                       <td className="px-4 py-3 text-muted-foreground text-xs">{idx + 1}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <Link href={`/leave-request/${row.id}/edit`} className="font-medium text-foreground hover:text-primary hover:underline transition-colors">{row.employeeName}</Link>
+                        <span className="font-medium text-foreground">{row.employeeName}</span>
                         {row.isOverdue && (
                           <span className="ml-2 inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/40 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:text-red-400">
                             {row.waitDays}d
@@ -229,15 +228,7 @@ export default async function PendingLeavePage({
                           {STATUS_LABELS[row.status] ?? row.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <Link
-                          href={`/leave-request/${row.id}/edit`}
-                          title="ดูรายละเอียด"
-                          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </td>
+
                     </tr>
                   ))
                 )}

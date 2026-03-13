@@ -145,7 +145,6 @@ export default async function DashboardPage() {
                 { href: '/employees',         label: 'จัดการพนักงาน',        icon: '👥' },
                 { href: '/leave-types',       label: 'ประเภทการลา',          icon: '🏷️' },
                 { href: '/admin/employees/new', label: 'เพิ่มพนักงาน',       icon: '➕' },
-                { href: '/hr/audit-logs',     label: 'บันทึกการดำเนินการ',   icon: '📜' },
                 { href: '/admin/settings',    label: 'ตั้งค่าระบบ',          icon: '⚙️' },
               ].map(({ href, label, icon }) => (
                 <Link

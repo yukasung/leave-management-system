@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   CalendarDays,
   Users,
-  Tags,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -40,7 +39,6 @@ const LEAVE_REPORT_ITEMS = [
   { href: '/hr/leave-history',        icon: ClipboardList, label: 'ประวัติการลา'     },
   { href: '/hr/leave-balance-report', icon: Wallet,        label: 'ยอดวันลาคงเหลือ' },
   { href: '/hr/pending-leave',        icon: Clock,         label: 'คำขอรออนุมัติ'   },
-  { href: '/hr/audit-logs',           icon: Tags,          label: 'บันทึกการตรวจสอบ' },
 ]
 
 const USER_NAV_ITEMS = [
@@ -82,7 +80,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
       return next
     })
 
-  const REPORT_PATHS = ['/hr/leave-summary', '/hr/leave-history', '/hr/leave-balance-report', '/hr/department-leave', '/hr/pending-leave', '/hr/audit-logs']
+  const REPORT_PATHS = ['/hr/leave-summary', '/hr/leave-history', '/hr/leave-balance-report', '/hr/department-leave', '/hr/pending-leave']
   const isReportsActive = REPORT_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
   const isSettingsActive = pathname === '/admin/settings' || pathname.startsWith('/admin/settings/') || pathname === '/admin/holiday-management' || pathname.startsWith('/admin/holiday-management/') || pathname === '/hr/leave-year-reset' || pathname === '/admin/departments' || pathname.startsWith('/admin/departments/')
   const [reportsOpen, setReportsOpen] = useState(isReportsActive)
