@@ -196,7 +196,7 @@ export default async function DashboardUserPage() {
               {recentRequests.map((r, idx) => (
                 <Link
                   key={r.id}
-                  href="/my-leaves"
+                  href={`/leave-request/${r.id}/edit`}
                   className={`group flex items-center gap-4 px-5 py-3.5 cursor-pointer transition-colors duration-150 hover:bg-muted/40 ${idx !== 0 ? 'border-t border-border' : ''}`}
                 >
                   <div className="flex-1 min-w-0">
