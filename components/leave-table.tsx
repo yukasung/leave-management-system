@@ -94,7 +94,7 @@ export function LeaveTable({
               วันที่สิ้นสุด
             </TableHead>
             <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              จำนวนวัน
+              จำนวน (วัน)
             </TableHead>
             <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               วันที่ขอ

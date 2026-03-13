@@ -230,7 +230,7 @@ export default async function HRLeaveRequestsPage({
                       { col: 'leaveType', label: 'ประเภทการลา', center: true },
                       { col: 'startDate', label: 'วันที่เริ่ม',  center: true },
                       { col: 'endDate',   label: 'วันที่สิ้นสุด', center: true },
-                      { col: 'totalDays', label: 'จำนวนวัน',    center: true },
+                      { col: 'totalDays', label: 'จำนวน (วัน)',    center: true },
                       { col: 'createdAt', label: 'วันที่ขอ',      center: true },
                       { col: 'status',    label: 'สถานะ',        center: true },
                     ] as const).map(({ col, label, center }) => (

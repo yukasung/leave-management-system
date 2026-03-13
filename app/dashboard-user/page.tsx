@@ -8,7 +8,6 @@ import {
   CalendarPlus,
   ClipboardList,
   BarChart2,
-  Clock,
   ChevronRight,
   ArrowRight,
   User,
@@ -41,7 +40,7 @@ export default async function DashboardUserPage() {
   const yearCE = new Date().getFullYear()
   const year   = yearCE + 543
 
-  const [balances, recentRequests, pendingCount, dbUser] = await Promise.all([
+  const [balances, recentRequests, dbUser] = await Promise.all([
     prisma.leaveBalance.findMany({
       where: { userId: session.user.id, year: yearCE },
       orderBy: { leaveType: { name: 'asc' } },
@@ -52,9 +51,6 @@ export default async function DashboardUserPage() {
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: { leaveType: { select: { name: true } } },
-    }),
-    prisma.leaveRequest.count({
-      where: { userId: session.user.id, status: 'PENDING' },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
@@ -175,23 +171,7 @@ export default async function DashboardUserPage() {
             </div>
           </Link>
 
-          {pendingCount > 0 ? (
-            <Link
-              href="/my-leaves"
-              className="group flex flex-col items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-4 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-amber-400 dark:hover:border-amber-600"
-            >
-              <div className="rounded-lg bg-amber-100 dark:bg-amber-900/50 p-2">
-                <Clock className="h-4 w-4 text-amber-700 dark:text-amber-400" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
-                  รออนุมัติ {pendingCount} รายการ
-                </p>
-                <p className="text-xs text-amber-600/80 dark:text-amber-500 mt-0.5">คลิกเพื่อดูรายการ</p>
-              </div>
-            </Link>
-          ) : (
-            <Link
+          <Link
               href="/profile"
               className="group flex flex-col items-start gap-3 rounded-xl border border-border bg-card p-4 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-primary/50"
             >
@@ -203,7 +183,6 @@ export default async function DashboardUserPage() {
                 <p className="text-xs text-muted-foreground mt-0.5">แก้ไขข้อมูลของฉัน</p>
               </div>
             </Link>
-          )}
         </div>
 
         {/* Recent requests */}
