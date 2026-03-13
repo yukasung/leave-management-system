@@ -26,6 +26,7 @@ export default async function EditLeavePage({
       totalDays:         true,
       reason:            true,
       documentUrl:       true,
+      user: { select: { name: true } },
       approvals: {
         orderBy: { level: 'asc' },
         select: {
@@ -180,6 +181,7 @@ export default async function EditLeavePage({
             reason:             leave.reason ?? '',
             documentUrl:        leave.documentUrl ?? '',
             status:             leave.status,
+            requesterName:      leave.user?.name ?? '',
             approvals:          allApprovers,
           }}
           leaveTypes={leaveTypes}

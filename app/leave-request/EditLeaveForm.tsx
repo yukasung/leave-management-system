@@ -39,6 +39,7 @@ type ExistingLeave = {
   reason:             string
   documentUrl:        string
   status:             string
+  requesterName?:     string
   approvals?:         ApprovalRow[]
 }
 
@@ -437,6 +438,22 @@ export default function EditLeaveForm({
 
           {/* Info rows */}
           <div className="px-6 py-5 space-y-3">
+            {/* Requester — visible to privileged users only */}
+            {isPrivileged && existing.requesterName && (
+              <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
+                <div className="h-8 w-8 rounded-lg bg-sky-100 dark:bg-sky-950/40 flex items-center justify-center shrink-0">
+                  <svg className="h-4 w-4 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">ผู้ขอลา</p>
+                  <p className="text-sm font-semibold text-foreground">{existing.requesterName}</p>
+                </div>
+              </div>
+            )}
+
             {/* Leave type */}
             <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
               <div className="h-8 w-8 rounded-lg bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0">
