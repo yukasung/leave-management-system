@@ -14,9 +14,9 @@ function dt(iso: string, hhmm = '08:00'): Date {
   return new Date(`${iso}T${hhmm}:00`)
 }
 
-/** Convenience: full-day leave (08:00 → 17:00) on possibly multiple days */
+/** Convenience: full-day leave (09:30 → 17:30) — matches actual WORK_START / WORK_END constants. */
 function fullRange(startIso: string, endIso: string): [Date, Date] {
-  return [dt(startIso, '08:00'), dt(endIso, '17:00')]
+  return [dt(startIso, '09:30'), dt(endIso, '17:30')]
 }
 
 /** Build a UTC midnight Date from a "YYYY-MM-DD" string (avoids TZ surprises). */
@@ -74,22 +74,22 @@ describe('countWorkingDays', () => {
 // ── calculateLeaveDuration — basic cases ────────────────────────────────────
 
 describe('calculateLeaveDuration — full days', () => {
-  it('returns 1 day for a single weekday 08:00–17:00', () => {
-    // 2026-01-05 is Monday
+  it('returns 1 day for a single weekday 09:30–17:30', () => {
+    // 2026-01-05 is Monday; 09:30–17:30 = 7 working hours (lunch deducted) = 1 day
     const [s, e] = fullRange('2026-01-05', '2026-01-05')
     const res = calculateLeaveDuration(s, e)
     expect(res.totalDays).toBeCloseTo(1)
     expect(res.error).toBeUndefined()
   })
 
-  it('returns 5 days for Mon–Fri 08:00–17:00', () => {
+  it('returns 5 days for Mon–Fri 09:30–17:30', () => {
     const [s, e] = fullRange('2026-01-05', '2026-01-09')
     const res = calculateLeaveDuration(s, e)
     expect(res.totalDays).toBeCloseTo(5)
   })
 
   it('returns error for leave entirely on a weekend', () => {
-    // 2026-01-10 (Sat) 08:00 → 2026-01-10 17:00
+    // 2026-01-10 (Sat) 09:30 → 17:30
     const [s, e] = fullRange('2026-01-10', '2026-01-10')
     const res = calculateLeaveDuration(s, e)
     expect(res.totalDays).toBe(0)
@@ -98,37 +98,37 @@ describe('calculateLeaveDuration — full days', () => {
 })
 
 describe('calculateLeaveDuration — partial days (time-based)', () => {
-  it('returns 0.5 for a morning half-day (08:00–12:00)', () => {
-    // 4 working hours out of 8 = 0.5 days
-    const s = dt('2026-01-05', '08:00')
+  it('returns ~0.357 for a morning session (09:30–12:00) = 2.5h / 7h', () => {
+    // 09:30–12:00 = 2.5 working hours (no lunch overlap)
+    const s = dt('2026-01-05', '09:30')
     const e = dt('2026-01-05', '12:00')
     const res = calculateLeaveDuration(s, e)
-    expect(res.totalDays).toBeCloseTo(0.5)
+    expect(res.totalDays).toBeCloseTo(2.5 / 7, 3)
+    expect(res.totalHours).toBeCloseTo(2.5, 2)
   })
 
-  it('returns 0.5 for an afternoon half-day (13:00–17:00)', () => {
+  it('returns ~0.643 for an afternoon session (13:00–17:30) = 4.5h / 7h', () => {
     const s = dt('2026-01-05', '13:00')
-    const e = dt('2026-01-05', '17:00')
+    const e = dt('2026-01-05', '17:30')
     const res = calculateLeaveDuration(s, e)
-    expect(res.totalDays).toBeCloseTo(0.5)
+    expect(res.totalDays).toBeCloseTo(4.5 / 7, 3)
+    expect(res.totalHours).toBeCloseTo(4.5, 2)
   })
 
-  it('excludes lunch hour (12:00–13:00) from the calculation', () => {
-    // 08:00–17:00 = 8 working hours (lunch excluded) = 1 day
-    const s = dt('2026-01-05', '08:00')
-    const e = dt('2026-01-05', '17:00')
+  it('excludes lunch hour (12:00–13:00) — full day 09:30–17:30 = 7h = 1 day', () => {
+    const s = dt('2026-01-05', '09:30')
+    const e = dt('2026-01-05', '17:30')
     const res = calculateLeaveDuration(s, e)
     expect(res.totalDays).toBeCloseTo(1)
-    expect(res.totalHours).toBeCloseTo(8)
+    expect(res.totalHours).toBeCloseTo(7)
   })
 
-  it('returns 0.125 for a one-hour leave (08:00–09:00)', () => {
-    // 1/8 of a working day
-    const s = dt('2026-01-05', '08:00')
-    const e = dt('2026-01-05', '09:00')
+  it('returns ~0.143 for a one-hour leave (09:30–10:30) = 1h / 7h', () => {
+    const s = dt('2026-01-05', '09:30')
+    const e = dt('2026-01-05', '10:30')
     const res = calculateLeaveDuration(s, e)
-    expect(res.totalDays).toBeCloseTo(0.125)
-    expect(res.totalHours).toBeCloseTo(1)
+    expect(res.totalDays).toBeCloseTo(1 / 7, 3)
+    expect(res.totalHours).toBeCloseTo(1, 2)
   })
 })
 

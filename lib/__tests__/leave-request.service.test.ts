@@ -39,14 +39,23 @@ const mockFindUniqueLeaveType    = vi.fn()
 const mockFindUniqueUser         = vi.fn()
 const mockFindFirstUser          = vi.fn()
 const mockAuditCreate            = vi.fn()
+const mockLeaveRequestUpdate     = vi.fn().mockResolvedValue({ status: 'PENDING' })
+const mockUserFindMany           = vi.fn().mockResolvedValue([])
+const mockApprovalDeleteMany     = vi.fn().mockResolvedValue({})
+const mockApprovalCreate         = vi.fn().mockResolvedValue({})
+const mockNotificationCreateMany = vi.fn().mockResolvedValue({})
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $transaction:   mockTransaction,
-    leaveRequest:   { findUnique: mockFindUniqueLeaveRequest },
+    leaveRequest:   { findUnique: mockFindUniqueLeaveRequest, update: mockLeaveRequestUpdate },
     leaveType:      { findUnique: mockFindUniqueLeaveType },
-    user:           { findUnique: mockFindUniqueUser, findFirst: mockFindFirstUser },
+    user:           { findUnique: mockFindUniqueUser, findFirst: mockFindFirstUser, findMany: mockUserFindMany },
     auditLog:       { create: mockAuditCreate },
+    approval:       { deleteMany: mockApprovalDeleteMany, create: mockApprovalCreate },
+    notification:   { createMany: mockNotificationCreateMany, create: vi.fn().mockResolvedValue({}) },
+    leaveBalance:   { findUnique: vi.fn().mockResolvedValue(null), updateMany: vi.fn() },
+    leaveAuditLog:  { findFirst: vi.fn().mockResolvedValue(null) },
   },
 }))
 
@@ -58,15 +67,20 @@ vi.mock('@/lib/leave-policy', () => ({
 vi.mock('@/lib/leave-audit-log.service', () => ({
   logLeaveFieldChanges: vi.fn().mockResolvedValue(undefined),
   leaveFieldChange: {
-    status:      vi.fn().mockReturnValue({}),
-    leaveTypeId: vi.fn().mockReturnValue({}),
-    startDate:   vi.fn().mockReturnValue({}),
-    endDate:     vi.fn().mockReturnValue({}),
+    status:              vi.fn().mockReturnValue({}),
+    leaveTypeId:         vi.fn().mockReturnValue({}),
+    leaveStartDateTime:  vi.fn().mockReturnValue({}),
+    leaveEndDateTime:    vi.fn().mockReturnValue({}),
   },
 }))
 
 vi.mock('@/lib/role-guard', () => ({
   isPrivileged: vi.fn((isAdmin: boolean) => isAdmin),
+}))
+
+vi.mock('@/lib/mailer', () => ({
+  sendMail:               vi.fn().mockResolvedValue(undefined),
+  buildLeaveRequestEmail: vi.fn().mockReturnValue({ subject: '', html: '', text: '' }),
 }))
 
 // Import after mocks
@@ -272,12 +286,10 @@ describe('cancelLeave — guard clauses', () => {
     await expect(cancelLeave('user-1', false, 'leave-1')).rejects.toThrow('รอการพิจารณา')
   })
 
-  it('returns { requestedCancellation: true } when owner cancels APPROVED leave', async () => {
+  it('throws when non-privileged owner tries to cancel APPROVED leave', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.APPROVED }))
-    const tx = makeTx()
-    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
-    const result = await cancelLeave('user-1', false, 'leave-1')
-    expect(result).toEqual({ requestedCancellation: true })
+    await expect(cancelLeave('user-1', false, 'leave-1')).rejects.toThrow(LeaveServiceError)
+    await expect(cancelLeave('user-1', false, 'leave-1')).rejects.toThrow('อนุมัติแล้วไม่สามารถยกเลิกเอง')
   })
 
   it('returns { requestedCancellation: false } when HR cancels APPROVED leave', async () => {
@@ -296,12 +308,10 @@ describe('cancelLeave — guard clauses', () => {
     expect(result).toEqual({ requestedCancellation: false })
   })
 
-  it('returns { requestedCancellation: false } when cancelling a PENDING leave', async () => {
+  it('returns { requestedCancellation: true } when non-privileged owner cancels a PENDING leave', async () => {
     mockFindUniqueLeaveRequest.mockResolvedValue(leaveRow({ status: LeaveStatus.PENDING }))
-    const tx = makeTx()
-    mockTransaction.mockImplementation((cb: (tx: ReturnType<typeof makeTx>) => unknown) => cb(tx))
     const result = await cancelLeave('user-1', false, 'leave-1')
-    expect(result).toEqual({ requestedCancellation: false })
+    expect(result).toEqual({ requestedCancellation: true })
   })
 })
 

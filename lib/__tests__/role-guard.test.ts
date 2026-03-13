@@ -38,8 +38,8 @@ describe('assertAdmin', () => {
     expect(() => assertAdmin(false)).toThrow(RoleGuardError)
   })
 
-  it('thrown error message mentions admin', () => {
-    expect(() => assertAdmin(false)).toThrow(/admin/i)
+  it('thrown error message mentions ผู้ดูแลระบบ', () => {
+    expect(() => assertAdmin(false)).toThrow(/ผู้ดูแลระบบ/)
   })
 })
 
