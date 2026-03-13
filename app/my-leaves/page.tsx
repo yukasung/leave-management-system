@@ -6,21 +6,36 @@ import LeaveTableRow from './LeaveTableRow'
 import AdminLayout from '@/components/admin-layout'
 import Link from 'next/link'
 import { STATUS_BADGE, STATUS_LABEL as STATUS_LABEL_MAP } from '@/lib/leave-status'
+import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 
 const PAGE_SIZE = 14
 
 const STATUS_LABEL: Record<string, string> = STATUS_LABEL_MAP
 
+const VALID_SORTS = ['leaveType', 'startDate', 'endDate', 'totalDays', 'status', 'createdAt'] as const
+type SortKey = typeof VALID_SORTS[number]
+
+const ORDER_MAP: Record<SortKey, object> = {
+  leaveType:  { leaveType: { name: 'asc' } },
+  startDate:  { leaveStartDateTime: 'asc' },
+  endDate:    { leaveEndDateTime: 'asc' },
+  totalDays:  { totalDays: 'asc' },
+  status:     { status: 'asc' },
+  createdAt:  { createdAt: 'asc' },
+}
+
 export default async function MyLeaveHistoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; year?: string }>
+  searchParams: Promise<{ page?: string; year?: string; sort?: string; dir?: string }>
 }) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  const { page: pageStr, year: yearStr } = (await searchParams) ?? {}
+  const { page: pageStr, year: yearStr, sort: sortParam, dir: dirParam } = (await searchParams) ?? {}
   const page = Math.max(1, parseInt(pageStr ?? '1', 10) || 1)
+  const sortKey: SortKey = VALID_SORTS.includes(sortParam as SortKey) ? (sortParam as SortKey) : 'createdAt'
+  const sortDir: 'asc' | 'desc' = dirParam === 'asc' ? 'asc' : 'desc'
   const currentYear = new Date().getFullYear()
   const year = parseInt(yearStr ?? String(currentYear), 10) || currentYear
 
@@ -44,11 +59,21 @@ export default async function MyLeaveHistoryPage({
     leaveStartDateTime: { gte: yearStart, lt: yearEnd },
   }
 
+  const baseOrderBy = { ...ORDER_MAP[sortKey] } as Record<string, unknown>
+  // flip direction if desc
+  const orderBy = Object.fromEntries(
+    Object.entries(baseOrderBy).map(([k, v]) =>
+      typeof v === 'object' && v !== null
+        ? [k, Object.fromEntries(Object.entries(v as object).map(([ik]) => [ik, sortDir]))]
+        : [k, sortDir]
+    )
+  )
+
   const [total, requests, dbUser] = await Promise.all([
     prisma.leaveRequest.count({ where }),
     prisma.leaveRequest.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: { leaveType: { select: { name: true } } },
@@ -108,12 +133,32 @@ export default async function MyLeaveHistoryPage({
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 border-b border-border">
                   <tr>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่เริ่มลา</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่สิ้นสุด</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวน (วัน)</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">สถานะ</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่ขอ</th>
+                    {([
+                      { col: 'leaveType', label: 'ประเภทการลา' },
+                      { col: 'startDate', label: 'วันที่เริ่มลา' },
+                      { col: 'endDate',   label: 'วันที่สิ้นสุด' },
+                      { col: 'totalDays', label: 'จำนวน (วัน)' },
+                      { col: 'status',    label: 'สถานะ' },
+                      { col: 'createdAt', label: 'วันที่ขอ' },
+                    ] as const).map(({ col, label }) => {
+                      const isActive = sortKey === col
+                      const nextDir  = isActive && sortDir === 'desc' ? 'asc' : 'desc'
+                      return (
+                        <th key={col} className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+                          <Link
+                            href={`?year=${resolvedYear}&page=1&sort=${col}&dir=${nextDir}`}
+                            className="inline-flex items-center justify-center gap-1 hover:text-foreground transition-colors"
+                          >
+                            {label}
+                            {isActive
+                              ? sortDir === 'asc'
+                                ? <ChevronUp className="h-3 w-3" />
+                                : <ChevronDown className="h-3 w-3" />
+                              : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                          </Link>
+                        </th>
+                      )
+                    })}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -145,7 +190,7 @@ export default async function MyLeaveHistoryPage({
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-1 pt-2">
             <Link
-              href={`?year=${resolvedYear}&page=${page - 1}`}
+              href={`?year=${resolvedYear}&page=${page - 1}&sort=${sortKey}&dir=${sortDir}`}
               className={`px-3 py-1.5 rounded-lg text-sm border transition ${
                 page <= 1
                   ? 'pointer-events-none opacity-40 border-border text-muted-foreground'
@@ -158,7 +203,7 @@ export default async function MyLeaveHistoryPage({
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <Link
                 key={p}
-                href={`?year=${resolvedYear}&page=${p}`}
+                href={`?year=${resolvedYear}&page=${p}&sort=${sortKey}&dir=${sortDir}`}
                 className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm border transition ${
                   p === page
                     ? 'bg-primary text-primary-foreground border-primary font-semibold'
@@ -170,7 +215,7 @@ export default async function MyLeaveHistoryPage({
             ))}
 
             <Link
-              href={`?year=${resolvedYear}&page=${page + 1}`}
+              href={`?year=${resolvedYear}&page=${page + 1}&sort=${sortKey}&dir=${sortDir}`}
               className={`px-3 py-1.5 rounded-lg text-sm border transition ${
                 page >= totalPages
                   ? 'pointer-events-none opacity-40 border-border text-muted-foreground'
