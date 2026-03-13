@@ -25,6 +25,12 @@ import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
 type BalanceInfo = { totalDays: number; usedDays: number }
 
+type ApprovalRow = {
+  level:        number
+  status:       string
+  approverName: string
+}
+
 type ExistingLeave = {
   leaveTypeId:        string
   leaveStartDateTime: string   // "YYYY-MM-DDTHH:mm"
@@ -33,6 +39,7 @@ type ExistingLeave = {
   reason:             string
   documentUrl:        string
   status:             string
+  approvals?:         ApprovalRow[]
 }
 
 type Props = {
@@ -503,6 +510,44 @@ export default function EditLeaveForm({
                 </p>
               </div>
             </div>
+
+            {/* Approvers — visible to privileged users only */}
+            {isPrivileged && existing.approvals && existing.approvals.length > 0 && (
+              <div className="flex items-start gap-3 rounded-xl bg-muted/40 px-4 py-3">
+                <div className="h-8 w-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/40 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg className="h-4 w-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground mb-2">ผู้อนุมัติ</p>
+                  <div className="space-y-1.5">
+                    {existing.approvals.map((a) => {
+                      const badgeCls =
+                        a.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                        : a.status === 'REJECTED' ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400'
+                      const badgeLabel =
+                        a.status === 'APPROVED' ? 'อนุมัติ'
+                        : a.status === 'REJECTED' ? 'ปฏิเสธ'
+                        : 'รออนุมัติ'
+                      return (
+                        <div key={a.level} className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-muted-foreground w-12 shrink-0">ลำดับ {a.level}</span>
+                            <span className="text-sm font-medium text-foreground">{a.approverName}</span>
+                          </div>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${badgeCls}`}>
+                            {badgeLabel}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Attachment */}
             {fileName ? (

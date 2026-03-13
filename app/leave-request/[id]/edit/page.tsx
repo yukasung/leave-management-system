@@ -26,6 +26,14 @@ export default async function EditLeavePage({
       totalDays:         true,
       reason:            true,
       documentUrl:       true,
+      approvals: {
+        orderBy: { level: 'asc' },
+        select: {
+          level:  true,
+          status: true,
+          approver: { select: { name: true } },
+        },
+      },
     },
   })
 
@@ -130,6 +138,11 @@ export default async function EditLeavePage({
             reason:             leave.reason ?? '',
             documentUrl:        leave.documentUrl ?? '',
             status:             leave.status,
+            approvals:          leave.approvals.map((a) => ({
+              level:        a.level,
+              status:       a.status,
+              approverName: a.approver.name ?? '',
+            })),
           }}
           leaveTypes={leaveTypes}
           balanceByType={balanceByType}
