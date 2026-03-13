@@ -12,6 +12,8 @@ interface Props {
   statusLabel: string
   status: string
   createdAt: string
+  hideCreatedAt?: boolean
+  hideTotalDays?: boolean
 }
 
 export default function LeaveTableRow({
@@ -24,6 +26,8 @@ export default function LeaveTableRow({
   statusLabel,
   status,
   createdAt,
+  hideCreatedAt,
+  hideTotalDays,
 }: Props) {
   const router = useRouter()
 
@@ -41,17 +45,21 @@ export default function LeaveTableRow({
       <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
         {endDate}
       </td>
-      <td className="px-5 py-4 text-center font-semibold text-foreground">
-        {totalDays}
-      </td>
+      {!hideTotalDays && (
+        <td className="px-5 py-4 text-center font-semibold text-foreground">
+          {totalDays}
+        </td>
+      )}
       <td className="px-5 py-4 text-center whitespace-nowrap">
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusBadge}`}>
           {statusLabel}
         </span>
       </td>
-      <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-        {createdAt}
-      </td>
+      {!hideCreatedAt && (
+        <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
+          {createdAt}
+        </td>
+      )}
     </tr>
   )
 }

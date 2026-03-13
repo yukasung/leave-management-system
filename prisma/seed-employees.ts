@@ -36,6 +36,14 @@ async function main() {
       await prisma.department.findFirst({ where: { name: emp.department }, select: { id: true } })
     )?.id ?? null
 
+    // Upsert position into Position table and resolve id
+    const positionRecord = await prisma.position.upsert({
+      where: { name: emp.position },
+      update: {},
+      create: { name: emp.position },
+      select: { id: true },
+    })
+
     await prisma.employee.upsert({
       where: { employeeCode: emp.employeeCode },
       update: {
@@ -43,6 +51,7 @@ async function main() {
         lastName:     emp.lastName,
         email:        emp.email,
         position:     emp.position,
+        positionId:   positionRecord.id,
         departmentId: deptId,
       },
       create: {
@@ -51,6 +60,7 @@ async function main() {
         lastName:     emp.lastName,
         email:        emp.email,
         position:     emp.position,
+        positionId:   positionRecord.id,
         isProbation:  false,
         isActive:     true,
         departmentId: deptId,

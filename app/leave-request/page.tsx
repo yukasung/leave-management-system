@@ -13,20 +13,13 @@ const STATUS_LABEL: Record<string, string> = STATUS_LABEL_MAP
 
 const PAGE_SIZE = 14
 
-export default async function LeaveRequestPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ page?: string }>
-}) {
-  const { page: pageStr } = (await searchParams) ?? {}
-  const page = Math.max(1, parseInt(pageStr ?? '1', 10) || 1)
-
+export default async function LeaveRequestPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
   const year = new Date().getFullYear()
 
-  const [leaveTypes, balances, dbUser, total, requests] = await Promise.all([
+  const [leaveTypes, balances, dbUser, requests] = await Promise.all([
     prisma.leaveType.findMany({
       orderBy: { name: 'asc' },
       select: {
@@ -47,16 +40,6 @@ export default async function LeaveRequestPage({
       where: { id: session.user.id },
       select: { avatarUrl: true },
     }),
-    prisma.leaveRequest.count({
-      where: {
-        userId: session.user.id,
-        status: { not: 'DRAFT' },
-        leaveStartDateTime: {
-          gte: new Date(`${year}-01-01T00:00:00`),
-          lt:  new Date(`${year + 1}-01-01T00:00:00`),
-        },
-      },
-    }),
     prisma.leaveRequest.findMany({
       where: {
         userId: session.user.id,
@@ -67,7 +50,6 @@ export default async function LeaveRequestPage({
         },
       },
       orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: { leaveType: { select: { name: true } } },
     }),
@@ -110,12 +92,20 @@ export default async function LeaveRequestPage({
 
         {/* Leave history list — fills remaining space */}
         <div className="w-full min-w-0 space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">ประวัติการลาของฉัน</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">ปี {year + 543} · ทั้งหมด {total} รายการ</p>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">ประวัติการลาของฉัน</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">ปี {year + 543} · ทั้งหมด {requests.length} รายการ</p>
+            </div>
+            <Link
+              href="/my-leaves"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline shrink-0"
+            >
+              ดูทั้งหมด →
+            </Link>
           </div>
 
-          {total === 0 ? (
+          {requests.length === 0 ? (
             <div className="rounded-xl border border-border bg-card shadow-sm py-16 text-center text-muted-foreground">
               ยังไม่มีประวัติการลา
             </div>
@@ -129,9 +119,7 @@ export default async function LeaveRequestPage({
                         <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ประเภทการลา</th>
                         <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่เริ่มลา</th>
                         <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่สิ้นสุด</th>
-                        <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวน (วัน)</th>
                         <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">สถานะ</th>
-                        <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่ขอ</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -150,6 +138,8 @@ export default async function LeaveRequestPage({
                             statusLabel={label}
                             status={req.status}
                             createdAt={formatDate(req.createdAt)}
+                            hideCreatedAt
+                            hideTotalDays
                           />
                         )
                       })}
@@ -157,54 +147,6 @@ export default async function LeaveRequestPage({
                   </table>
                 </div>
               </div>
-
-              {/* Pagination */}
-              {(() => {
-                const totalPages = Math.ceil(total / PAGE_SIZE)
-                if (totalPages <= 1) return null
-                const pages = Array.from({ length: totalPages }, (_, i) => i + 1)
-                return (
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    <p className="text-xs text-muted-foreground">
-                      หน้า {page} จาก {totalPages}
-                    </p>
-                    <div className="flex items-center gap-1">
-                      <Link
-                        href={`?page=${page - 1}`}
-                        aria-disabled={page <= 1}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition
-                          ${page <= 1
-                            ? 'pointer-events-none opacity-40 border-border bg-background text-muted-foreground'
-                            : 'border-border bg-background hover:bg-muted text-foreground'}`}
-                      >
-                        ← ก่อนหน้า
-                      </Link>
-                      {pages.map((p) => (
-                        <Link
-                          key={p}
-                          href={`?page=${p}`}
-                          className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-medium border transition
-                            ${p === page
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'border-border bg-background hover:bg-muted text-foreground'}`}
-                        >
-                          {p}
-                        </Link>
-                      ))}
-                      <Link
-                        href={`?page=${page + 1}`}
-                        aria-disabled={page >= totalPages}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition
-                          ${page >= totalPages
-                            ? 'pointer-events-none opacity-40 border-border bg-background text-muted-foreground'
-                            : 'border-border bg-background hover:bg-muted text-foreground'}`}
-                      >
-                        ถัดไป →
-                      </Link>
-                    </div>
-                  </div>
-                )
-              })()}
             </>
           )}
         </div>
