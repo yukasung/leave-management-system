@@ -17,7 +17,7 @@ import { NextResponse } from 'next/server'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type ColumnType = 'text' | 'number' | 'date' | 'status'
+export type ColumnType = 'text' | 'number' | 'date' | 'status' | 'index'
 
 export interface ColumnDef {
   header: string
@@ -99,6 +99,20 @@ export function buildExcelReport(
   // ── Column widths ────────────────────────────────────────────────────────
   ws['!cols'] = columns.map((col) => ({ wch: col.width ?? 14 }))
 
+  // ── Center-align 'index' columns ────────────────────────────────────────
+  const centerStyle = { alignment: { horizontal: 'center', vertical: 'center' } }
+  const headerRowIdx = 4          // 0-based row of the header row
+  const dataStartIdx = 5          // 0-based row of first data row (header + 1)
+  const totalRows    = aoa.length // includes meta rows + header + data + summary
+
+  columns.forEach((col, colIdx) => {
+    if (col.type !== 'index') return
+    for (let rowIdx = headerRowIdx; rowIdx < totalRows; rowIdx++) {
+      const cellAddr = XLSX.utils.encode_cell({ r: rowIdx, c: colIdx })
+      if (ws[cellAddr]) ws[cellAddr].s = centerStyle
+    }
+  })
+
   // ── Freeze below header row + autofilter on header ───────────────────────
   ws['!freeze'] = { xSplit: 0, ySplit: 5, activeCell: 'A6' }
   ws['!autofilter'] = {
@@ -109,7 +123,7 @@ export function buildExcelReport(
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, meta.sheetName)
 
-  return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
+  return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx', cellStyles: true }) as Buffer
 }
 
 /** Build the standard Content-Disposition filename with today's date */

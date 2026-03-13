@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
   const now = new Date()
 
   const columns: ColumnDef[] = [
-    { header: '#',              type: 'number', width: 6  },
+    { header: '#',              type: 'index',  width: 6  },
     { header: 'ชื่อพนักงาน',  type: 'text',   width: 25 },
     { header: 'แผนก',          type: 'text',   width: 20 },
     { header: 'ประเภทการลา',  type: 'text',   width: 18 },

@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => b.days - a.days)
 
   const columns: ColumnDef[] = [
-    { header: '#',                      type: 'number', width: 6  },
+    { header: '#',                      type: 'index',  width: 6  },
     { header: 'แผนก',                    type: 'text',   width: 26 },
     { header: 'จำนวนพนักงาน',          type: 'number', width: 16 },
     { header: 'คำขอลา',               type: 'number', width: 12 },
