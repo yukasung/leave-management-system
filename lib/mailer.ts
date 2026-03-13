@@ -239,3 +239,103 @@ export function buildLeaveRequestEmail(data: LeaveRequestMailData): { subject: s
 
   return { subject, html, text }
 }
+
+// ── Leave Cancel Request Email (to Admin) ────────────────────────────────────
+
+export type LeaveCancelRequestMailData = {
+  employeeName:       string
+  leaveTypeName:      string
+  totalDays:          number
+  leaveStartDateTime: Date
+  leaveEndDateTime:   Date
+  reason?:            string | null
+  leaveRequestId:     string
+}
+
+export function buildLeaveCancelRequestEmail(data: LeaveCancelRequestMailData): { subject: string; html: string; text: string } {
+  const {
+    employeeName, leaveTypeName, totalDays,
+    leaveStartDateTime, leaveEndDateTime, reason, leaveRequestId,
+  } = data
+
+  const daysStr  = Number.isInteger(totalDays) ? `${totalDays}` : parseFloat(totalDays.toFixed(2)).toString()
+  const startStr = thaiDate(leaveStartDateTime)
+  const endStr   = thaiDate(leaveEndDateTime)
+  const appUrl   = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+  const reviewUrl = `${appUrl}/en/leave-request/${leaveRequestId}/edit`
+
+  const subject = `[ขอยกเลิกการลา] ${employeeName} — ${leaveTypeName} ${daysStr} วัน`
+
+  const html = `
+<!DOCTYPE html>
+<html lang="th">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 0">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+        <!-- Header -->
+        <tr>
+          <td style="background:#ea580c;padding:24px 32px">
+            <p style="margin:0;font-size:18px;font-weight:700;color:#ffffff">🔄 คำขอยกเลิกการลา</p>
+            <p style="margin:4px 0 0;font-size:13px;color:#fed7aa">ระบบจัดการวันลา</p>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="padding:28px 32px">
+            <p style="margin:0 0 20px;font-size:15px;color:#374151">
+              พนักงาน <strong>${employeeName}</strong> ได้ส่งคำขอยกเลิกการลา กรุณาตรวจสอบและดำเนินการ
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+              <tr style="background:#f9fafb">
+                <td style="padding:10px 16px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;width:140px">พนักงาน</td>
+                <td style="padding:10px 16px;font-size:14px;font-weight:600;color:#111827">${employeeName}</td>
+              </tr>
+              <tr style="background:#ffffff;border-top:1px solid #e5e7eb">
+                <td style="padding:10px 16px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">ประเภทการลา</td>
+                <td style="padding:10px 16px;font-size:14px;color:#111827">${leaveTypeName}</td>
+              </tr>
+              <tr style="background:#f9fafb;border-top:1px solid #e5e7eb">
+                <td style="padding:10px 16px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">วันที่เริ่ม</td>
+                <td style="padding:10px 16px;font-size:14px;color:#111827">${startStr}</td>
+              </tr>
+              <tr style="background:#ffffff;border-top:1px solid #e5e7eb">
+                <td style="padding:10px 16px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">วันที่สิ้นสุด</td>
+                <td style="padding:10px 16px;font-size:14px;color:#111827">${endStr}</td>
+              </tr>
+              <tr style="background:#f9fafb;border-top:1px solid #e5e7eb">
+                <td style="padding:10px 16px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">จำนวนวัน</td>
+                <td style="padding:10px 16px;font-size:14px;font-weight:700;color:#ea580c">${daysStr} วัน</td>
+              </tr>
+              ${reason ? `
+              <tr style="background:#ffffff;border-top:1px solid #e5e7eb">
+                <td style="padding:10px 16px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;vertical-align:top">เหตุผล</td>
+                <td style="padding:10px 16px;font-size:14px;color:#374151">${reason}</td>
+              </tr>` : ''}
+            </table>
+            <div style="margin-top:24px;text-align:center">
+              <a href="${reviewUrl}" style="display:inline-block;padding:12px 28px;background:#ea580c;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px">
+                ดูคำขอและดำเนินการ →
+              </a>
+            </div>
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb">
+            <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center">
+              อีเมลนี้ส่งอัตโนมัติจากระบบจัดการวันลา · รหัสคำขอ: ${leaveRequestId.slice(0, 8)}
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+
+  const text = `คำขอยกเลิกการลา\nพนักงาน: ${employeeName}\nประเภทการลา: ${leaveTypeName}\nวันที่: ${startStr} – ${endStr}\nจำนวน: ${daysStr} วัน${reason ? `\nเหตุผล: ${reason}` : ''}\n\nดูคำขอ: ${reviewUrl}`
+
+  return { subject, html, text }
+}

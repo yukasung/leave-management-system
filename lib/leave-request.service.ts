@@ -10,7 +10,7 @@ import { getUsedLeaveDaysThisYear } from './leave-policy'
 import { Prisma, LeaveStatus, ApprovalStatus } from '@prisma/client'
 import { isPrivileged } from './role-guard'
 import { logLeaveFieldChanges, leaveFieldChange } from './leave-audit-log.service'
-import { sendMail, buildLeaveRequestEmail } from './mailer'
+import { sendMail, buildLeaveRequestEmail, buildLeaveCancelRequestEmail } from './mailer'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -627,11 +627,13 @@ export async function cancelLeave(
   const leave = await prisma.leaveRequest.findUnique({
     where: { id: leaveId },
     select: {
-      userId:      true,
+      userId:              true,
       status:              true,
-      totalDays:            true,
-      leaveStartDateTime:   true,
-      leaveTypeId:          true,
+      totalDays:           true,
+      leaveStartDateTime:  true,
+      leaveEndDateTime:    true,
+      reason:              true,
+      leaveTypeId:         true,
       leaveType: {
         select: {
           name:             true,
@@ -729,6 +731,31 @@ export async function cancelLeave(
     await logLeaveFieldChanges(prisma, leaveId, callerId, [
       leaveFieldChange.status(status, 'CANCEL_REQUESTED'),
     ])
+
+    // Fire-and-forget email to all admins
+    void (async () => {
+      try {
+        const adminRows = await prisma.user.findMany({
+          where:  { employee: { isAdmin: true, isActive: true } },
+          select: { email: true },
+        })
+        const recipients = adminRows.map((u) => u.email).filter((e): e is string => !!e)
+        if (recipients.length > 0) {
+          const { subject, html, text } = buildLeaveCancelRequestEmail({
+            employeeName:       leave.user.name ?? '',
+            leaveTypeName:      leave.leaveType.name,
+            totalDays:          leave.totalDays,
+            leaveStartDateTime: leave.leaveStartDateTime,
+            leaveEndDateTime:   leave.leaveEndDateTime,
+            reason:             leave.reason,
+            leaveRequestId:     leaveId,
+          })
+          await sendMail({ to: recipients, subject, html, text })
+        }
+      } catch (err) {
+        console.error('[cancelLeave] cancel-request email failed:', err)
+      }
+    })()
 
     return { requestedCancellation: true }
   }
