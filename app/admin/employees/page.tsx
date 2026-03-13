@@ -5,6 +5,7 @@ import { Link } from '@/i18n/navigation'
 import { Suspense } from 'react'
 import EmployeeFilters from './EmployeeFilters'
 import AdminLayout from '@/components/admin-layout'
+import EmployeeRow from './EmployeeRow'
 
 const PAGE_SIZE = 15
 
@@ -174,85 +175,25 @@ export default async function EmployeesPage({
                         สถานะ<SortIcon col="isActive" />
                       </Link>
                     </th>
-                    <th className="px-5 py-3.5 text-center whitespace-nowrap">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {employees.map((emp) => (
-                    <tr key={emp.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
-                      <td className="px-5 py-3.5 font-mono text-muted-foreground text-xs whitespace-nowrap">
-                        {emp.employeeCode}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 ring-1 ring-border">
-                            {emp.avatarUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={emp.avatarUrl} alt="" className="h-full w-full object-cover" />
-                            ) : (
-                              <span className="flex h-full w-full items-center justify-center bg-linear-to-br from-primary/60 to-primary text-primary-foreground text-[10px] font-bold select-none">
-                                {`${emp.firstName}${emp.lastName}`.slice(0, 2).toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">
-                              {emp.firstName} {emp.lastName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{emp.email}</p>
-                            {emp.isProbation && (
-                              <span className="inline-block mt-0.5 text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 font-medium">
-                                ทดลองงาน
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5 text-center text-muted-foreground whitespace-nowrap">
-                        {emp.department?.name ?? (
-                          <span className="text-muted-foreground/40"></span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5 text-center text-muted-foreground whitespace-nowrap">{emp.position}</td>
-                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
-                        <div className="flex flex-col items-center gap-1">
-                          {emp.isAdmin && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200 dark:border-violet-800/50">
-                              ผู้ดูแลระบบ
-                            </span>
-                          )}
-                          {emp.isManager && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50">
-                              ผู้อนุมัติการลา
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                            emp.isActive
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50'
-                              : 'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/50'
-                          }`}
-                        >
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              emp.isActive ? 'bg-emerald-500' : 'bg-red-400'
-                            }`}
-                          />
-                          {emp.isActive ? 'ทำงานอยู่' : 'ไม่ทำงาน'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
-                        <Link
-                          href={`/admin/employees/${emp.id}`}
-                          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                        >
-                          แก้ไข
-                        </Link>
-                      </td>
-                    </tr>
+                    <EmployeeRow
+                      key={emp.id}
+                      id={emp.id}
+                      employeeCode={emp.employeeCode}
+                      firstName={emp.firstName}
+                      lastName={emp.lastName}
+                      email={emp.email}
+                      avatarUrl={emp.avatarUrl ?? null}
+                      position={emp.position ?? null}
+                      isAdmin={emp.isAdmin}
+                      isManager={emp.isManager}
+                      isActive={emp.isActive}
+                      isProbation={emp.isProbation}
+                      departmentName={emp.department?.name ?? null}
+                    />
                   ))}
                 </tbody>
               </table>

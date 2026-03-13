@@ -1,4 +1,6 @@
-import Link from 'next/link'
+'use client'
+
+import { useRouter } from 'next/navigation'
 import {
   Table,
   TableBody,
@@ -53,11 +55,12 @@ const STATUS_DOT: Record<string, string> = {
 
 export function LeaveTable({
   rows,
-  showActions = true,
+  showActions = false,
 }: {
   rows: LeaveRow[]
   showActions?: boolean
 }) {
+  const router = useRouter()
   if (rows.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -108,16 +111,20 @@ export function LeaveTable({
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={row.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
+            <TableRow
+              key={row.id}
+              onClick={() => router.push(`/leave-request/${row.id}/edit`)}
+              className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors cursor-pointer"
+            >
               {/* Employee */}
               <TableCell>
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                     {row.employee.name.slice(0, 2).toUpperCase()}
                   </div>
-                  <Link href={`/leave-request/${row.id}/edit`} className="text-sm font-medium text-foreground hover:text-primary hover:underline transition-colors">
+                  <span className="text-sm font-medium text-foreground">
                     {row.employee.name}
-                  </Link>
+                  </span>
                 </div>
               </TableCell>
               {/* Leave Type */}
@@ -156,12 +163,9 @@ export function LeaveTable({
               {showActions && (
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center gap-1">
-                    <Link
-                      href={`/leave-request/${row.id}/edit`}
-                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                    >
+                    <span className="text-sm text-blue-600 dark:text-blue-400">
                       ดูรายละเอียด
-                    </Link>
+                    </span>
                   </div>
                 </TableCell>
               )}

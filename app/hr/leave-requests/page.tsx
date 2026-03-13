@@ -4,6 +4,7 @@ import { LeaveStatus } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { HRActionButtons } from './HRActionButtons'
+import HRLeaveRow from './HRLeaveRow'
 import AdminLayout from '@/components/admin-layout'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -42,7 +43,7 @@ const STATUS_DOT: Record<string, string> = {
 }
 
 import { formatDate } from '@/lib/format-date'
-import { ChevronUp, ChevronDown, ChevronsUpDown, Search, Paperclip, Eye } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Search, Paperclip } from 'lucide-react'
 import Pagination from '@/components/Pagination'
 
 const PAGE_SIZE = 10
@@ -226,7 +227,6 @@ export default async function HRLeaveRequestsPage({
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
                     {([
                       { col: 'name',      label: 'ชื่อพนักงาน', center: false },
-                      { col: 'department', label: 'แผนก',       center: false },
                       { col: 'leaveType', label: 'ประเภทการลา', center: true },
                       { col: 'startDate', label: 'วันที่เริ่ม',  center: true },
                       { col: 'endDate',   label: 'วันที่สิ้นสุด', center: true },
@@ -245,69 +245,25 @@ export default async function HRLeaveRequestsPage({
                         </Link>
                       </th>
                     ))}
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">เอกสารแนบ</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">การดำเนินการ</th>
+
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {requests.map((req, index) => (
-                    <tr key={req.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{skip + index + 1}</td>
-                      <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
-                        <Link href={`/leave-request/${req.id}/edit`} className="hover:text-primary hover:underline transition-colors">
-                          {req.user.name}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                        {req.user.department?.name ?? (
-                          <span className="italic text-muted-foreground/50">ไม่ระบุ</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{req.leaveType.name}</td>
-                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveStartDateTime)}</td>
-                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveEndDateTime)}</td>
-                      <td className="px-4 py-3 text-center font-semibold text-foreground whitespace-nowrap">{parseFloat(Number(req.totalDays).toFixed(2))}</td>
-                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.createdAt)}</td>
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                          STATUS_BADGE_NEW[req.status] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400 dark:border-gray-700'
-                        }`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[req.status] ?? 'bg-gray-400'}`} />
-                          {STATUS_LABELS[req.status] ?? req.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        {req.documentUrl ? (
-                          <a
-                            href={req.documentUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="ดูเอกสารแนบ"
-                            className="inline-flex items-center justify-center h-7 w-7 rounded-md text-primary hover:bg-primary/10 transition-colors"
-                          >
-                            <Paperclip className="h-4 w-4" />
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground/30">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        <div className="inline-flex items-center justify-center gap-1">
-                          <Link
-                            href={`/leave-request/${req.id}/edit`}
-                            title="ดูรายละเอียด"
-                            className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                          {(req.status === 'PENDING' || req.status === 'IN_REVIEW' || req.status === 'CANCEL_REQUESTED' || req.status === 'APPROVED') ? (
-                            <HRActionButtons id={req.id} status={req.status} />
-                          ) : (
-                            <span className="text-muted-foreground/30">—</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+                    <HRLeaveRow
+                      key={req.id}
+                      id={req.id}
+                      rowNumber={skip + index + 1}
+                      userName={req.user.name}
+                      departmentName={req.user.department?.name ?? null}
+                      leaveTypeName={req.leaveType.name}
+                      startDate={formatDate(req.leaveStartDateTime)}
+                      endDate={formatDate(req.leaveEndDateTime)}
+                      totalDays={String(parseFloat(Number(req.totalDays).toFixed(2)))}
+                      createdAt={formatDate(req.createdAt)}
+                      status={req.status}
+                      documentUrl={req.documentUrl ?? null}
+                    />
                   ))}
                 </tbody>
               </table>

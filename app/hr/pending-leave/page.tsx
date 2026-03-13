@@ -3,12 +3,11 @@ import { auth }        from '@/lib/auth'
 import { redirect }    from 'next/navigation'
 import { LeaveStatus } from '@prisma/client'
 import AdminLayout     from '@/components/admin-layout'
-import { StatCard }    from '@/components/dashboard-cards'
 import PendingLeaveFilters from './PendingLeaveFilters'
 import { formatDate }  from '@/lib/format-date'
 import Link            from 'next/link'
 import { cn }          from '@/lib/utils'
-import { AlertTriangle, CalendarClock, Eye, Clock, Search } from 'lucide-react'
+import { AlertTriangle, CalendarClock, Eye } from 'lucide-react'
 
 type SearchParams = {
   approverId?:   string
@@ -149,38 +148,6 @@ export default async function PendingLeavePage({
               <span className="text-sm font-semibold text-red-700 dark:text-red-400">รอนานเกิน 3 วัน: {overdue} รายการ</span>
             </div>
           )}
-        </div>
-
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard
-            label="รออนุมัติทั้งหมด"
-            value={rows.length}
-            sub="รายการ"
-            accent="indigo"
-            icon={<Clock className="h-4 w-4" />}
-          />
-          <StatCard
-            label="รอนานเกิน 3 วัน"
-            value={overdue}
-            sub="ด่วน"
-            accent={overdue > 0 ? 'red' : 'default'}
-            icon={<AlertTriangle className="h-4 w-4" />}
-          />
-          <StatCard
-            label="รออนุมัติ"
-            value={rows.filter(r => r.status === 'PENDING').length}
-            sub="รายการ"
-            accent="yellow"
-            icon={<Clock className="h-4 w-4" />}
-          />
-          <StatCard
-            label="รอ HR"
-            value={rows.filter(r => r.status === 'IN_REVIEW').length}
-            sub="รายการ"
-            accent="blue"
-            icon={<Search className="h-4 w-4" />}
-          />
         </div>
 
         {/* Filters */}

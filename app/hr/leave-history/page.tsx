@@ -6,11 +6,10 @@ import Link from 'next/link'
 import AdminLayout from '@/components/admin-layout'
 import LeaveHistoryFilters from './LeaveHistoryFilters'
 import { formatDate } from '@/lib/format-date'
-import { formatLeaveDuration } from '@/lib/leave-calc'
-import { ChevronUp, ChevronDown, ChevronsUpDown, Eye, FileText, CheckCircle2, Clock, XCircle } from 'lucide-react'
-import { StatCard } from '@/components/dashboard-cards'
+import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import Pagination from '@/components/Pagination'
 import { cn } from '@/lib/utils'
+import LeaveHistoryRow from './LeaveHistoryRow'
 
 const PAGE_SIZE = 10
 
@@ -194,17 +193,10 @@ export default async function LeaveHistoryPage({
     { col: 'leaveType',  label: 'ประเภทการลา',     className: 'min-w-30', center: true },
     { col: 'startDate',  label: 'วันที่เริ่ม',      className: 'min-w-25', center: true },
     { col: 'endDate',    label: 'วันที่สิ้นสุด',    className: 'min-w-25', center: true },
-    { col: 'totalDays',  label: 'จำนวนวัน',         className: 'min-w-20', center: true },
+    { col: 'totalDays',  label: 'จำนวน (วัน)',        className: 'min-w-20', center: true },
     { col: 'status',     label: 'สถานะ',            className: 'min-w-30', center: true },
     { col: 'createdAt',  label: 'วันที่สร้าง',       className: 'min-w-25', center: true },
   ]
-
-  // Stat counts for summary cards
-  const [approvedCount, pendingCount, rejectedCount] = await Promise.all([
-    prisma.leaveRequest.count({ where: { ...where, status: 'APPROVED' } }),
-    prisma.leaveRequest.count({ where: { ...where, status: { in: ['PENDING', 'IN_REVIEW'] } } }),
-    prisma.leaveRequest.count({ where: { ...where, status: 'REJECTED' } }),
-  ])
 
   return (
     <AdminLayout title="ประวัติการลาพนักงาน" user={user}>
@@ -214,38 +206,6 @@ export default async function LeaveHistoryPage({
         <div>
           <h1 className="text-xl font-bold text-foreground">ประวัติการลาพนักงาน</h1>
           <p className="text-sm text-muted-foreground mt-0.5">ข้อมูลคำขอลาทั้งหมดในระบบ</p>
-        </div>
-
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard
-            label="ทั้งหมด"
-            value={total.toLocaleString()}
-            sub="คำขอในระบบ"
-            accent="blue"
-            icon={<FileText className="h-4 w-4" />}
-          />
-          <StatCard
-            label="อนุมัติแล้ว"
-            value={approvedCount.toLocaleString()}
-            sub="รายการ"
-            accent="green"
-            icon={<CheckCircle2 className="h-4 w-4" />}
-          />
-          <StatCard
-            label="รออนุมัติ"
-            value={pendingCount.toLocaleString()}
-            sub="รายการ"
-            accent="yellow"
-            icon={<Clock className="h-4 w-4" />}
-          />
-          <StatCard
-            label="ปฏิเสธ"
-            value={rejectedCount.toLocaleString()}
-            sub="รายการ"
-            accent="red"
-            icon={<XCircle className="h-4 w-4" />}
-          />
         </div>
 
         {/* Filters */}
@@ -291,85 +251,33 @@ export default async function LeaveHistoryPage({
                       </th>
                     ))}
                     {/* Reason — no sort (long text) */}
-                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-35">
+                    <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-35">
                       เหตุผล
                     </th>
                     {/* Approver — no sort */}
                     <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-30">
                       ผู้อนุมัติ
                     </th>
-                    {/* Detail link — no sort */}
-                    <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-12">
-                      
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {requests.map((req, index) => (
-                    <tr key={req.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
-                      <td className="px-3 py-3 text-muted-foreground text-xs whitespace-nowrap">{skip + index + 1}</td>
-                      <td className="px-3 py-3 text-xs font-mono text-muted-foreground whitespace-nowrap">
-                        {req.user.employee?.employeeCode ?? (
-                          <span className="italic opacity-40">—</span>
-                        )}
-                      </td>
-                      {/* Name */}
-                      <td className="px-3 py-3 font-medium text-foreground whitespace-nowrap">
-                        <Link href={`/leave-request/${req.id}/edit`} className="hover:text-primary hover:underline transition-colors">{req.user.name}</Link>
-                      </td>
-                      {/* Department */}
-                      <td className="px-3 py-3 text-center text-muted-foreground whitespace-nowrap">
-                        {req.user.department?.name ?? <span className="italic opacity-40">—</span>}
-                      </td>
-                      {/* Leave type */}
-                      <td className="px-3 py-3 text-center text-muted-foreground whitespace-nowrap">{req.leaveType.name}</td>
-                      {/* Start */}
-                      <td className="px-3 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveStartDateTime)}</td>
-                      {/* End */}
-                      <td className="px-3 py-3 text-center text-muted-foreground whitespace-nowrap">{formatDate(req.leaveEndDateTime)}</td>
-                      {/* Days */}
-                      <td className="px-3 py-3 text-center font-semibold text-foreground whitespace-nowrap">
-                        {formatLeaveDuration(req.totalDays)}
-                      </td>
-                      {/* Status */}
-                      <td className="px-3 py-3 text-center whitespace-nowrap">
-                        <span className={cn(
-                          'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap',
-                          STATUS_BADGE[req.status] ?? 'bg-gray-100 text-gray-600 border-gray-200',
-                        )}>
-                          <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_DOT[req.status] ?? 'bg-gray-400')} />
-                          {STATUS_LABELS[req.status] ?? req.status}
-                        </span>
-                      </td>
-                      {/* Created at */}
-                      <td className="px-3 py-3 text-center text-muted-foreground whitespace-nowrap text-xs">
-                        {formatDate(req.createdAt)}
-                      </td>
-                      {/* Reason */}
-                      <td className="px-3 py-3 text-muted-foreground max-w-50">
-                        {req.reason ? (
-                          <span className="line-clamp-2 text-xs" title={req.reason}>{req.reason}</span>
-                        ) : (
-                          <span className="italic opacity-40 text-xs">—</span>
-                        )}
-                      </td>
-                      {/* Approver */}
-                      <td className="px-3 py-3 text-center text-muted-foreground">
-                        {req.approvals[0]?.approver.name ?? (
-                          <span className="italic opacity-40 text-xs">—</span>
-                        )}
-                      </td>
-                      {/* Detail link */}
-                      <td className="px-3 py-3 text-center">
-                        <Link
-                          href={`/leave-request/${req.id}/edit`}
-                          title="ดูรายละเอียด"
-                          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </td>
-                    </tr>
+                    <LeaveHistoryRow
+                      key={req.id}
+                      id={req.id}
+                      rowNumber={skip + index + 1}
+                      employeeCode={req.user.employee?.employeeCode ?? null}
+                      userName={req.user.name}
+                      departmentName={req.user.department?.name ?? null}
+                      leaveTypeName={req.leaveType.name}
+                      startDate={formatDate(req.leaveStartDateTime)}
+                      endDate={formatDate(req.leaveEndDateTime)}
+                      totalDays={req.totalDays % 1 === 0 ? String(req.totalDays) : req.totalDays.toFixed(1)}
+                      status={req.status}
+                      createdAt={formatDate(req.createdAt)}
+                      reason={req.reason ?? null}
+                      approverName={req.approvals[0]?.approver.name ?? null}
+                    />
                   ))}
                 </tbody>
               </table>

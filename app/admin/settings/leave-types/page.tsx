@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { Link } from '@/i18n/navigation'
 import { redirect } from 'next/navigation'
 import AdminLayout from '@/components/admin-layout'
+import LeaveTypeRow from './LeaveTypeRow'
 
 export default async function LeaveTypesPage() {
   const session = await auth()
@@ -62,64 +63,37 @@ export default async function LeaveTypesPage() {
               <p className="font-medium">ยังไม่มีประเภทการลา</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 border-b border-border">
-                <tr>
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ชื่อ</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันสูงสุด/ปี</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันสูงสุด/ครั้ง</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ต้องแนบเอกสาร</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">หักยอด</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ลาช่วงทดลองงาน</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {leaveTypes.map((lt) => (
-                  <tr key={lt.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
-                    <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">{lt.name}</td>
-                    <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                      {lt.maxDaysPerYear ?? <span className="text-muted-foreground/40">—</span>}
-                    </td>
-                    <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                      {lt.maxDaysPerRequest ?? <span className="text-muted-foreground/40">—</span>}
-                    </td>
-                    <td className="px-5 py-4 text-center whitespace-nowrap">
-                      <BoolBadge value={lt.requiresAttachment} yes="ต้องการ" no="ไม่ต้องการ" />
-                    </td>
-                    <td className="px-5 py-4 text-center whitespace-nowrap">
-                      <BoolBadge value={lt.deductFromBalance} yes="หัก" no="ไม่หัก" />
-                    </td>
-                    <td className="px-5 py-4 text-center whitespace-nowrap">
-                      <BoolBadge value={lt.allowDuringProbation} yes="อนุญาต" no="ไม่อนุญาต" />
-                    </td>
-                    <td className="px-5 py-4 text-right whitespace-nowrap">
-                      <Link
-                        href={`/admin/settings/leave-types/${lt.id}`}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        แก้ไข
-                      </Link>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 border-b border-border">
+                  <tr>
+                    <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ชื่อ</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันสูงสุด/ปี</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันสูงสุด/ครั้ง</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ต้องแนบเอกสาร</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">หักยอด</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ลาช่วงทดลองงาน</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {leaveTypes.map((lt) => (
+                    <LeaveTypeRow
+                      key={lt.id}
+                      id={lt.id}
+                      name={lt.name}
+                      maxDaysPerYear={lt.maxDaysPerYear}
+                      maxDaysPerRequest={lt.maxDaysPerRequest}
+                      requiresAttachment={lt.requiresAttachment}
+                      deductFromBalance={lt.deductFromBalance}
+                      allowDuringProbation={lt.allowDuringProbation}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
     </AdminLayout>
-  )
-}
-
-function BoolBadge({ value, yes, no }: { value: boolean; yes: string; no: string }) {
-  return value ? (
-    <span className="inline-block bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-xs font-medium px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">
-      {yes}
-    </span>
-  ) : (
-    <span className="inline-block bg-muted text-muted-foreground text-xs font-medium px-2 py-0.5 rounded-full border border-border">
-      {no}
-    </span>
   )
 }

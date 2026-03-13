@@ -2,7 +2,7 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { formatDate } from '@/lib/format-date'
-import LeaveActionsCell from './LeaveActionsCell'
+import LeaveTableRow from './LeaveTableRow'
 import AdminLayout from '@/components/admin-layout'
 import Link from 'next/link'
 
@@ -127,10 +127,8 @@ export default async function MyLeaveHistoryPage({
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่เริ่มลา</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่สิ้นสุด</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวน (วัน)</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">เหตุผล</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">สถานะ</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันที่ขอ</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -138,34 +136,18 @@ export default async function MyLeaveHistoryPage({
                     const badgeCls = STATUS_BADGE[req.status] ?? STATUS_BADGE.CANCELLED
                     const label   = STATUS_LABEL[req.status] ?? req.status
                     return (
-                      <tr key={req.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition">
-                        <td className="px-5 py-4 text-center font-medium text-foreground whitespace-nowrap">
-                          {req.leaveType.name}
-                        </td>
-                        <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                          {formatDate(req.leaveStartDateTime)}
-                        </td>
-                        <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                          {formatDate(req.leaveEndDateTime)}
-                        </td>
-                        <td className="px-5 py-4 text-center font-semibold text-foreground">
-                          {parseFloat(Number(req.totalDays).toFixed(2))}
-                        </td>
-                        <td className="px-5 py-4 text-center text-muted-foreground max-w-xs truncate">
-                          {req.reason || <span className="text-muted-foreground/40"></span>}
-                        </td>
-                        <td className="px-5 py-4 text-center whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${badgeCls}`}>
-                            {label}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                          {formatDate(req.createdAt)}
-                        </td>
-                        <td className="px-5 py-4 text-center whitespace-nowrap">
-                          <LeaveActionsCell leaveId={req.id} status={req.status} />
-                        </td>
-                      </tr>
+                      <LeaveTableRow
+                        key={req.id}
+                        id={req.id}
+                        leaveTypeName={req.leaveType.name}
+                        startDate={formatDate(req.leaveStartDateTime)}
+                        endDate={formatDate(req.leaveEndDateTime)}
+                        totalDays={String(parseFloat(Number(req.totalDays).toFixed(2)))}
+                        statusBadge={badgeCls}
+                        statusLabel={label}
+                        status={req.status}
+                        createdAt={formatDate(req.createdAt)}
+                      />
                     )
                   })}
                 </tbody>

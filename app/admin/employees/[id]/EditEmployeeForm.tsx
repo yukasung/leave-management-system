@@ -218,7 +218,7 @@ export default function EditEmployeeForm({
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">ผู้อนุมัติการลา</label>
-                  <div className="rounded-lg border border-input overflow-hidden">
+                  <div className="rounded-lg border border-input overflow-hidden overflow-x-auto">
                     <table className="min-w-full text-sm">
                       <thead className="bg-muted/50">
                         <tr>

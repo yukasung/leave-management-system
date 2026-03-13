@@ -108,38 +108,6 @@ export default async function LeaveBalanceReportPage({
           </div>
         </div>
 
-        {/* Summary stat cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard
-            label="ทั้งหมด"
-            value={allSummary.length.toLocaleString()}
-            sub="รายการ"
-            accent="indigo"
-            icon={<Users className="h-4 w-4" />}
-          />
-          <StatCard
-            label="ปกติ (ใช้ < 75%)"
-            value={normalCount.toLocaleString()}
-            sub="รายการ"
-            accent="green"
-            icon={<CheckCircle2 className="h-4 w-4" />}
-          />
-          <StatCard
-            label="เหลือน้อย (≥ 75%)"
-            value={low.toLocaleString()}
-            sub="รายการ"
-            accent={low > 0 ? 'yellow' : 'default'}
-            icon={<AlertTriangle className="h-4 w-4" />}
-          />
-          <StatCard
-            label="หมดโควตา"
-            value={exhausted.toLocaleString()}
-            sub="รายการ"
-            accent={exhausted > 0 ? 'red' : 'default'}
-            icon={<XCircle className="h-4 w-4" />}
-          />
-        </div>
-
         {/* Alert summary cards */}
         {(exhausted > 0 || low > 0) && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -195,8 +163,6 @@ export default async function LeaveBalanceReportPage({
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">โควตา (วัน)</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">ใช้ไปแล้ว (วัน)</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">คงเหลือ (วัน)</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-36">การใช้งาน</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">สถานะ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -261,46 +227,6 @@ export default async function LeaveBalanceReportPage({
                             {remaining <= 0 ? 0 : remaining % 1 === 0 ? remaining : remaining.toFixed(1)}
                           </span>
                         </td>
-
-                        {/* Progress bar */}
-                        <td className="px-4 py-3 text-center">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden min-w-16">
-                              <div
-                                className={cn(
-                                  'h-full rounded-full transition-all',
-                                  isEmpty ? 'bg-red-500' :
-                                  isLow   ? 'bg-amber-500' :
-                                            'bg-emerald-500',
-                                )}
-                                style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
-                              />
-                            </div>
-                            <span className="text-xs tabular-nums text-muted-foreground w-9 text-right shrink-0">
-                              {pct.toFixed(0)}%
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Status badge */}
-                        <td className="px-4 py-3 text-center">
-                          {isEmpty ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:border-red-800/50 dark:bg-red-950/40 dark:text-red-400 whitespace-nowrap">
-                              <XCircle className="h-3 w-3" />
-                              หมดโควตา
-                            </span>
-                          ) : isLow ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-400 whitespace-nowrap">
-                              <AlertTriangle className="h-3 w-3" />
-                              เหลือน้อย
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/40 dark:text-emerald-400 whitespace-nowrap">
-                              <CheckCircle2 className="h-3 w-3" />
-                              ปกติ
-                            </span>
-                          )}
-                        </td>
                       </tr>
                     )
                   })}
@@ -310,20 +236,6 @@ export default async function LeaveBalanceReportPage({
 
             {/* Pagination */}
             <Pagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} />
-
-            {/* Legend */}
-            <div className="flex items-center gap-4 border-t border-border px-4 py-3 flex-wrap">
-              <p className="text-xs text-muted-foreground font-medium">คำอธิบาย:</p>
-              <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400">
-                <CheckCircle2 className="h-3.5 w-3.5" /> ปกติ (ใช้ไป &lt; 75%)
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
-                <AlertTriangle className="h-3.5 w-3.5" /> เหลือน้อย (ใช้ไป ≥ 75%)
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-xs text-red-700 dark:text-red-400">
-                <XCircle className="h-3.5 w-3.5" /> หมดโควตา (ใช้ครบ 100%)
-              </span>
-            </div>
           </div>
         )}
       </div>

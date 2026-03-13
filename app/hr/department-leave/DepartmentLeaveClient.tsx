@@ -2,9 +2,8 @@
 
 import { useRouter, useParams } from 'next/navigation'
 import { useState, useCallback } from 'react'
-import { Building2, CalendarDays, Users, TrendingUp, Download, SlidersHorizontal } from 'lucide-react'
+import { Download, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { StatCard } from '@/components/dashboard-cards'
 import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
 type LeaveType = { id: string; name: string }
@@ -24,6 +23,11 @@ interface Props {
   byDepartment:  DeptRow[]
   summary:       Summary
   filters:       Filters
+}
+
+function toThaiDate(iso: string) {
+  const date = new Date(iso + 'T00:00:00')
+  return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 const CHART_COLORS = [
@@ -178,10 +182,6 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
   }
 
   const hasFilters  = !!(filters.dateFrom || filters.dateTo || filters.leaveTypeId)
-  const avgPerEmp   = summary.totalEmployees > 0
-    ? (summary.totalDays / summary.totalEmployees).toFixed(1)
-    : '0'
-  const activeDepts = byDepartment.filter((d) => d.requestCount > 0).length
 
   return (
     <div className="space-y-6 max-w-350 mx-auto">
@@ -193,7 +193,9 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
           <p className="text-sm text-muted-foreground mt-0.5">
             วิเคราะห์การใช้วันลาแยกตามแผนก
             {hasFilters && filters.dateFrom && (
-              <span className="ml-2 text-primary font-medium">· {filters.dateFrom}{filters.dateTo ? ` – ${filters.dateTo}` : ''}</span>
+              <span className="ml-2 text-primary font-medium">
+                · {toThaiDate(filters.dateFrom)}{filters.dateTo ? ` – ${toThaiDate(filters.dateTo)}` : ''}
+              </span>
             )}
           </p>
         </div>
@@ -253,88 +255,6 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="แผนกทั้งหมด"     value={byDepartment.length}                   sub={`มีการลา ${activeDepts} แผนก`}      icon={<Building2 className="h-4 w-4" />}   accent="indigo" />
-        <StatCard label="คำขอลารวม"       value={summary.totalRequests.toLocaleString()} sub="คำขอที่อนุมัติแล้ว"                  icon={<CalendarDays className="h-4 w-4" />} accent="blue"   />
-        <StatCard label="วันลารวม"         value={summary.totalDays % 1 === 0 ? summary.totalDays : summary.totalDays.toFixed(1)} sub="วัน"  icon={<TrendingUp className="h-4 w-4" />}  accent="green"  />
-        <StatCard label="เฉลี่ยต่อพนักงาน" value={avgPerEmp}                              sub="วัน / คน (ทั้งบริษัท)"             icon={<Users className="h-4 w-4" />}       accent="yellow" />
-      </div>
-
-        {/* Chart + Table */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* Horizontal bar chart */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-foreground">วันลาตามแผนก (Top 12)</h2>
-            <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-md bg-muted">หน่วย: วัน</span>
-          </div>
-          <div className="flex-1">
-            <HorizontalBarChart data={byDepartment} />
-          </div>
-        </div>
-
-        {/* Summary table */}
-        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden flex flex-col">
-          <div className="px-5 py-4 border-b border-border">
-            <h2 className="text-sm font-semibold text-foreground">สรุปตามแผนก</h2>
-          </div>
-          {byDepartment.length === 0 ? (
-            <div className="flex items-center justify-center h-52 text-muted-foreground text-sm">ไม่มีข้อมูล</div>
-          ) : (
-            <div className="overflow-x-auto flex-1">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">แผนก</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">พนักงาน</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">คำขอ</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">วันรวม</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">เฉลี่ย/คน</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {byDepartment.map((d, i) => {
-                    const avg = d.empCount > 0 ? (d.totalDays / d.empCount).toFixed(1) : '—'
-                    return (
-                      <tr key={d.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-2.5">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="h-2.5 w-2.5 rounded-full shrink-0"
-                              style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
-                            />
-                            <span className="font-medium text-foreground truncate max-w-28" title={d.name}>{d.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5 text-center tabular-nums text-muted-foreground">{d.empCount}</td>
-                        <td className="px-4 py-2.5 text-center tabular-nums text-muted-foreground">{d.requestCount}</td>
-                        <td className="px-4 py-2.5 text-center tabular-nums font-semibold text-foreground">
-                          {d.totalDays % 1 === 0 ? d.totalDays : d.totalDays.toFixed(1)}
-                        </td>
-                        <td className="px-4 py-2.5 text-center tabular-nums text-muted-foreground">{avg}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-                <tfoot className="border-t-2 border-border bg-muted/20">
-                  <tr>
-                    <td className="px-4 py-3 font-semibold text-foreground">รวม</td>
-                    <td className="px-4 py-3 text-center tabular-nums font-semibold text-foreground">{summary.totalEmployees}</td>
-                    <td className="px-4 py-3 text-center tabular-nums font-semibold text-foreground">{summary.totalRequests}</td>
-                    <td className="px-4 py-3 text-center tabular-nums font-semibold text-foreground">
-                      {summary.totalDays % 1 === 0 ? summary.totalDays : summary.totalDays.toFixed(1)}
-                    </td>
-                    <td className="px-4 py-3 text-center tabular-nums font-semibold text-foreground">{avgPerEmp}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Detail table (full width) */}
       {byDepartment.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
@@ -366,13 +286,10 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-20">คำขอลา</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">พนักงานที่ลา</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">วันลารวม</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-28">เฉลี่ย/พนักงาน</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-36">การใช้งาน</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {byDepartment.map((d, i) => {
-                  const avg   = d.empCount > 0 ? d.totalDays / d.empCount : 0
                   const pct   = d.empCount > 0 ? (d.uniqueEmployees / d.empCount) * 100 : 0
                   const color = CHART_COLORS[i % CHART_COLORS.length]
                   return (
@@ -388,7 +305,7 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
                       <td className="px-4 py-3 text-center tabular-nums text-muted-foreground whitespace-nowrap">{d.requestCount}</td>
                       <td className="px-4 py-3 text-center tabular-nums text-muted-foreground whitespace-nowrap">
                         {d.uniqueEmployees}
-                        {d.empCount > 0 && (
+                        {d.empCount > 0 && d.uniqueEmployees > 0 && (
                           <span className="text-xs ml-1 text-muted-foreground/50">
                             ({pct.toFixed(0)}%)
                           </span>
@@ -396,30 +313,6 @@ export default function DepartmentLeaveClient({ leaveTypes, byDepartment, summar
                       </td>
                       <td className="px-4 py-3 text-center tabular-nums font-semibold text-foreground whitespace-nowrap">
                         {d.totalDays % 1 === 0 ? d.totalDays : d.totalDays.toFixed(1)}
-                      </td>
-                      <td className="px-4 py-3 text-center tabular-nums text-muted-foreground whitespace-nowrap">
-                        {avg > 0 ? (avg % 1 === 0 ? avg : avg.toFixed(1)) : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        {d.empCount > 0 && d.totalDays > 0 ? (
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden min-w-16">
-                              <div
-                                className="h-full rounded-full transition-all"
-                                style={{
-                                  width: `${Math.min(100, pct)}%`,
-                                  backgroundColor: color,
-                                  opacity: 0.8,
-                                }}
-                              />
-                            </div>
-                            <span className="text-xs tabular-nums text-muted-foreground w-9 text-right shrink-0">
-                              {pct.toFixed(0)}%
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground/30 italic">—</span>
-                        )}
                       </td>
                     </tr>
                   )

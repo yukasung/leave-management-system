@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { Link } from '@/i18n/navigation'
 import { redirect } from 'next/navigation'
 import AdminLayout from '@/components/admin-layout'
+import PositionRow from './PositionRow'
 
 export default async function PositionsPage() {
   const session = await auth()
@@ -78,41 +79,30 @@ export default async function PositionsPage() {
               <p className="font-medium">ยังไม่มีตำแหน่งงาน</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 border-b border-border">
-                <tr>
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ชื่อตำแหน่ง</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">แผนก</th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวนพนักงาน</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {positions.map((pos, idx) => (
-                  <tr key={pos.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors">
-                    <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">{idx + 1}</td>
-                    <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">{pos.name}</td>
-                    <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                      {pos.departmentName ?? <span className="italic opacity-40">—</span>}
-                    </td>
-                    <td className="px-5 py-4 text-center whitespace-nowrap">
-                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
-                        {pos._count.employees}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-right whitespace-nowrap">
-                      <Link
-                        href={`/admin/settings/positions/${pos.id}`}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        แก้ไข
-                      </Link>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 border-b border-border">
+                  <tr>
+                    <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ชื่อตำแหน่ง</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">แผนก</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวนพนักงาน</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {positions.map((pos, idx) => (
+                    <PositionRow
+                      key={pos.id}
+                      id={pos.id}
+                      index={idx + 1}
+                      name={pos.name}
+                      departmentName={pos.departmentName}
+                      employeeCount={pos._count.employees}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
