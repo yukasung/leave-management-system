@@ -29,9 +29,9 @@ export default async function EditLeavePage({
       approvals: {
         orderBy: { level: 'asc' },
         select: {
-          level:  true,
-          status: true,
-          approver: { select: { name: true } },
+          level:    true,
+          status:   true,
+          approver: { select: { id: true, name: true } },
         },
       },
     },
@@ -106,6 +106,48 @@ export default async function EditLeavePage({
   const balanceByType: Record<string, { totalDays: number; usedDays: number }> =
     Object.fromEntries(balances.map((b) => [b.leaveTypeId, b]))
 
+  // Build the full approver list from the employee's configured approvers
+  // merged with actual Approval record statuses
+  const employeeRecord = await prisma.employee.findFirst({
+    where: { userId: leave.userId },
+    select: {
+      managerId: true,
+      manager: { select: { user: { select: { id: true, name: true } } } },
+      approvers: { select: { user: { select: { id: true, name: true } } } },
+    },
+  })
+
+  const approvalStatusMap = new Map(
+    leave.approvals.map((a) => [a.approver.id, a.status as string])
+  )
+
+  // Collect configured approvers (many-to-many first, then direct manager fallback)
+  const configuredApprovers: { id: string; name: string }[] =
+    (employeeRecord?.approvers ?? [])
+      .filter((a) => a.user?.id)
+      .map((a) => ({ id: a.user!.id, name: a.user!.name ?? '' }))
+
+  if (configuredApprovers.length === 0 && employeeRecord?.manager?.user?.id) {
+    configuredApprovers.push({
+      id:   employeeRecord.manager.user.id,
+      name: employeeRecord.manager.user.name ?? '',
+    })
+  }
+
+  // Merge: configured approvers with their actual status; fall back to DB Approval records
+  const allApprovers =
+    configuredApprovers.length > 0
+      ? configuredApprovers.map((ca, i) => ({
+          level:        i + 1,
+          status:       approvalStatusMap.get(ca.id) ?? 'PENDING',
+          approverName: ca.name,
+        }))
+      : leave.approvals.map((a) => ({
+          level:        a.level,
+          status:       a.status as string,
+          approverName: a.approver.name ?? '',
+        }))
+
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { avatarUrl: true },
@@ -138,11 +180,7 @@ export default async function EditLeavePage({
             reason:             leave.reason ?? '',
             documentUrl:        leave.documentUrl ?? '',
             status:             leave.status,
-            approvals:          leave.approvals.map((a) => ({
-              level:        a.level,
-              status:       a.status,
-              approverName: a.approver.name ?? '',
-            })),
+            approvals:          allApprovers,
           }}
           leaveTypes={leaveTypes}
           balanceByType={balanceByType}
