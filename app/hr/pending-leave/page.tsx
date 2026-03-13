@@ -18,12 +18,15 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_CLASSES = STATUS_BADGE
 
+const PAGE_SIZE = 12
+
 type SearchParams = {
   approverId?:   string
   departmentId?: string
   dateFrom?:     string
   dateTo?:       string
   dir?:          string
+  page?:         string
 }
 
 export default async function PendingLeavePage({
@@ -45,8 +48,9 @@ export default async function PendingLeavePage({
     isAdmin:   true,
   }
 
-  const { approverId, departmentId, dateFrom, dateTo, dir: dirParam } = await searchParams
+  const { approverId, departmentId, dateFrom, dateTo, dir: dirParam, page: pageStr } = await searchParams
   const sortDir: 'asc' | 'desc' = dirParam === 'asc' ? 'asc' : 'desc'
+  const page = Math.max(1, parseInt(pageStr ?? '1', 10) || 1)
 
   const now = new Date()
 
@@ -68,10 +72,16 @@ export default async function PendingLeavePage({
       : {}),
   }
 
-  const [requests, departments, approversRaw] = await Promise.all([
+  const overdueThreshold = new Date(now.getTime() - 3 * 86_400_000)
+
+  const [total, overdueTotal, requests, departments, approversRaw] = await Promise.all([
+    prisma.leaveRequest.count({ where }),
+    prisma.leaveRequest.count({ where: { ...where, createdAt: { lt: overdueThreshold } } }),
     prisma.leaveRequest.findMany({
       where,
       orderBy: { createdAt: sortDir },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: {
         user: {
           select: {
@@ -116,16 +126,26 @@ export default async function PendingLeavePage({
     }
   })
 
-  const overdue = rows.filter((r) => r.isOverdue).length
+  const overdue = overdueTotal
+  const totalPages = Math.ceil(total / PAGE_SIZE)
 
-  function buildSortLink(nextDir: 'asc' | 'desc') {
+  function buildLink(overrides: Record<string, string | undefined>) {
     const q = new URLSearchParams()
     if (approverId)   q.set('approverId',   approverId)
     if (departmentId) q.set('departmentId', departmentId)
     if (dateFrom)     q.set('dateFrom',     dateFrom)
     if (dateTo)       q.set('dateTo',       dateTo)
-    q.set('dir', nextDir)
+    q.set('dir',  overrides.dir  ?? dirParam  ?? 'desc')
+    q.set('page', overrides.page ?? String(page))
     return `?${q.toString()}`
+  }
+
+  function buildSortLink(nextDir: 'asc' | 'desc') {
+    return buildLink({ dir: nextDir, page: '1' })
+  }
+
+  function buildPageLink(p: number) {
+    return buildLink({ page: String(p) })
   }
 
   const nextDir = sortDir === 'desc' ? 'asc' : 'desc'
@@ -152,7 +172,7 @@ export default async function PendingLeavePage({
           departments={departments}
           approvers={approvers}
           current={{ approverId, departmentId, dateFrom, dateTo, dir: dirParam }}
-          total={rows.length}
+          total={total}
           overdue={overdue}
         />
 
@@ -200,7 +220,7 @@ export default async function PendingLeavePage({
                           : 'hover:bg-muted/40',
                       )}
                     >
-                      <td className="px-4 py-3 text-muted-foreground text-xs">{idx + 1}</td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">{(page - 1) * PAGE_SIZE + idx + 1}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="font-medium text-foreground">{row.employeeName}</span>
                         {row.isOverdue && (
@@ -233,6 +253,55 @@ export default async function PendingLeavePage({
             </table>
           </div>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between gap-4 text-sm">
+            <p className="text-muted-foreground">
+              แสดง {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} จาก {total} รายการ
+            </p>
+            <div className="flex items-center gap-1">
+              <Link
+                href={buildPageLink(page - 1)}
+                aria-disabled={page <= 1}
+                className={cn(
+                  'rounded-md border border-border px-3 py-1.5 text-xs font-medium transition-colors',
+                  page <= 1
+                    ? 'pointer-events-none opacity-40'
+                    : 'hover:bg-muted',
+                )}
+              >
+                ← ก่อนหน้า
+              </Link>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <Link
+                  key={p}
+                  href={buildPageLink(p)}
+                  className={cn(
+                    'rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
+                    p === page
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border hover:bg-muted',
+                  )}
+                >
+                  {p}
+                </Link>
+              ))}
+              <Link
+                href={buildPageLink(page + 1)}
+                aria-disabled={page >= totalPages}
+                className={cn(
+                  'rounded-md border border-border px-3 py-1.5 text-xs font-medium transition-colors',
+                  page >= totalPages
+                    ? 'pointer-events-none opacity-40'
+                    : 'hover:bg-muted',
+                )}
+              >
+                ถัดไป →
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   )
