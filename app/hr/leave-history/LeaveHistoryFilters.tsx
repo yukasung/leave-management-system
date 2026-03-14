@@ -7,7 +7,12 @@ import { cn } from '@/lib/utils'
 import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
 type Department = { id: string; name: string }
-type LeaveType  = { id: string; name: string }
+type LeaveType  = { id: string; name: string; leaveCategory: string }
+
+const CATEGORY_OPTIONS = [
+  { value: 'ANNUAL', label: 'ลาประจำปี' },
+  { value: 'EVENT',  label: 'ลาพิเศษ' },
+]
 
 const STATUS_OPTIONS = [
   { value: 'PENDING',          label: 'รออนุมัติ' },
@@ -22,14 +27,15 @@ interface Props {
   departments: Department[]
   leaveTypes:  LeaveType[]
   current: {
-    employee?:    string
-    dateFrom?:    string
-    dateTo?:      string
-    leaveTypeId?: string
-    status?:      string
-    departmentId?:string
-    sort?:        string
-    dir?:         string
+    employee?:     string
+    dateFrom?:     string
+    dateTo?:       string
+    leaveTypeId?:  string
+    leaveCategory?: string
+    status?:       string
+    departmentId?: string
+    sort?:         string
+    dir?:          string
   }
   total: number
 }
@@ -40,26 +46,27 @@ export default function LeaveHistoryFilters({ departments, leaveTypes, current, 
   const locale   = (params?.locale as string) || ''
   const base     = locale ? `/${locale}/hr/leave-history` : '/hr/leave-history'
 
-  const [employee,    setEmployee]    = useState(current.employee    ?? '')
-  const [dateFrom,    setDateFrom]    = useState(current.dateFrom    ?? '')
-  const [dateTo,      setDateTo]      = useState(current.dateTo      ?? '')
-  const [leaveTypeId, setLeaveTypeId] = useState(current.leaveTypeId ?? '')
-  const [status,      setStatus]      = useState(current.status      ?? '')
-  const [departmentId,setDepartmentId]= useState(current.departmentId?? '')
+  const [employee,    setEmployee]    = useState(current.employee     ?? '')
+  const [dateFrom,    setDateFrom]    = useState(current.dateFrom     ?? '')
+  const [dateTo,      setDateTo]      = useState(current.dateTo       ?? '')
+  const [leaveTypeId, setLeaveTypeId] = useState(current.leaveTypeId  ?? '')
+  const [leaveCategory, setLeaveCategory] = useState(current.leaveCategory ?? '')
+  const [status,      setStatus]      = useState(current.status       ?? '')
+  const [departmentId,setDepartmentId]= useState(current.departmentId ?? '')
   const [exporting,   setExporting]   = useState(false)
 
   const buildQS = useCallback(
     (overrides: Record<string, string> = {}) => {
       const q = new URLSearchParams()
       const vals: Record<string, string> = {
-        employee, dateFrom, dateTo, leaveTypeId, status, departmentId,
+        employee, dateFrom, dateTo, leaveTypeId, leaveCategory, status, departmentId,
         sort: current.sort ?? '', dir: current.dir ?? '',
         ...overrides,
       }
       for (const [k, v] of Object.entries(vals)) if (v) q.set(k, v)
       return q.toString()
     },
-    [employee, dateFrom, dateTo, leaveTypeId, status, departmentId, current.sort, current.dir],
+    [employee, dateFrom, dateTo, leaveTypeId, leaveCategory, status, departmentId, current.sort, current.dir],
   )
 
   const applyFilters = useCallback(() => {
@@ -69,7 +76,7 @@ export default function LeaveHistoryFilters({ departments, leaveTypes, current, 
 
   const clearFilters = useCallback(() => {
     setEmployee(''); setDateFrom(''); setDateTo('')
-    setLeaveTypeId(''); setStatus(''); setDepartmentId('')
+    setLeaveTypeId(''); setLeaveCategory(''); setStatus(''); setDepartmentId('')
     router.push(base)
   }, [base, router])
 
@@ -93,7 +100,7 @@ export default function LeaveHistoryFilters({ departments, leaveTypes, current, 
     }
   }
 
-  const hasFilters = !!(employee || dateFrom || dateTo || leaveTypeId || status || departmentId)
+  const hasFilters = !!(employee || dateFrom || dateTo || leaveTypeId || leaveCategory || status || departmentId)
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4">
@@ -126,14 +133,31 @@ export default function LeaveHistoryFilters({ departments, leaveTypes, current, 
 
         {/* Leave type */}
         <select
+          value={leaveCategory}
+          onChange={(e) => {
+            setLeaveCategory(e.target.value)
+            setLeaveTypeId('')
+          }}
+          className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">ทุกหมวดหมู่</option>
+          {CATEGORY_OPTIONS.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
+
+        {/* Leave type */}
+        <select
           value={leaveTypeId}
           onChange={(e) => setLeaveTypeId(e.target.value)}
           className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
         >
           <option value="">ทุกประเภทการลา</option>
-          {leaveTypes.map((lt) => (
-            <option key={lt.id} value={lt.id}>{lt.name}</option>
-          ))}
+          {leaveTypes
+            .filter((lt) => !leaveCategory || lt.leaveCategory === leaveCategory)
+            .map((lt) => (
+              <option key={lt.id} value={lt.id}>{lt.name}</option>
+            ))}
         </select>
 
         {/* Status */}

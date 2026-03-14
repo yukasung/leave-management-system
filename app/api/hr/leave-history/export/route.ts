@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
   const dateFrom     = searchParams.get('dateFrom')     ?? undefined
   const dateTo       = searchParams.get('dateTo')       ?? undefined
   const leaveTypeId  = searchParams.get('leaveTypeId')  ?? undefined
+  const leaveCategory = searchParams.get('leaveCategory') ?? undefined
   const statusParam  = searchParams.get('status')?.toUpperCase() ?? undefined
   const departmentId = searchParams.get('departmentId') ?? undefined
   const sortParam    = searchParams.get('sort') ?? 'startDate'
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
   const where = {
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(leaveTypeId  ? { leaveTypeId } : {}),
+    ...(leaveCategory ? { leaveType: { leaveCategory: leaveCategory as 'ANNUAL' | 'EVENT' } } : {}),
     ...(dateFrom || dateTo
       ? {
           leaveStartDateTime: {
@@ -76,7 +78,7 @@ export async function GET(req: NextRequest) {
           department: { select: { name: true } },
         },
       },
-      leaveType: { select: { name: true } },
+      leaveType: { select: { name: true, leaveCategory: true } },
       approvals: {
         orderBy: { level: 'desc' },
         take:    1,
@@ -85,11 +87,14 @@ export async function GET(req: NextRequest) {
     },
   })
 
+  const CATEGORY_LABEL: Record<string, string> = { ANNUAL: 'ลาประจำปี', EVENT: 'ลาพิเศษ' }
+
   const columns: ColumnDef[] = [
     { header: '#',           type: 'index',  width: 6  },
     { header: 'ชื่อพนักงาน',    type: 'text',   width: 25 },
     { header: 'รหัสพนักงาน',    type: 'text',   width: 16 },
     { header: 'แผนก',          type: 'text',   width: 20 },
+    { header: 'หมวดหมู่การลา',  type: 'text',   width: 16 },
     { header: 'ประเภทการลา',    type: 'text',   width: 18 },
     { header: 'วันที่เริ่ม',      type: 'date',   width: 15 },
     { header: 'วันที่สิ้นสุด',    type: 'date',   width: 15 },
@@ -105,6 +110,7 @@ export async function GET(req: NextRequest) {
     r.user.name,
     r.user.employee?.employeeCode ?? '',
     r.user.department?.name ?? '',
+    CATEGORY_LABEL[r.leaveType.leaveCategory] ?? r.leaveType.leaveCategory,
     r.leaveType.name,
     formatThaiDateShort(r.leaveStartDateTime),
     formatThaiDateShort(r.leaveEndDateTime),

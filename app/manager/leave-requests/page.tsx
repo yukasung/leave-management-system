@@ -30,7 +30,7 @@ export default async function ManagerLeaveRequestsPage() {
           orderBy: { createdAt: 'asc' },
           include: {
             user: { select: { name: true, email: true } },
-            leaveType: { select: { name: true } },
+            leaveType: { select: { name: true, leaveCategory: true } },
           },
         })
       : Promise.resolve([]),

@@ -15,7 +15,7 @@ type LeaveRequest = {
   reason: string | null
   createdAt: Date
   user: { name: string; email: string }
-  leaveType: { name: string }
+  leaveType: { name: string; leaveCategory: string }
 }
 
 function ActionButtons({ id }: { id: string }) {
@@ -68,7 +68,7 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
         <thead>
           <tr className="bg-muted/40 border-b border-border text-center text-muted-foreground font-semibold">
             <th className="px-5 py-3 whitespace-nowrap text-left">พนักงาน</th>
-            <th className="px-5 py-3 whitespace-nowrap">ประเภทการลา</th>
+              <th className="px-5 py-3 whitespace-nowrap">หมวดหมู่ / ประเภทการลา</th>
             <th className="px-5 py-3 whitespace-nowrap">วันที่</th>
             <th className="px-5 py-3 whitespace-nowrap">จำนวน (วัน)</th>
             <th className="px-5 py-3 whitespace-nowrap">เหตุผล</th>
@@ -83,7 +83,18 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
                 <Link href={`/leave-request/${req.id}/edit`} className="font-medium text-foreground hover:text-primary hover:underline transition-colors">{req.user.name}</Link>
                 <p className="text-xs text-muted-foreground/60">{req.user.email}</p>
               </td>
-              <td className="px-5 py-4 text-foreground whitespace-nowrap">{req.leaveType.name}</td>
+              <td className="px-5 py-4 text-foreground whitespace-nowrap">
+                <div className="flex flex-col items-center gap-1">
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${
+                    req.leaveType.leaveCategory === 'ANNUAL'
+                      ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700'
+                      : 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700'
+                  }`}>
+                    {req.leaveType.leaveCategory === 'ANNUAL' ? 'ลาประจำปี' : 'ลาพิเศษ'}
+                  </span>
+                  <span>{req.leaveType.name}</span>
+                </div>
+              </td>
               <td className="px-5 py-4 text-foreground whitespace-nowrap">
                 {formatDate(req.leaveStartDateTime)}
                 {' — '}

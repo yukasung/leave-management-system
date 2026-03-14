@@ -18,15 +18,16 @@ const VALID_SORTS = ['name', 'department', 'leaveType', 'startDate', 'endDate', 
 type SortKey = typeof VALID_SORTS[number]
 
 type SearchParams = {
-  employee?:     string
-  dateFrom?:     string
-  dateTo?:       string
-  leaveTypeId?:  string
-  status?:       string
-  departmentId?: string
-  sort?:         string
-  dir?:          string
-  page?:         string
+  employee?:      string
+  dateFrom?:      string
+  dateTo?:        string
+  leaveTypeId?:   string
+  leaveCategory?: string
+  status?:        string
+  departmentId?:  string
+  sort?:          string
+  dir?:           string
+  page?:          string
 }
 
 export default async function LeaveHistoryPage({
@@ -49,7 +50,7 @@ export default async function LeaveHistoryPage({
   }
 
   const {
-    employee, dateFrom, dateTo, leaveTypeId,
+    employee, dateFrom, dateTo, leaveTypeId, leaveCategory,
     status: statusParam, departmentId,
     sort: sortParam, dir: dirParam, page: pageParam,
   } = await searchParams
@@ -82,6 +83,7 @@ export default async function LeaveHistoryPage({
   const where = {
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(leaveTypeId  ? { leaveTypeId } : {}),
+    ...(leaveCategory ? { leaveType: { leaveCategory: leaveCategory as 'ANNUAL' | 'EVENT' } } : {}),
     ...(dateFrom || dateTo
       ? {
           leaveStartDateTime: {
@@ -114,7 +116,7 @@ export default async function LeaveHistoryPage({
             department: { select: { name: true } },
           },
         },
-        leaveType: { select: { name: true } },
+        leaveType: { select: { name: true, leaveCategory: true } },
         approvals: {
           orderBy: { level: 'desc' },
           take: 1,
@@ -124,7 +126,7 @@ export default async function LeaveHistoryPage({
     }),
     prisma.leaveRequest.count({ where }),
     prisma.department.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
-    prisma.leaveType.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+    prisma.leaveType.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, leaveCategory: true } }),
   ])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -136,6 +138,7 @@ export default async function LeaveHistoryPage({
       dateFrom:     dateFrom     || undefined,
       dateTo:       dateTo       || undefined,
       leaveTypeId:  leaveTypeId  || undefined,
+      leaveCategory: leaveCategory || undefined,
       status:       statusParam  || undefined,
       departmentId: departmentId || undefined,
       sort: sortKey !== 'startDate' ? sortKey : undefined,
@@ -161,7 +164,7 @@ export default async function LeaveHistoryPage({
   const COLUMNS: ColDef[] = [
     { col: 'name',       label: 'ชื่อพนักงาน',    className: 'min-w-35' },
     { col: 'department', label: 'แผนก',            className: 'min-w-28', center: true },
-    { col: 'leaveType',  label: 'ประเภทการลา',     className: 'min-w-30', center: true },
+    { col: 'leaveType',  label: 'หมวดหมู่ / ประเภทการลา',     className: 'min-w-40', center: true },
     { col: 'startDate',  label: 'วันที่เริ่ม',      className: 'min-w-25', center: true },
     { col: 'endDate',    label: 'วันที่สิ้นสุด',    className: 'min-w-25', center: true },
     { col: 'totalDays',  label: 'จำนวน (วัน)',        className: 'min-w-20', center: true },
@@ -184,7 +187,7 @@ export default async function LeaveHistoryPage({
           departments={departments}
           leaveTypes={leaveTypes}
           total={total}
-          current={{ employee, dateFrom, dateTo, leaveTypeId, status: statusParam, departmentId, sort: sortKey, dir: sortDir }}
+          current={{ employee, dateFrom, dateTo, leaveTypeId, leaveCategory, status: statusParam, departmentId, sort: sortKey, dir: sortDir }}
         />
 
         {/* Table */}
@@ -240,6 +243,7 @@ export default async function LeaveHistoryPage({
                       employeeCode={req.user.employee?.employeeCode ?? null}
                       userName={req.user.name}
                       departmentName={req.user.department?.name ?? null}
+                      leaveCategory={req.leaveType.leaveCategory}
                       leaveTypeName={req.leaveType.name}
                       startDate={formatDate(req.leaveStartDateTime)}
                       endDate={formatDate(req.leaveEndDateTime)}

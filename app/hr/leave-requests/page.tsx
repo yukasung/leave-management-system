@@ -97,7 +97,7 @@ export default async function HRLeaveRequestsPage({
         documentUrl: true,
         reason: true,
         user: { select: { name: true, department: { select: { name: true } } } },
-        leaveType: { select: { name: true } },
+        leaveType: { select: { name: true, leaveCategory: true } },
       },
     }),
     prisma.leaveRequest.count({ where }),
@@ -195,7 +195,7 @@ export default async function HRLeaveRequestsPage({
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
                     {([
                       { col: 'name',      label: 'ชื่อพนักงาน', center: false },
-                      { col: 'leaveType', label: 'ประเภทการลา', center: true },
+                      { col: 'leaveType', label: 'หมวดหมู่ / ประเภทการลา', center: true },
                       { col: 'startDate', label: 'วันที่เริ่ม',  center: true },
                       { col: 'endDate',   label: 'วันที่สิ้นสุด', center: true },
                       { col: 'totalDays', label: 'จำนวน (วัน)',    center: true },
@@ -224,6 +224,7 @@ export default async function HRLeaveRequestsPage({
                       rowNumber={skip + index + 1}
                       userName={req.user.name}
                       departmentName={req.user.department?.name ?? null}
+                      leaveCategory={req.leaveType.leaveCategory}
                       leaveTypeName={req.leaveType.name}
                       startDate={formatDate(req.leaveStartDateTime)}
                       endDate={formatDate(req.leaveEndDateTime)}

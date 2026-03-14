@@ -6,17 +6,23 @@ import { Search, X, Download } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Department = { id: string; name: string }
-type LeaveType  = { id: string; name: string }
+type LeaveType  = { id: string; name: string; leaveCategory: string }
+
+const CATEGORY_OPTIONS = [
+  { value: 'ANNUAL', label: 'ลาประจำปี' },
+  { value: 'EVENT',  label: 'ลาพิเศษ' },
+]
 
 interface Props {
   departments:  Department[]
   leaveTypes:   LeaveType[]
   yearOptions:  number[]
   current: {
-    employee?:     string
-    departmentId?: string
-    leaveTypeId?:  string
-    year?:         number
+    employee?:      string
+    departmentId?:  string
+    leaveTypeId?:   string
+    leaveCategory?: string
+    year?:          number
   }
   total: number
 }
@@ -32,17 +38,18 @@ export default function LeaveBalanceReportFilters({
   const [employee,     setEmployee]     = useState(current.employee     ?? '')
   const [departmentId, setDepartmentId] = useState(current.departmentId ?? '')
   const [leaveTypeId,  setLeaveTypeId]  = useState(current.leaveTypeId  ?? '')
+  const [leaveCategory, setLeaveCategory] = useState(current.leaveCategory ?? '')
   const [year,         setYear]         = useState(String(current.year ?? new Date().getFullYear()))
   const [exporting,    setExporting]    = useState(false)
 
   const buildQS = useCallback(
     (overrides: Record<string, string> = {}) => {
       const q = new URLSearchParams()
-      const vals: Record<string, string> = { employee, departmentId, leaveTypeId, year, ...overrides }
+      const vals: Record<string, string> = { employee, departmentId, leaveTypeId, leaveCategory, year, ...overrides }
       for (const [k, v] of Object.entries(vals)) if (v) q.set(k, v)
       return q.toString()
     },
-    [employee, departmentId, leaveTypeId, year],
+    [employee, departmentId, leaveTypeId, leaveCategory, year],
   )
 
   const applyFilters = useCallback(() => {
@@ -51,7 +58,7 @@ export default function LeaveBalanceReportFilters({
 
   const clearFilters = useCallback(() => {
     const currentYear = String(new Date().getFullYear())
-    setEmployee(''); setDepartmentId(''); setLeaveTypeId(''); setYear(currentYear)
+    setEmployee(''); setDepartmentId(''); setLeaveTypeId(''); setLeaveCategory(''); setYear(currentYear)
     router.push(`${base}?year=${currentYear}`)
   }, [base, router])
 
@@ -74,7 +81,7 @@ export default function LeaveBalanceReportFilters({
     }
   }
 
-  const hasActiveFilters = !!(employee || departmentId || leaveTypeId)
+  const hasActiveFilters = !!(employee || departmentId || leaveTypeId || leaveCategory)
   const currentYear = new Date().getFullYear()
 
   return (
@@ -105,6 +112,21 @@ export default function LeaveBalanceReportFilters({
           ))}
         </select>
 
+        {/* Leave category */}
+        <select
+          value={leaveCategory}
+          onChange={(e) => {
+            setLeaveCategory(e.target.value)
+            setLeaveTypeId('')
+          }}
+          className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">ทุกหมวดหมู่</option>
+          {CATEGORY_OPTIONS.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
+
         {/* Leave type */}
         <select
           value={leaveTypeId}
@@ -112,9 +134,11 @@ export default function LeaveBalanceReportFilters({
           className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
         >
           <option value="">ทุกประเภทการลา</option>
-          {leaveTypes.map((lt) => (
-            <option key={lt.id} value={lt.id}>{lt.name}</option>
-          ))}
+          {leaveTypes
+            .filter((lt) => !leaveCategory || lt.leaveCategory === leaveCategory)
+            .map((lt) => (
+              <option key={lt.id} value={lt.id}>{lt.name}</option>
+            ))}
         </select>
 
         {/* Year */}

@@ -9,11 +9,12 @@ import { AlertTriangle, XCircle, CheckCircle2, Users } from 'lucide-react'
 import { StatCard } from '@/components/dashboard-cards'
 
 type SearchParams = {
-  employee?:     string
-  departmentId?: string
-  leaveTypeId?:  string
-  year?:         string
-  page?:         string
+  employee?:      string
+  departmentId?:  string
+  leaveTypeId?:   string
+  leaveCategory?: string
+  year?:          string
+  page?:          string
 }
 
 const PAGE_SIZE = 12
@@ -37,7 +38,7 @@ export default async function LeaveBalanceReportPage({
     isAdmin:   true,
   }
 
-  const { employee, departmentId, leaveTypeId, year: yearParam, page: pageParam } = await searchParams
+  const { employee, departmentId, leaveTypeId, leaveCategory, year: yearParam, page: pageParam } = await searchParams
   const currentYear = new Date().getFullYear()
   const year = yearParam ? parseInt(yearParam, 10) : currentYear
   const page = Math.max(1, pageParam ? parseInt(pageParam, 10) : 1)
@@ -53,7 +54,8 @@ export default async function LeaveBalanceReportPage({
 
   const where = {
     year,
-    ...(leaveTypeId ? { leaveTypeId } : {}),
+    ...(leaveTypeId    ? { leaveTypeId } : {}),
+    ...(leaveCategory  ? { leaveType: { leaveCategory: leaveCategory as 'ANNUAL' | 'EVENT' } } : {}),
     user: {
       ...(employee     ? { name: { contains: employee, mode: 'insensitive' as const } } : {}),
       ...(departmentId ? { departmentId } : {}),
@@ -75,11 +77,11 @@ export default async function LeaveBalanceReportPage({
             department: { select: { name: true } },
           },
         },
-        leaveType: { select: { name: true } },
+        leaveType: { select: { name: true, leaveCategory: true } },
       },
     }),
     prisma.department.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
-    prisma.leaveType.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+    prisma.leaveType.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, leaveCategory: true } }),
   ])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -142,7 +144,7 @@ export default async function LeaveBalanceReportPage({
           leaveTypes={leaveTypes}
           yearOptions={yearOptions}
           total={total}
-          current={{ employee, departmentId, leaveTypeId, year }}
+          current={{ employee, departmentId, leaveTypeId, leaveCategory, year }}
         />
 
         {/* Table */}
@@ -159,6 +161,7 @@ export default async function LeaveBalanceReportPage({
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-10">#</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-36">ชื่อพนักงาน</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-28">แผนก</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-28">หมวดหมู่</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-32">ประเภทการลา</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">โควตา (วัน)</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-24">ใช้ไปแล้ว (วัน)</th>
@@ -201,6 +204,17 @@ export default async function LeaveBalanceReportPage({
                         {/* Department */}
                         <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">
                           {b.user.department?.name ?? <span className="italic opacity-40">—</span>}
+                        </td>
+
+                        {/* Leave category */}
+                        <td className="px-4 py-3 text-center whitespace-nowrap">
+                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${
+                            b.leaveType.leaveCategory === 'ANNUAL'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700'
+                              : 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700'
+                          }`}>
+                            {b.leaveType.leaveCategory === 'ANNUAL' ? 'ลาประจำปี' : 'ลาพิเศษ'}
+                          </span>
                         </td>
 
                         {/* Leave type */}

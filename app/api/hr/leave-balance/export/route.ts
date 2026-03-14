@@ -13,12 +13,14 @@ export async function GET(req: NextRequest) {
   const employee     = searchParams.get('employee')     ?? undefined
   const departmentId = searchParams.get('departmentId') ?? undefined
   const leaveTypeId  = searchParams.get('leaveTypeId')  ?? undefined
+  const leaveCategory = searchParams.get('leaveCategory') ?? undefined
   const yearParam    = searchParams.get('year')
   const year         = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear()
 
   const where = {
     year,
-    ...(leaveTypeId ? { leaveTypeId } : {}),
+    ...(leaveTypeId   ? { leaveTypeId } : {}),
+    ...(leaveCategory ? { leaveType: { leaveCategory: leaveCategory as 'ANNUAL' | 'EVENT' } } : {}),
     user: {
       ...(employee     ? { name: { contains: employee, mode: 'insensitive' as const } } : {}),
       ...(departmentId ? { departmentId } : {}),
@@ -36,15 +38,18 @@ export async function GET(req: NextRequest) {
           department: { select: { name: true } },
         },
       },
-      leaveType: { select: { name: true } },
+      leaveType: { select: { name: true, leaveCategory: true } },
     },
   })
+
+  const CATEGORY_LABEL: Record<string, string> = { ANNUAL: 'ลาประจำปี', EVENT: 'ลาพิเศษ' }
 
   const columns: ColumnDef[] = [
     { header: '#',             type: 'index',  width: 6  },
     { header: 'ชื่อพนักงาน',    type: 'text',   width: 25 },
     { header: 'รหัสพนักงาน',    type: 'text',   width: 16 },
     { header: 'แผนก',          type: 'text',   width: 20 },
+    { header: 'หมวดหมู่การลา',  type: 'text',   width: 16 },
     { header: 'ประเภทการลา',    type: 'text',   width: 18 },
     { header: 'วันลาที่ได้รับ',    type: 'number', width: 14 },
     { header: 'ใช้ไปแล้ว',       type: 'number', width: 12 },
@@ -61,6 +66,7 @@ export async function GET(req: NextRequest) {
       b.user.name,
       b.user.employee?.employeeCode ?? '',
       b.user.department?.name ?? '',
+      CATEGORY_LABEL[b.leaveType.leaveCategory] ?? b.leaveType.leaveCategory,
       b.leaveType.name,
       parseFloat(b.totalDays.toFixed(2)),
       parseFloat(b.usedDays.toFixed(2)),
@@ -73,7 +79,7 @@ export async function GET(req: NextRequest) {
   const totalUsed     = parseFloat(balances.reduce((s, b) => s + b.usedDays, 0).toFixed(2))
   const totalRemain   = parseFloat((totalGranted - totalUsed).toFixed(2))
   const summaryRow: (string | number | null)[] = [
-    null, 'รวม', null, null, null,
+    null, 'รวม', null, null, null, null,
     totalGranted, totalUsed, totalRemain, null,
   ]
 

@@ -76,7 +76,7 @@ export default async function MyLeaveHistoryPage({
       orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      include: { leaveType: { select: { name: true } } },
+      include: { leaveType: { select: { name: true, leaveCategory: true } } },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
@@ -134,7 +134,7 @@ export default async function MyLeaveHistoryPage({
                 <thead className="bg-muted/40 border-b border-border">
                   <tr>
                     {([
-                      { col: 'leaveType', label: 'ประเภทการลา' },
+                      { col: 'leaveType', label: 'หมวดหมู่ / ประเภทการลา' },
                       { col: 'startDate', label: 'วันที่เริ่มลา' },
                       { col: 'endDate',   label: 'วันที่สิ้นสุด' },
                       { col: 'totalDays', label: 'จำนวน (วัน)' },
@@ -169,6 +169,7 @@ export default async function MyLeaveHistoryPage({
                       <LeaveTableRow
                         key={req.id}
                         id={req.id}
+                        leaveCategory={req.leaveType.leaveCategory}
                         leaveTypeName={req.leaveType.name}
                         startDate={formatDate(req.leaveStartDateTime)}
                         endDate={formatDate(req.leaveEndDateTime)}
