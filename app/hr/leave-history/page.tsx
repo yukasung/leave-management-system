@@ -160,16 +160,17 @@ export default async function LeaveHistoryPage({
   }
 
   // ── Sort header helper ───────────────────────────────────────────────────────
-  type ColDef = { col: SortKey; label: string; className?: string; center?: boolean }
+  type ColDef = { col: SortKey | 'leaveCategory'; label: string; className?: string; center?: boolean; sortable?: false }
   const COLUMNS: ColDef[] = [
-    { col: 'name',       label: 'ชื่อพนักงาน',    className: 'min-w-35' },
-    { col: 'department', label: 'แผนก',            className: 'min-w-28', center: true },
-    { col: 'leaveType',  label: 'หมวดหมู่ / ประเภทการลา',     className: 'min-w-40', center: true },
-    { col: 'startDate',  label: 'วันที่เริ่ม',      className: 'min-w-25', center: true },
-    { col: 'endDate',    label: 'วันที่สิ้นสุด',    className: 'min-w-25', center: true },
-    { col: 'totalDays',  label: 'จำนวน (วัน)',        className: 'min-w-20', center: true },
-    { col: 'status',     label: 'สถานะ',            className: 'min-w-30', center: true },
-    { col: 'createdAt',  label: 'วันที่สร้าง',       className: 'min-w-25', center: true },
+    { col: 'name',          label: 'ชื่อพนักงาน',    className: 'min-w-35' },
+    { col: 'department',    label: 'แผนก',            className: 'min-w-28', center: true },
+    { col: 'leaveCategory', label: 'หมวดหมู่',        className: 'min-w-24', center: true, sortable: false },
+    { col: 'leaveType',     label: 'ประเภทการลา',     className: 'min-w-30', center: true },
+    { col: 'startDate',     label: 'วันที่เริ่ม',      className: 'min-w-25', center: true },
+    { col: 'endDate',       label: 'วันที่สิ้นสุด',    className: 'min-w-25', center: true },
+    { col: 'totalDays',     label: 'จำนวน (วัน)',      className: 'min-w-20', center: true },
+    { col: 'status',        label: 'สถานะ',            className: 'min-w-30', center: true },
+    { col: 'createdAt',     label: 'วันที่สร้าง',      className: 'min-w-25', center: true },
   ]
 
   return (
@@ -206,22 +207,24 @@ export default async function LeaveHistoryPage({
                     <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap min-w-25">
                       รหัสพนักงาน
                     </th>
-                    {COLUMNS.map(({ col, label, className, center }) => (
+                    {COLUMNS.map(({ col, label, className, center, sortable }) => (
                       <th
                         key={col}
                         className={cn('px-3 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap', center ? 'text-center' : 'text-left', className)}
                       >
-                        <Link
-                          href={sortUrl(col)}
-                          className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
-                        >
-                          {label}
-                          {sortKey === col
-                            ? sortDir === 'asc'
-                              ? <ChevronUp className="h-3 w-3" />
-                              : <ChevronDown className="h-3 w-3" />
-                            : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
-                        </Link>
+                        {sortable === false ? label : (
+                          <Link
+                            href={sortUrl(col as SortKey)}
+                            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                          >
+                            {label}
+                            {sortKey === col
+                              ? sortDir === 'asc'
+                                ? <ChevronUp className="h-3 w-3" />
+                                : <ChevronDown className="h-3 w-3" />
+                              : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                          </Link>
+                        )}
                       </th>
                     ))}
                     {/* Reason — no sort (long text) */}

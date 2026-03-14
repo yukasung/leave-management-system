@@ -195,7 +195,21 @@ export default async function HRLeaveRequestsPage({
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
                     {([
                       { col: 'name',      label: 'ชื่อพนักงาน', center: false },
-                      { col: 'leaveType', label: 'หมวดหมู่ / ประเภทการลา', center: true },
+                    ] as const).map(({ col, label, center }) => (
+                      <th key={col} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap ${center ? 'text-center' : 'text-left'}`}>
+                        <Link href={sortUrl(col)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                          {label}
+                          {sortKey === col
+                            ? sortDir === 'asc'
+                              ? <ChevronUp className="h-3 w-3" />
+                              : <ChevronDown className="h-3 w-3" />
+                            : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                        </Link>
+                      </th>
+                    ))}
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">หมวดหมู่</th>
+                    {([
+                      { col: 'leaveType', label: 'ประเภทการลา', center: true },
                       { col: 'startDate', label: 'วันที่เริ่ม',  center: true },
                       { col: 'endDate',   label: 'วันที่สิ้นสุด', center: true },
                       { col: 'totalDays', label: 'จำนวน (วัน)',    center: true },

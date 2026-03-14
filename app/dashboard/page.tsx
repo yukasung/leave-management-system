@@ -142,8 +142,7 @@ export default async function DashboardPage() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {[
                 { href: '/hr/leave-requests',    label: 'คำขอลาทั้งหมด',        icon: '📋' },
-                { href: '/employees',         label: 'จัดการพนักงาน',        icon: '👥' },
-                { href: '/leave-types',       label: 'ประเภทการลา',          icon: '🏷️' },
+                { href: '/admin/employees',   label: 'จัดการพนักงาน',        icon: '👥' },
                 { href: '/admin/employees/new', label: 'เพิ่มพนักงาน',       icon: '➕' },
                 { href: '/admin/settings',    label: 'ตั้งค่าระบบ',          icon: '⚙️' },
               ].map(({ href, label, icon }) => (

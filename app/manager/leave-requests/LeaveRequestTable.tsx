@@ -68,7 +68,7 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
         <thead>
           <tr className="bg-muted/40 border-b border-border text-center text-muted-foreground font-semibold">
             <th className="px-5 py-3 whitespace-nowrap text-left">พนักงาน</th>
-              <th className="px-5 py-3 whitespace-nowrap">หมวดหมู่ / ประเภทการลา</th>
+              <th className="px-5 py-3 whitespace-nowrap">ประเภทการลา</th>
             <th className="px-5 py-3 whitespace-nowrap">วันที่</th>
             <th className="px-5 py-3 whitespace-nowrap">จำนวน (วัน)</th>
             <th className="px-5 py-3 whitespace-nowrap">เหตุผล</th>

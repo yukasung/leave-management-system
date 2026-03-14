@@ -134,7 +134,7 @@ export default async function MyLeaveHistoryPage({
                 <thead className="bg-muted/40 border-b border-border">
                   <tr>
                     {([
-                      { col: 'leaveType', label: 'หมวดหมู่ / ประเภทการลา' },
+                      { col: 'leaveType', label: 'ประเภทการลา' },
                       { col: 'startDate', label: 'วันที่เริ่มลา' },
                       { col: 'endDate',   label: 'วันที่สิ้นสุด' },
                       { col: 'totalDays', label: 'จำนวน (วัน)' },
