@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useEffect, useRef, useCallback } from 'react'
 import { createLeaveRequest, type FormState } from './actions'
-import { calculateLeaveDuration, WORK_START_HOUR, WORK_START_MIN, WORK_END_HOUR, WORK_END_MIN } from '@/lib/leave-calc'
+import { calculateLeaveDuration, calculateCalendarDays, WORK_START_HOUR, WORK_START_MIN, WORK_END_HOUR, WORK_END_MIN } from '@/lib/leave-calc'
 import { buildPolicySummary, type LeaveTypePolicy } from '@/lib/leave-policy-utils'
 import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
@@ -110,6 +110,9 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   // Live preview
   const preview = (() => {
     if (!leaveStartDateTime || !leaveEndDateTime) return null
+    if (selectedType?.dayCountType === 'CALENDAR_DAY') {
+      return calculateCalendarDays(new Date(leaveStartDateTime), new Date(leaveEndDateTime))
+    }
     return calculateLeaveDuration(
       new Date(leaveStartDateTime),
       new Date(leaveEndDateTime),

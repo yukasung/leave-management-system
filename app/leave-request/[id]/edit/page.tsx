@@ -85,6 +85,9 @@ export default async function EditLeavePage({
         requiresAttachment:  true,
         deductFromBalance:   true,
         allowDuringProbation: true,
+        leaveCategory:       true,
+        leaveLimitType:      true,
+        dayCountType:        true,
       },
     }),
     prisma.leaveBalance.findMany({

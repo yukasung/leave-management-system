@@ -13,6 +13,7 @@ import 'server-only'
 import { prisma } from '@/lib/prisma'
 import {
   calculateLeaveDuration,
+  calculateCalendarDays,
   type CalculationResult,
 } from '@/lib/leave-calc'
 
@@ -41,16 +42,24 @@ async function fetchHolidaySet(startDate: Date, endDate: Date): Promise<Set<stri
 /**
  * Authoritative server-side leave duration calculation.
  *
- * Identical to `calculateLeaveDuration` but also skips any date that exists
- * in the CompanyHoliday table (source = MANUAL or BOT).
+ * When dayCountType is 'CALENDAR_DAY' (e.g. Maternity Leave), every calendar
+ * day is counted and public holidays / weekends are NOT skipped.
  *
- * @param startDT  - Leave start datetime
- * @param endDT    - Leave end datetime
+ * When dayCountType is 'WORKING_DAY' (default), weekends and public holidays
+ * stored in the CompanyHoliday table are excluded.
+ *
+ * @param startDT       - Leave start datetime
+ * @param endDT         - Leave end datetime
+ * @param dayCountType  - 'WORKING_DAY' (default) | 'CALENDAR_DAY'
  */
 export async function calculateLeaveDurationServer(
   startDT: Date,
-  endDT: Date
+  endDT: Date,
+  dayCountType: 'WORKING_DAY' | 'CALENDAR_DAY' = 'WORKING_DAY',
 ): Promise<CalculationResult> {
+  if (dayCountType === 'CALENDAR_DAY') {
+    return calculateCalendarDays(startDT, endDT)
+  }
   const publicHolidays = await fetchHolidaySet(startDT, endDT)
   return calculateLeaveDuration(startDT, endDT, publicHolidays)
 }

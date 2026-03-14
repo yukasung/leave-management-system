@@ -122,6 +122,35 @@ export function formatLeaveDuration(totalDays: number): string {
   return `${roundedH} ชั่วโมง`
 }
 
+/**
+ * Calculate leave duration counting every calendar day (including weekends
+ * and public holidays). Used for Maternity Leave (ลาคลอดบุตร).
+ *
+ * The result uses the same CalculationResult shape as calculateLeaveDuration.
+ * totalDays = full calendar days elapsed (end date - start date + 1).
+ * totalHours = totalDays * 24 (used for display only).
+ */
+export function calculateCalendarDays(
+  startDT: Date,
+  endDT:   Date,
+): CalculationResult {
+  const startDay = new Date(startDT.getFullYear(), startDT.getMonth(), startDT.getDate())
+  const endDay   = new Date(endDT.getFullYear(),   endDT.getMonth(),   endDT.getDate())
+
+  if (endDay < startDay) {
+    return { totalDays: 0, totalHours: 0, displayLabel: '', error: 'เวลาสิ้นสุดต้องหลังเวลาเริ่มต้น' }
+  }
+
+  const msPerDay = 24 * 60 * 60 * 1000
+  const totalDays = Math.round((endDay.getTime() - startDay.getTime()) / msPerDay) + 1
+
+  return {
+    totalDays,
+    totalHours: totalDays * 24,
+    displayLabel: `${totalDays} วันปฏิทิน`,
+  }
+}
+
 // ── Main export (pure — no DB) ────────────────────────────────────────────────
 
 /**

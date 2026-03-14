@@ -25,6 +25,9 @@ export default async function LeaveRequestPage() {
       select: {
         id: true,
         name: true,
+        leaveCategory: true,
+        leaveLimitType: true,
+        dayCountType: true,
         maxDaysPerYear: true,
         maxDaysPerRequest: true,
         requiresAttachment: true,

@@ -77,6 +77,44 @@ export default function NewLeaveTypeForm() {
         </div>
       </div>
 
+      {/* Classification */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">หมวดหมู่การลา</label>
+          <select
+            name="leaveCategory"
+            defaultValue="ANNUAL"
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="ANNUAL">ลาประจำปี</option>
+            <option value="EVENT">ลาตามเหตุการณ์</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">ประเภทขีดจำกัด</label>
+          <select
+            name="leaveLimitType"
+            defaultValue="PER_YEAR"
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="PER_YEAR">ต่อปี</option>
+            <option value="PER_EVENT">ต่อครั้ง</option>
+            <option value="MEDICAL_BASED">ตามใบรับรองแพทย์</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">การนับวัน</label>
+          <select
+            name="dayCountType"
+            defaultValue="WORKING_DAY"
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="WORKING_DAY">วันทำการ</option>
+            <option value="CALENDAR_DAY">วันปฏิทิน</option>
+          </select>
+        </div>
+      </div>
+
       {/* Toggles */}
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium text-foreground mb-2">การตั้งค่าเพิ่มเติม</legend>

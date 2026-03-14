@@ -12,6 +12,9 @@ function policy(overrides: Partial<LeaveTypePolicy> = {}): LeaveTypePolicy {
     requiresAttachment: false,
     deductFromBalance: true,
     allowDuringProbation: true,
+    leaveCategory: 'ANNUAL',
+    leaveLimitType: 'PER_YEAR',
+    dayCountType: 'WORKING_DAY',
     ...overrides,
   }
 }

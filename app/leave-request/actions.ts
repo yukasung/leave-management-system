@@ -91,8 +91,15 @@ export async function createLeaveRequest(
     return { errors: { general: 'คุณมีคำขอลาในช่วงเวลาดังกล่าวอยู่แล้ว กรุณาตรวจสอบอีกครั้ง' } }
   }
 
-  // ── Server-side recalculation — skips weekends + public holidays ──────────
-  const calc = await calculateLeaveDurationServer(leaveStartDateTime, leaveEndDateTime)
+  // ── Fetch dayCountType for the selected leave type ───────────────────────
+  const leaveTypeRecord = await prisma.leaveType.findUnique({
+    where: { id: leaveTypeId },
+    select: { dayCountType: true },
+  })
+  const dayCountType = leaveTypeRecord?.dayCountType ?? 'WORKING_DAY'
+
+  // ── Server-side recalculation — respects dayCountType ────────────────────
+  const calc = await calculateLeaveDurationServer(leaveStartDateTime, leaveEndDateTime, dayCountType)
   if (calc.error) {
     return { errors: { general: calc.error } }
   }
@@ -253,8 +260,15 @@ export async function updateLeaveRequest(
   if (!leaveStartDateTime) return { errors: { leaveStartDateTime: 'รูปแบบวันที่/เวลาไม่ถูกต้อง' } }
   if (!leaveEndDateTime)   return { errors: { leaveEndDateTime:   'รูปแบบวันที่/เวลาไม่ถูกต้อง' } }
 
-  // ── Server-side recalculation — skips weekends + public holidays ──────────
-  const calc = await calculateLeaveDurationServer(leaveStartDateTime, leaveEndDateTime)
+  // ── Fetch dayCountType for the selected leave type ───────────────────────
+  const leaveTypeRecord = await prisma.leaveType.findUnique({
+    where: { id: leaveTypeId },
+    select: { dayCountType: true },
+  })
+  const dayCountType = leaveTypeRecord?.dayCountType ?? 'WORKING_DAY'
+
+  // ── Server-side recalculation — respects dayCountType ────────────────────
+  const calc = await calculateLeaveDurationServer(leaveStartDateTime, leaveEndDateTime, dayCountType)
   if (calc.error) {
     return { errors: { general: calc.error } }
   }

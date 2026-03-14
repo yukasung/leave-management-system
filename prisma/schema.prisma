@@ -50,8 +50,11 @@ model Position {
 }
 
 model LeaveType {
-  id                   String  @id @default(uuid())
-  name                 String  @unique
+  id                   String          @id @default(uuid())
+  name                 String          @unique
+  leaveCategory        LeaveCategory   @default(ANNUAL)
+  leaveLimitType       LeaveLimitType  @default(PER_YEAR)
+  dayCountType         DayCountType    @default(WORKING_DAY)
   maxDaysPerYear       Float?
   maxDaysPerRequest    Float?
   requiresAttachment   Boolean @default(false)
@@ -122,6 +125,22 @@ enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum LeaveCategory {
+  ANNUAL
+  EVENT
+}
+
+enum LeaveLimitType {
+  PER_YEAR
+  PER_EVENT
+  MEDICAL_BASED
+}
+
+enum DayCountType {
+  WORKING_DAY
+  CALENDAR_DAY
 }
 
 model AuditLog {

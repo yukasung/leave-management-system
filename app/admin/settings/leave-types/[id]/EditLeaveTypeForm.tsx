@@ -12,6 +12,9 @@ type LeaveTypeData = {
   requiresAttachment: boolean
   deductFromBalance: boolean
   allowDuringProbation: boolean
+  leaveCategory: 'ANNUAL' | 'EVENT'
+  leaveLimitType: 'PER_YEAR' | 'PER_EVENT' | 'MEDICAL_BASED'
+  dayCountType: 'WORKING_DAY' | 'CALENDAR_DAY'
   _count: { leaveRequests: number }
 }
 
@@ -107,6 +110,44 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
               placeholder="ไม่จำกัด"
               className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
+          </div>
+        </div>
+
+        {/* Classification */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">หมวดหมู่การลา</label>
+            <select
+              name="leaveCategory"
+              defaultValue={leaveType.leaveCategory}
+              className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="ANNUAL">ลาประจำปี</option>
+              <option value="EVENT">ลาตามเหตุการณ์</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">ประเภทขีดจำกัด</label>
+            <select
+              name="leaveLimitType"
+              defaultValue={leaveType.leaveLimitType}
+              className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="PER_YEAR">ต่อปี</option>
+              <option value="PER_EVENT">ต่อครั้ง</option>
+              <option value="MEDICAL_BASED">ตามใบรับรองแพทย์</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">การนับวัน</label>
+            <select
+              name="dayCountType"
+              defaultValue={leaveType.dayCountType}
+              className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="WORKING_DAY">วันทำการ</option>
+              <option value="CALENDAR_DAY">วันปฏิทิน</option>
+            </select>
           </div>
         </div>
 

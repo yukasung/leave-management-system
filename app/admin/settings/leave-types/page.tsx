@@ -73,6 +73,9 @@ export default async function LeaveTypesPage() {
                     <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ต้องแนบเอกสาร</th>
                     <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">หักยอด</th>
                     <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ลาช่วงทดลองงาน</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">หมวดหมู่</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ขีดจำกัด</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">การนับวัน</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -86,6 +89,9 @@ export default async function LeaveTypesPage() {
                       requiresAttachment={lt.requiresAttachment}
                       deductFromBalance={lt.deductFromBalance}
                       allowDuringProbation={lt.allowDuringProbation}
+                      leaveCategory={lt.leaveCategory}
+                      leaveLimitType={lt.leaveLimitType}
+                      dayCountType={lt.dayCountType}
                     />
                   ))}
                 </tbody>

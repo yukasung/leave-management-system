@@ -25,6 +25,9 @@ export async function createLeaveType(
   const requiresAttachment = formData.get('requiresAttachment') === 'true'
   const deductFromBalance = formData.get('deductFromBalance') === 'true'
   const allowDuringProbation = formData.get('allowDuringProbation') === 'true'
+  const leaveCategory = (formData.get('leaveCategory') as string | null) ?? 'ANNUAL'
+  const leaveLimitType = (formData.get('leaveLimitType') as string | null) ?? 'PER_YEAR'
+  const dayCountType = (formData.get('dayCountType') as string | null) ?? 'WORKING_DAY'
 
   if (!name) {
     return { success: false, message: 'กรุณากรอกชื่อประเภทการลา', errors: { name: 'ชื่อจำเป็น' } }
@@ -43,6 +46,9 @@ export async function createLeaveType(
       requiresAttachment,
       deductFromBalance,
       allowDuringProbation,
+      leaveCategory: leaveCategory as 'ANNUAL' | 'EVENT',
+      leaveLimitType: leaveLimitType as 'PER_YEAR' | 'PER_EVENT' | 'MEDICAL_BASED',
+      dayCountType: dayCountType as 'WORKING_DAY' | 'CALENDAR_DAY',
     },
   })
 
