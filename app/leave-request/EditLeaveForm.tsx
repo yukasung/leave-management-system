@@ -17,7 +17,7 @@ import { useRouter } from 'next/navigation'
 import { updateLeaveRequest, submitLeaveRequest, cancelLeaveRequest, type FormState } from './actions'
 import { approveLeaveRequest, rejectLeaveRequest } from '@/app/manager/leave-requests/actions'
 import { hrApproveLeaveRequest, hrRejectLeaveRequest, hrAdminCancelApproved, hrApproveCancellation } from '@/app/hr/leave-requests/actions'
-import { calculateLeaveDuration, WORK_START_HOUR, WORK_START_MIN, WORK_END_HOUR, WORK_END_MIN } from '@/lib/leave-calc'
+import { calculateLeaveDuration, calculateCalendarDays, WORK_START_HOUR, WORK_START_MIN, WORK_END_HOUR, WORK_END_MIN } from '@/lib/leave-calc'
 import { buildPolicySummary, type LeaveTypePolicy } from '@/lib/leave-policy-utils'
 import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
@@ -106,6 +106,8 @@ export default function EditLeaveForm({
 
   const today = new Date().toISOString().split('T')[0]
 
+  const initType = leaveTypes.find((lt) => lt.id === existing.leaveTypeId)
+  const [selectedCategory, setSelectedCategory] = useState<'ANNUAL' | 'EVENT' | ''>(initType?.leaveCategory ?? '')
   const [leaveTypeId, setLeaveTypeId] = useState(existing.leaveTypeId)
 
   // Parse existing datetime strings (YYYY-MM-DDTHH:mm)
@@ -188,6 +190,9 @@ export default function EditLeaveForm({
 
   const preview = (() => {
     if (!leaveStartDateTime || !leaveEndDateTime) return null
+    if (selectedType?.dayCountType === 'CALENDAR_DAY') {
+      return calculateCalendarDays(new Date(leaveStartDateTime), new Date(leaveEndDateTime))
+    }
     return calculateLeaveDuration(
       new Date(leaveStartDateTime),
       new Date(leaveEndDateTime),
@@ -295,7 +300,9 @@ export default function EditLeaveForm({
 
   // ── Read-only detail view (non-editable) ───────────────────────────────────
   if (!isEditable) {
-    const selectedTypeName = leaveTypes.find((lt) => lt.id === existing.leaveTypeId)?.name ?? '—'
+    const selectedType = leaveTypes.find((lt) => lt.id === existing.leaveTypeId)
+    const selectedTypeName = selectedType?.name ?? '—'
+    const selectedCategoryLabel = selectedType?.leaveCategory === 'ANNUAL' ? 'ลาประจำปี' : selectedType?.leaveCategory === 'EVENT' ? 'ลาพิเศษ' : '—'
 
     const formatDT = (dt: string) => {
       if (!dt) return '—'
@@ -453,6 +460,19 @@ export default function EditLeaveForm({
                 </div>
               </div>
             )}
+
+            {/* Leave category */}
+            <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
+              <div className="h-8 w-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/40 flex items-center justify-center shrink-0">
+                <svg className="h-4 w-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">หมวดหมู่การลา</p>
+                <p className="text-sm font-semibold text-foreground truncate">{selectedCategoryLabel}</p>
+              </div>
+            </div>
 
             {/* Leave type */}
             <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
@@ -731,6 +751,27 @@ export default function EditLeaveForm({
         <input type="hidden" name="leaveStartDateTime" value={leaveStartDateTime} />
         <input type="hidden" name="leaveEndDateTime"   value={leaveEndDateTime} />
 
+        {/* Leave Category */}
+        <div>
+          <label htmlFor="leaveCategoryEdit" className="block text-sm font-medium text-foreground mb-1">
+            หมวดหมู่การลา <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="leaveCategoryEdit"
+            value={selectedCategory}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value as 'ANNUAL' | 'EVENT' | '')
+              setLeaveTypeId('')
+            }}
+            disabled={disabled}
+            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
+          >
+            <option value="" disabled>-- เลือกหมวดหมู่ --</option>
+            <option value="ANNUAL">ลาประจำปี</option>
+            <option value="EVENT">ลาพิเศษ</option>
+          </select>
+        </div>
+
         {/* Leave Type */}
         <div>
           <label htmlFor="leaveTypeId" className="block text-sm font-medium text-foreground mb-1">
@@ -741,12 +782,16 @@ export default function EditLeaveForm({
             name="leaveTypeId"
             value={leaveTypeId}
             onChange={(e) => setLeaveTypeId(e.target.value)}
-            disabled={disabled}            required            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
+            disabled={disabled || !selectedCategory}
+            required
+            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
           >
             <option value="" disabled>-- เลือกประเภทการลา --</option>
-            {leaveTypes.map((lt) => (
-              <option key={lt.id} value={lt.id}>{lt.name}</option>
-            ))}
+            {leaveTypes
+              .filter((lt) => !selectedCategory || lt.leaveCategory === selectedCategory)
+              .map((lt) => (
+                <option key={lt.id} value={lt.id}>{lt.name}</option>
+              ))}
           </select>
           {state.errors?.leaveTypeId && (
             <p className="mt-1 text-xs text-red-500">{state.errors.leaveTypeId}</p>

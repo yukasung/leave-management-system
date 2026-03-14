@@ -42,6 +42,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
 
   const today = new Date().toISOString().split('T')[0]
 
+  const [selectedCategory, setSelectedCategory] = useState<'ANNUAL' | 'EVENT' | ''>('')
   const [leaveTypeId, setLeaveTypeId] = useState('')
   const [startDate, setStartDate]     = useState(today)
   const [endDate, setEndDate]         = useState(today)
@@ -183,6 +184,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
   // ── Handle final submit (DRAFT → PENDING) ─────────────────────────────────
   function handleStartOver() {
     setPhase('form')
+    setSelectedCategory('')
     setLeaveTypeId('')
     setStartDate(today)
     setEndDate(today)
@@ -235,6 +237,26 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
         <input type="hidden" name="leaveStartDateTime" value={leaveStartDateTime} />
         <input type="hidden" name="leaveEndDateTime"   value={leaveEndDateTime} />
 
+        {/* Leave Category */}
+        <div>
+          <label htmlFor="leaveCategory" className="block text-sm font-medium text-foreground mb-1">
+            หมวดหมู่การลา <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="leaveCategory"
+            value={selectedCategory}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value as 'ANNUAL' | 'EVENT' | '')
+              setLeaveTypeId('')
+            }}
+            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="" disabled>-- เลือกหมวดหมู่ --</option>
+            <option value="ANNUAL">ลาประจำปี</option>
+            <option value="EVENT">ลาพิเศษ</option>
+          </select>
+        </div>
+
         {/* Leave Type */}
         <div>
           <label htmlFor="leaveTypeId" className="block text-sm font-medium text-foreground mb-1">
@@ -244,14 +266,19 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             id="leaveTypeId"
             name="leaveTypeId"
             value={leaveTypeId}
-            onChange={(e) => setLeaveTypeId(e.target.value)}            required            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            onChange={(e) => setLeaveTypeId(e.target.value)}
+            required
+            disabled={!selectedCategory}
+            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="" disabled>-- เลือกประเภทการลา --</option>
-            {leaveTypes.map((lt) => (
-              <option key={lt.id} value={lt.id}>
-                {lt.name}
-              </option>
-            ))}
+            {leaveTypes
+              .filter((lt) => !selectedCategory || lt.leaveCategory === selectedCategory)
+              .map((lt) => (
+                <option key={lt.id} value={lt.id}>
+                  {lt.name}
+                </option>
+              ))}
           </select>
           {state.errors?.leaveTypeId && (
             <p className="mt-1 text-xs text-red-500">{state.errors.leaveTypeId}</p>

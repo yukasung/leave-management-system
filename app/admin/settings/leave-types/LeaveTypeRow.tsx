@@ -46,7 +46,7 @@ export default function LeaveTypeRow({
       onClick={() => router.push(`/admin/settings/leave-types/${id}`)}
       className="hover:bg-primary/3 dark:hover:bg-primary/10 transition-colors cursor-pointer"
     >
-      <td className="px-5 py-4 font-medium text-foreground">{name}</td>
+      <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">{name}</td>
       <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
         {maxDaysPerYear ?? <span className="text-muted-foreground/40">—</span>}
       </td>
@@ -64,7 +64,7 @@ export default function LeaveTypeRow({
       </td>
       <td className="px-5 py-4 text-center whitespace-nowrap">
         <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50">
-          {leaveCategory === 'ANNUAL' ? 'ประจำปี' : 'ตามเหตุการณ์'}
+          {leaveCategory === 'ANNUAL' ? 'ประจำปี' : 'ลาพิเศษ'}
         </span>
       </td>
       <td className="px-5 py-4 text-center whitespace-nowrap">

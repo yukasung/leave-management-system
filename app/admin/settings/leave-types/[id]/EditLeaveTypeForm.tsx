@@ -25,6 +25,7 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
   const boundUpdate = updateLeaveType.bind(null, leaveType.id)
   const [state, action, pending] = useActionState(boundUpdate, initial)
 
+  const [limitType, setLimitType] = useState<'PER_YEAR' | 'PER_EVENT' | 'MEDICAL_BASED'>(leaveType.leaveLimitType)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleteState, setDeleteState] = useState<LeaveTypeFormState | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -85,34 +86,6 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
           {state.errors?.name && <p className="text-xs text-red-500 mt-1">{state.errors.name}</p>}
         </div>
 
-        {/* Max days */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">วันสูงสุดต่อปี</label>
-            <input
-              name="maxDaysPerYear"
-              type="number"
-              min="0"
-              step="0.5"
-              defaultValue={leaveType.maxDaysPerYear ?? ''}
-              placeholder="ไม่จำกัด"
-              className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">วันสูงสุดต่อครั้ง</label>
-            <input
-              name="maxDaysPerRequest"
-              type="number"
-              min="0"
-              step="0.5"
-              defaultValue={leaveType.maxDaysPerRequest ?? ''}
-              placeholder="ไม่จำกัด"
-              className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-        </div>
-
         {/* Classification */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
@@ -123,14 +96,15 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
               className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="ANNUAL">ลาประจำปี</option>
-              <option value="EVENT">ลาตามเหตุการณ์</option>
+              <option value="EVENT">ลาพิเศษ</option>
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">ประเภทขีดจำกัด</label>
             <select
               name="leaveLimitType"
-              defaultValue={leaveType.leaveLimitType}
+              value={limitType}
+              onChange={e => setLimitType(e.target.value as typeof limitType)}
               className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="PER_YEAR">ต่อปี</option>
@@ -150,6 +124,44 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
             </select>
           </div>
         </div>
+
+        {/* Max days */}
+        {limitType === 'MEDICAL_BASED' ? (
+          <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg px-4 py-3">
+            จำนวนวันลากำหนดตามใบรับรองแพทย์ ไม่มีขีดจำกัดคงที่
+          </p>
+        ) : (
+          <div className="max-w-xs">
+            {limitType === 'PER_YEAR' && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">วันสูงสุดต่อปี</label>
+                <input
+                  name="maxDaysPerYear"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  defaultValue={leaveType.maxDaysPerYear ?? ''}
+                  placeholder="ไม่จำกัด"
+                  className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            )}
+            {limitType === 'PER_EVENT' && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">วันสูงสุดต่อครั้ง</label>
+                <input
+                  name="maxDaysPerRequest"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  defaultValue={leaveType.maxDaysPerRequest ?? ''}
+                  placeholder="ไม่จำกัด"
+                  className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Toggles */}
         <fieldset className="space-y-3">

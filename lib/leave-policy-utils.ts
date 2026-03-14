@@ -22,7 +22,7 @@ export type LeaveTypePolicy = {
 /** Human-readable Thai labels */
 export const LEAVE_CATEGORY_LABEL: Record<LeaveCategory, string> = {
   ANNUAL: 'ลาประจำปี',
-  EVENT:  'ลาตามเหตุการณ์',
+  EVENT:  'ลาพิเศษ',
 }
 
 export const LEAVE_LIMIT_TYPE_LABEL: Record<LeaveLimitType, string> = {
