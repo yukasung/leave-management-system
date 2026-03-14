@@ -85,7 +85,7 @@ export default async function EditLeavePage({
         requiresAttachment:  true,
         deductFromBalance:   true,
         allowDuringProbation: true,
-        leaveCategory:       true,
+        leaveCategory:       { select: { name: true } },
         leaveLimitType:      true,
         dayCountType:        true,
       },

@@ -6,7 +6,7 @@ import { createLeaveType, type LeaveTypeFormState } from './actions'
 
 const initial: LeaveTypeFormState = { success: false, message: '' }
 
-export default function NewLeaveTypeForm() {
+export default function NewLeaveTypeForm({ categories }: { categories: { id: string; name: string }[] }) {
   const router = useRouter()
   const [state, action, pending] = useActionState(createLeaveType, initial)
   const [limitType, setLimitType] = useState<'PER_YEAR' | 'PER_EVENT' | 'MEDICAL_BASED'>('PER_YEAR')
@@ -53,12 +53,13 @@ export default function NewLeaveTypeForm() {
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">หมวดหมู่การลา</label>
           <select
-            name="leaveCategory"
-            defaultValue="ANNUAL"
+            name="leaveCategoryId"
             className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            <option value="ANNUAL">ลาประจำปี</option>
-              <option value="EVENT">ลาพิเศษ</option>
+            <option value="">— ไม่ระบุ —</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
           </select>
         </div>
         <div>

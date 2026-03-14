@@ -97,7 +97,7 @@ export default async function HRLeaveRequestsPage({
         documentUrl: true,
         reason: true,
         user: { select: { name: true, department: { select: { name: true } } } },
-        leaveType: { select: { name: true, leaveCategory: true } },
+        leaveType: { select: { name: true, leaveCategory: { select: { name: true, color: true } } } },
       },
     }),
     prisma.leaveRequest.count({ where }),

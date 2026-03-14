@@ -83,7 +83,7 @@ export default async function LeaveHistoryPage({
   const where = {
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(leaveTypeId  ? { leaveTypeId } : {}),
-    ...(leaveCategory ? { leaveType: { leaveCategory: leaveCategory as 'ANNUAL' | 'EVENT' } } : {}),
+    ...(leaveCategory ? { leaveType: { leaveCategory: { key: leaveCategory } } } : {}),
     ...(dateFrom || dateTo
       ? {
           leaveStartDateTime: {
@@ -102,7 +102,7 @@ export default async function LeaveHistoryPage({
       : {}),
   }
 
-  const [requests, total, departments, leaveTypes] = await Promise.all([
+  const [requests, total, departments, leaveTypes, categories] = await Promise.all([
     prisma.leaveRequest.findMany({
       where,
       skip,
@@ -116,7 +116,7 @@ export default async function LeaveHistoryPage({
             department: { select: { name: true } },
           },
         },
-        leaveType: { select: { name: true, leaveCategory: true } },
+        leaveType: { select: { name: true, leaveCategory: { select: { name: true, color: true } } } },
         approvals: {
           orderBy: { level: 'desc' },
           take: 1,
@@ -126,7 +126,8 @@ export default async function LeaveHistoryPage({
     }),
     prisma.leaveRequest.count({ where }),
     prisma.department.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
-    prisma.leaveType.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, leaveCategory: true } }),
+    prisma.leaveType.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, leaveCategory: { select: { key: true } } } }),
+    prisma.leaveCategoryConfig.findMany({ orderBy: { sortOrder: 'asc' }, select: { key: true, name: true } }),
   ])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -188,6 +189,7 @@ export default async function LeaveHistoryPage({
           departments={departments}
           leaveTypes={leaveTypes}
           total={total}
+          categories={categories}
           current={{ employee, dateFrom, dateTo, leaveTypeId, leaveCategory, status: statusParam, departmentId, sort: sortKey, dir: sortDir }}
         />
 

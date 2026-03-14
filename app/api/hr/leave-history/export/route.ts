@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   const where = {
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(leaveTypeId  ? { leaveTypeId } : {}),
-    ...(leaveCategory ? { leaveType: { leaveCategory: leaveCategory as 'ANNUAL' | 'EVENT' } } : {}),
+    ...(leaveCategory ? { leaveType: { leaveCategory: { key: leaveCategory } } } : {}),
     ...(dateFrom || dateTo
       ? {
           leaveStartDateTime: {
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
           department: { select: { name: true } },
         },
       },
-      leaveType: { select: { name: true, leaveCategory: true } },
+      leaveType: { select: { name: true, leaveCategory: { select: { name: true } } } },
       approvals: {
         orderBy: { level: 'desc' },
         take:    1,
@@ -86,8 +86,6 @@ export async function GET(req: NextRequest) {
       },
     },
   })
-
-  const CATEGORY_LABEL: Record<string, string> = { ANNUAL: 'ลาประจำปี', EVENT: 'ลาพิเศษ' }
 
   const columns: ColumnDef[] = [
     { header: '#',           type: 'index',  width: 6  },
@@ -110,7 +108,7 @@ export async function GET(req: NextRequest) {
     r.user.name,
     r.user.employee?.employeeCode ?? '',
     r.user.department?.name ?? '',
-    CATEGORY_LABEL[r.leaveType.leaveCategory] ?? r.leaveType.leaveCategory,
+    r.leaveType.leaveCategory?.name ?? '',
     r.leaveType.name,
     formatThaiDateShort(r.leaveStartDateTime),
     formatThaiDateShort(r.leaveEndDateTime),

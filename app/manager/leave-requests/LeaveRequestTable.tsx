@@ -15,7 +15,7 @@ type LeaveRequest = {
   reason: string | null
   createdAt: Date
   user: { name: string; email: string }
-  leaveType: { name: string; leaveCategory: string }
+  leaveType: { name: string; leaveCategory: { name: string; color: string } | null }
 }
 
 function ActionButtons({ id }: { id: string }) {
@@ -86,11 +86,13 @@ export default function LeaveRequestTable({ requests }: { requests: LeaveRequest
               <td className="px-5 py-4 text-foreground whitespace-nowrap">
                 <div className="flex flex-col items-center gap-1">
                   <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${
-                    req.leaveType.leaveCategory === 'ANNUAL'
-                      ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700'
-                      : 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700'
+                    req.leaveType.leaveCategory?.color === 'violet'
+                      ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700'
+                      : req.leaveType.leaveCategory?.color === 'green'
+                      ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
+                      : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700'
                   }`}>
-                    {req.leaveType.leaveCategory === 'ANNUAL' ? 'ลาประจำปี' : 'ลาพิเศษ'}
+                    {req.leaveType.leaveCategory?.name ?? '—'}
                   </span>
                   <span>{req.leaveType.name}</span>
                 </div>

@@ -107,7 +107,7 @@ export default function EditLeaveForm({
   const today = new Date().toISOString().split('T')[0]
 
   const initType = leaveTypes.find((lt) => lt.id === existing.leaveTypeId)
-  const [selectedCategory, setSelectedCategory] = useState<'ANNUAL' | 'EVENT' | ''>(initType?.leaveCategory ?? '')
+  const [selectedCategory, setSelectedCategory] = useState(initType?.leaveCategory?.name ?? '')
   const [leaveTypeId, setLeaveTypeId] = useState(existing.leaveTypeId)
 
   // Parse existing datetime strings (YYYY-MM-DDTHH:mm)
@@ -302,7 +302,7 @@ export default function EditLeaveForm({
   if (!isEditable) {
     const selectedType = leaveTypes.find((lt) => lt.id === existing.leaveTypeId)
     const selectedTypeName = selectedType?.name ?? '—'
-    const selectedCategoryLabel = selectedType?.leaveCategory === 'ANNUAL' ? 'ลาประจำปี' : selectedType?.leaveCategory === 'EVENT' ? 'ลาพิเศษ' : '—'
+    const selectedCategoryLabel = selectedType?.leaveCategory?.name ?? '—'
 
     const formatDT = (dt: string) => {
       if (!dt) return '—'
@@ -760,15 +760,19 @@ export default function EditLeaveForm({
             id="leaveCategoryEdit"
             value={selectedCategory}
             onChange={(e) => {
-              setSelectedCategory(e.target.value as 'ANNUAL' | 'EVENT' | '')
+              setSelectedCategory(e.target.value)
               setLeaveTypeId('')
             }}
             disabled={disabled}
             className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
           >
             <option value="" disabled>-- เลือกหมวดหมู่ --</option>
-            <option value="ANNUAL">ลาประจำปี</option>
-            <option value="EVENT">ลาพิเศษ</option>
+            {Array.from(new Map(
+              leaveTypes.filter((lt) => lt.leaveCategory !== null)
+                        .map((lt) => [lt.leaveCategory!.name, lt.leaveCategory!.name])
+            ).values()).map((catName) => (
+              <option key={catName} value={catName}>{catName}</option>
+            ))}
           </select>
         </div>
 
@@ -788,7 +792,7 @@ export default function EditLeaveForm({
           >
             <option value="" disabled>-- เลือกประเภทการลา --</option>
             {leaveTypes
-              .filter((lt) => !selectedCategory || lt.leaveCategory === selectedCategory)
+              .filter((lt) => !selectedCategory || lt.leaveCategory?.name === selectedCategory)
               .map((lt) => (
                 <option key={lt.id} value={lt.id}>{lt.name}</option>
               ))}

@@ -2,18 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 
-const CATEGORY_LABEL: Record<string, string> = {
-  ANNUAL: 'ลาประจำปี',
-  EVENT:  'ลาพิเศษ',
-}
-const CATEGORY_BADGE: Record<string, string> = {
-  ANNUAL: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700',
-  EVENT:  'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700',
-}
-
 interface Props {
   id: string
-  leaveCategory: string
   leaveTypeName: string
   startDate: string
   endDate: string
@@ -28,7 +18,6 @@ interface Props {
 
 export default function LeaveTableRow({
   id,
-  leaveCategory,
   leaveTypeName,
   startDate,
   endDate,

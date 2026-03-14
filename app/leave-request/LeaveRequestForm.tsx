@@ -42,7 +42,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
 
   const today = new Date().toISOString().split('T')[0]
 
-  const [selectedCategory, setSelectedCategory] = useState<'ANNUAL' | 'EVENT' | ''>('')
+  const [selectedCategory, setSelectedCategory] = useState('')
   const [leaveTypeId, setLeaveTypeId] = useState('')
   const [startDate, setStartDate]     = useState(today)
   const [endDate, setEndDate]         = useState(today)
@@ -246,14 +246,18 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             id="leaveCategory"
             value={selectedCategory}
             onChange={(e) => {
-              setSelectedCategory(e.target.value as 'ANNUAL' | 'EVENT' | '')
+              setSelectedCategory(e.target.value)
               setLeaveTypeId('')
             }}
             className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="" disabled>-- เลือกหมวดหมู่ --</option>
-            <option value="ANNUAL">ลาประจำปี</option>
-            <option value="EVENT">ลาพิเศษ</option>
+            {Array.from(new Map(
+              leaveTypes.filter((lt) => lt.leaveCategory !== null)
+                        .map((lt) => [lt.leaveCategory!.name, lt.leaveCategory!.name])
+            ).values()).map((catName) => (
+              <option key={catName} value={catName}>{catName}</option>
+            ))}
           </select>
         </div>
 
@@ -273,7 +277,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
           >
             <option value="" disabled>-- เลือกประเภทการลา --</option>
             {leaveTypes
-              .filter((lt) => !selectedCategory || lt.leaveCategory === selectedCategory)
+              .filter((lt) => !selectedCategory || lt.leaveCategory?.name === selectedCategory)
               .map((lt) => (
                 <option key={lt.id} value={lt.id}>
                   {lt.name}

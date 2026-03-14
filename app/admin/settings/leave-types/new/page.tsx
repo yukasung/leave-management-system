@@ -10,10 +10,10 @@ export default async function NewLeaveTypePage() {
   if (!session?.user?.id) redirect('/login')
   if (!session.user.isAdmin) redirect('/dashboard')
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { avatarUrl: true },
-  })
+  const [dbUser, categories] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { avatarUrl: true } }),
+    prisma.leaveCategoryConfig.findMany({ orderBy: { sortOrder: 'asc' }, select: { id: true, name: true } }),
+  ])
 
   const user = {
     name:      session.user.name ?? '',
@@ -32,7 +32,7 @@ export default async function NewLeaveTypePage() {
         </nav>
         <h2 className="text-lg font-semibold text-foreground">เพิ่มประเภทการลาใหม่</h2>
         <div className="rounded-xl border border-border bg-card shadow-sm p-6">
-          <NewLeaveTypeForm />
+          <NewLeaveTypeForm categories={categories} />
         </div>
       </div>
     </AdminLayout>

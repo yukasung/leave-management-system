@@ -25,7 +25,7 @@ export async function createLeaveType(
   const requiresAttachment = formData.get('requiresAttachment') === 'true'
   const deductFromBalance = formData.get('deductFromBalance') === 'true'
   const allowDuringProbation = formData.get('allowDuringProbation') === 'true'
-  const leaveCategory = (formData.get('leaveCategory') as string | null) ?? 'ANNUAL'
+  const leaveCategoryId = (formData.get('leaveCategoryId') as string | null) || null
   const leaveLimitType = (formData.get('leaveLimitType') as string | null) ?? 'PER_YEAR'
   const dayCountType = (formData.get('dayCountType') as string | null) ?? 'WORKING_DAY'
 
@@ -46,7 +46,7 @@ export async function createLeaveType(
       requiresAttachment,
       deductFromBalance,
       allowDuringProbation,
-      leaveCategory: leaveCategory as 'ANNUAL' | 'EVENT',
+      leaveCategoryId: leaveCategoryId || undefined,
       leaveLimitType: leaveLimitType as 'PER_YEAR' | 'PER_EVENT' | 'MEDICAL_BASED',
       dayCountType: dayCountType as 'WORKING_DAY' | 'CALENDAR_DAY',
     },

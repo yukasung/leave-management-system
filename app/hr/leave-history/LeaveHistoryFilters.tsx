@@ -7,12 +7,8 @@ import { cn } from '@/lib/utils'
 import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
 type Department = { id: string; name: string }
-type LeaveType  = { id: string; name: string; leaveCategory: string }
-
-const CATEGORY_OPTIONS = [
-  { value: 'ANNUAL', label: 'ลาประจำปี' },
-  { value: 'EVENT',  label: 'ลาพิเศษ' },
-]
+type LeaveType  = { id: string; name: string; leaveCategory: { key: string } | null }
+type Category   = { key: string; name: string }
 
 const STATUS_OPTIONS = [
   { value: 'PENDING',          label: 'รออนุมัติ' },
@@ -26,6 +22,7 @@ const STATUS_OPTIONS = [
 interface Props {
   departments: Department[]
   leaveTypes:  LeaveType[]
+  categories:  Category[]
   current: {
     employee?:     string
     dateFrom?:     string
@@ -40,7 +37,7 @@ interface Props {
   total: number
 }
 
-export default function LeaveHistoryFilters({ departments, leaveTypes, current, total }: Props) {
+export default function LeaveHistoryFilters({ departments, leaveTypes, categories, current, total }: Props) {
   const router   = useRouter()
   const params   = useParams()
   const locale   = (params?.locale as string) || ''
@@ -141,8 +138,8 @@ export default function LeaveHistoryFilters({ departments, leaveTypes, current, 
           className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
         >
           <option value="">ทุกหมวดหมู่</option>
-          {CATEGORY_OPTIONS.map((c) => (
-            <option key={c.value} value={c.value}>{c.label}</option>
+          {categories.map((c) => (
+            <option key={c.key} value={c.key}>{c.name}</option>
           ))}
         </select>
 
@@ -154,7 +151,7 @@ export default function LeaveHistoryFilters({ departments, leaveTypes, current, 
         >
           <option value="">ทุกประเภทการลา</option>
           {leaveTypes
-            .filter((lt) => !leaveCategory || lt.leaveCategory === leaveCategory)
+            .filter((lt) => !leaveCategory || lt.leaveCategory?.key === leaveCategory)
             .map((lt) => (
               <option key={lt.id} value={lt.id}>{lt.name}</option>
             ))}

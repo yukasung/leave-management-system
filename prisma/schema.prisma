@@ -49,12 +49,23 @@ model Position {
   @@index([name])
 }
 
+model LeaveCategoryConfig {
+  id        String      @id @default(uuid())
+  key       String      @unique
+  name      String      @unique
+  color     String      @default("blue")
+  sortOrder Int         @default(0)
+  createdAt DateTime    @default(now())
+  leaveTypes LeaveType[]
+}
+
 model LeaveType {
-  id                   String          @id @default(uuid())
-  name                 String          @unique
-  leaveCategory        LeaveCategory   @default(ANNUAL)
-  leaveLimitType       LeaveLimitType  @default(PER_YEAR)
-  dayCountType         DayCountType    @default(WORKING_DAY)
+  id                   String               @id @default(uuid())
+  name                 String               @unique
+  leaveCategoryId      String?
+  leaveCategory        LeaveCategoryConfig? @relation(fields: [leaveCategoryId], references: [id])
+  leaveLimitType       LeaveLimitType       @default(PER_YEAR)
+  dayCountType         DayCountType         @default(WORKING_DAY)
   maxDaysPerYear       Float?
   maxDaysPerRequest    Float?
   requiresAttachment   Boolean @default(false)
@@ -127,10 +138,6 @@ enum ApprovalStatus {
   REJECTED
 }
 
-enum LeaveCategory {
-  ANNUAL
-  EVENT
-}
 
 enum LeaveLimitType {
   PER_YEAR

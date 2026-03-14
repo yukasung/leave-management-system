@@ -10,7 +10,7 @@ type Props = {
   requiresAttachment: boolean
   deductFromBalance: boolean
   allowDuringProbation: boolean
-  leaveCategory: 'ANNUAL' | 'EVENT'
+  leaveCategory: { name: string; color: string } | null
   leaveLimitType: 'PER_YEAR' | 'PER_EVENT' | 'MEDICAL_BASED'
   dayCountType: 'WORKING_DAY' | 'CALENDAR_DAY'
 }
@@ -63,8 +63,18 @@ export default function LeaveTypeRow({
         <BoolBadge value={allowDuringProbation} yes="อนุญาต" no="ไม่อนุญาต" />
       </td>
       <td className="px-5 py-4 text-center whitespace-nowrap">
-        <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50">
-          {leaveCategory === 'ANNUAL' ? 'ประจำปี' : 'ลาพิเศษ'}
+        <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full border ${
+          leaveCategory?.color === 'violet'
+            ? 'border-violet-200 bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 dark:border-violet-800/50'
+            : leaveCategory?.color === 'green'
+            ? 'border-green-200 bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800/50'
+            : leaveCategory?.color === 'amber'
+            ? 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50'
+            : leaveCategory?.color === 'red'
+            ? 'border-red-200 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/50'
+            : 'border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50'
+        }`}>
+          {leaveCategory?.name ?? '—'}
         </span>
       </td>
       <td className="px-5 py-4 text-center whitespace-nowrap">

@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const where = {
     year,
     ...(leaveTypeId   ? { leaveTypeId } : {}),
-    ...(leaveCategory ? { leaveType: { leaveCategory: leaveCategory as 'ANNUAL' | 'EVENT' } } : {}),
+    ...(leaveCategory ? { leaveType: { leaveCategory: { key: leaveCategory } } } : {}),
     user: {
       ...(employee     ? { name: { contains: employee, mode: 'insensitive' as const } } : {}),
       ...(departmentId ? { departmentId } : {}),
@@ -38,11 +38,9 @@ export async function GET(req: NextRequest) {
           department: { select: { name: true } },
         },
       },
-      leaveType: { select: { name: true, leaveCategory: true } },
+      leaveType: { select: { name: true, leaveCategory: { select: { name: true } } } },
     },
   })
-
-  const CATEGORY_LABEL: Record<string, string> = { ANNUAL: 'ลาประจำปี', EVENT: 'ลาพิเศษ' }
 
   const columns: ColumnDef[] = [
     { header: '#',             type: 'index',  width: 6  },
@@ -66,7 +64,7 @@ export async function GET(req: NextRequest) {
       b.user.name,
       b.user.employee?.employeeCode ?? '',
       b.user.department?.name ?? '',
-      CATEGORY_LABEL[b.leaveType.leaveCategory] ?? b.leaveType.leaveCategory,
+      b.leaveType.leaveCategory?.name ?? '',
       b.leaveType.name,
       parseFloat(b.totalDays.toFixed(2)),
       parseFloat(b.usedDays.toFixed(2)),

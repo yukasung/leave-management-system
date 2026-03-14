@@ -55,14 +55,14 @@ export default async function LeaveBalanceReportPage({
   const where = {
     year,
     ...(leaveTypeId    ? { leaveTypeId } : {}),
-    ...(leaveCategory  ? { leaveType: { leaveCategory: leaveCategory as 'ANNUAL' | 'EVENT' } } : {}),
+    ...(leaveCategory  ? { leaveType: { leaveCategory: { key: leaveCategory } } } : {}),
     user: {
       ...(employee     ? { name: { contains: employee, mode: 'insensitive' as const } } : {}),
       ...(departmentId ? { departmentId } : {}),
     },
   }
 
-  const [total, balances, departments, leaveTypes] = await Promise.all([
+  const [total, balances, departments, leaveTypes, categories] = await Promise.all([
     prisma.leaveBalance.count({ where }),
     prisma.leaveBalance.findMany({
       where,
@@ -77,11 +77,12 @@ export default async function LeaveBalanceReportPage({
             department: { select: { name: true } },
           },
         },
-        leaveType: { select: { name: true, leaveCategory: true } },
+        leaveType: { select: { name: true, leaveCategory: { select: { name: true, color: true } } } },
       },
     }),
     prisma.department.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
-    prisma.leaveType.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, leaveCategory: true } }),
+    prisma.leaveType.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, leaveCategory: { select: { key: true } } } }),
+    prisma.leaveCategoryConfig.findMany({ orderBy: { sortOrder: 'asc' }, select: { key: true, name: true } }),
   ])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -144,6 +145,7 @@ export default async function LeaveBalanceReportPage({
           leaveTypes={leaveTypes}
           yearOptions={yearOptions}
           total={total}
+          categories={categories}
           current={{ employee, departmentId, leaveTypeId, leaveCategory, year }}
         />
 
@@ -209,11 +211,13 @@ export default async function LeaveBalanceReportPage({
                         {/* Leave category */}
                         <td className="px-4 py-3 text-center whitespace-nowrap">
                           <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${
-                            b.leaveType.leaveCategory === 'ANNUAL'
-                              ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700'
-                              : 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700'
+                            b.leaveType.leaveCategory?.color === 'violet'
+                              ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700'
+                              : b.leaveType.leaveCategory?.color === 'green'
+                              ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
+                              : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700'
                           }`}>
-                            {b.leaveType.leaveCategory === 'ANNUAL' ? 'ลาประจำปี' : 'ลาพิเศษ'}
+                            {b.leaveType.leaveCategory?.name ?? '—'}
                           </span>
                         </td>
 

@@ -9,7 +9,7 @@ export type DayCountType   = 'WORKING_DAY' | 'CALENDAR_DAY'
 export type LeaveTypePolicy = {
   id: string
   name: string
-  leaveCategory:       LeaveCategory
+  leaveCategory:       { name: string } | null
   leaveLimitType:      LeaveLimitType
   dayCountType:        DayCountType
   maxDaysPerYear: number | null
@@ -45,7 +45,7 @@ export const DAY_COUNT_TYPE_LABEL: Record<DayCountType, string> = {
 export function buildPolicySummary(lt: LeaveTypePolicy): string {
   const parts: string[] = []
 
-  parts.push(LEAVE_CATEGORY_LABEL[lt.leaveCategory])
+  if (lt.leaveCategory?.name) parts.push(lt.leaveCategory.name)
 
   if (lt.maxDaysPerYear !== null) {
     parts.push(`ไม่เกิน ${lt.maxDaysPerYear} วัน${LEAVE_LIMIT_TYPE_LABEL[lt.leaveLimitType]}`)

@@ -13,7 +13,7 @@ export default async function LeaveTypesPage() {
   const [leaveTypes, dbUser] = await Promise.all([
     prisma.leaveType.findMany({
       orderBy: { name: 'asc' },
-      include: { _count: { select: { leaveRequests: true } } },
+      include: { _count: { select: { leaveRequests: true } }, leaveCategory: { select: { name: true, color: true } } },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },

@@ -17,15 +17,16 @@ export default async function EditLeaveTypePage({
 
   const { id } = await params
 
-  const [leaveType, dbUser] = await Promise.all([
+  const [leaveType, dbUser, categories] = await Promise.all([
     prisma.leaveType.findUnique({
       where: { id },
-      include: { _count: { select: { leaveRequests: true } } },
+      include: { _count: { select: { leaveRequests: true } }, leaveCategory: { select: { id: true, name: true } } },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { avatarUrl: true },
     }),
+    prisma.leaveCategoryConfig.findMany({ orderBy: { sortOrder: 'asc' }, select: { id: true, name: true } }),
   ])
 
   if (!leaveType) notFound()
@@ -47,7 +48,7 @@ export default async function EditLeaveTypePage({
         </nav>
         <h2 className="text-lg font-semibold text-foreground">แก้ไขประเภทการลา</h2>
         <div className="rounded-xl border border-border bg-card shadow-sm p-6">
-          <EditLeaveTypeForm leaveType={leaveType} />
+          <EditLeaveTypeForm leaveType={leaveType} categories={categories} />
         </div>
       </div>
     </AdminLayout>

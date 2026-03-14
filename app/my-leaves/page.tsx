@@ -76,7 +76,7 @@ export default async function MyLeaveHistoryPage({
       orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      include: { leaveType: { select: { name: true, leaveCategory: true } } },
+      include: { leaveType: { select: { name: true } } },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
@@ -169,7 +169,6 @@ export default async function MyLeaveHistoryPage({
                       <LeaveTableRow
                         key={req.id}
                         id={req.id}
-                        leaveCategory={req.leaveType.leaveCategory}
                         leaveTypeName={req.leaveType.name}
                         startDate={formatDate(req.leaveStartDateTime)}
                         endDate={formatDate(req.leaveEndDateTime)}

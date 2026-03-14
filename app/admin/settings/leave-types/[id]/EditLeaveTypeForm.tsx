@@ -12,7 +12,7 @@ type LeaveTypeData = {
   requiresAttachment: boolean
   deductFromBalance: boolean
   allowDuringProbation: boolean
-  leaveCategory: 'ANNUAL' | 'EVENT'
+  leaveCategory: { id: string; name: string } | null
   leaveLimitType: 'PER_YEAR' | 'PER_EVENT' | 'MEDICAL_BASED'
   dayCountType: 'WORKING_DAY' | 'CALENDAR_DAY'
   _count: { leaveRequests: number }
@@ -20,7 +20,7 @@ type LeaveTypeData = {
 
 const initial: LeaveTypeFormState = { success: false, message: '' }
 
-export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeData }) {
+export default function EditLeaveTypeForm({ leaveType, categories }: { leaveType: LeaveTypeData; categories: { id: string; name: string }[] }) {
   const router = useRouter()
   const boundUpdate = updateLeaveType.bind(null, leaveType.id)
   const [state, action, pending] = useActionState(boundUpdate, initial)
@@ -91,12 +91,14 @@ export default function EditLeaveTypeForm({ leaveType }: { leaveType: LeaveTypeD
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">หมวดหมู่การลา</label>
             <select
-              name="leaveCategory"
-              defaultValue={leaveType.leaveCategory}
+              name="leaveCategoryId"
+              defaultValue={leaveType.leaveCategory?.id ?? ''}
               className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="ANNUAL">ลาประจำปี</option>
-              <option value="EVENT">ลาพิเศษ</option>
+              <option value="">— ไม่ระบุ —</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
             </select>
           </div>
           <div>
