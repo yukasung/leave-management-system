@@ -72,7 +72,7 @@ export default async function HRLeaveRequestsPage({
 
   const ORDER_BY: Record<SortKey, object> = {
     name:       { user: { name: sortDir } },
-    department: { user: { department: { name: sortDir } } },
+    department: { user: { employee: { department: { name: sortDir } } } },
     leaveType:  { leaveType: { name: sortDir } },
     startDate:  { leaveStartDateTime: sortDir },
     endDate:    { leaveEndDateTime: sortDir },
@@ -96,7 +96,12 @@ export default async function HRLeaveRequestsPage({
         status: true,
         documentUrl: true,
         reason: true,
-        user: { select: { name: true, department: { select: { name: true } } } },
+        user: {
+          select: {
+            name: true,
+            employee: { select: { department: { select: { name: true } } } },
+          },
+        },
         leaveType: { select: { name: true, leaveCategory: { select: { name: true, color: true } } } },
       },
     }),
@@ -237,7 +242,7 @@ export default async function HRLeaveRequestsPage({
                       id={req.id}
                       rowNumber={skip + index + 1}
                       userName={req.user.name}
-                      departmentName={req.user.department?.name ?? null}
+                      departmentName={req.user.employee?.department?.name ?? null}
                       leaveCategory={req.leaveType.leaveCategory}
                       leaveTypeName={req.leaveType.name}
                       startDate={formatDate(req.leaveStartDateTime)}

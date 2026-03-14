@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { buildPolicySummary, type LeaveTypePolicy } from '../leave-policy-utils'
+import {
+  buildPolicySummary,
+  LEAVE_CATEGORY_LABEL,
+  LEAVE_LIMIT_TYPE_LABEL,
+  DAY_COUNT_TYPE_LABEL,
+  type LeaveTypePolicy,
+} from '../leave-policy-utils'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -112,5 +118,75 @@ describe('buildPolicySummary', () => {
 
   it('handles maxDaysPerYear = 0', () => {
     expect(buildPolicySummary(policy({ maxDaysPerYear: 0 }))).toBe('ไม่เกิน 0 วันต่อปี')
+  })
+})
+
+// ── LEAVE_CATEGORY_LABEL ──────────────────────────────────────────────────────
+
+describe('LEAVE_CATEGORY_LABEL', () => {
+  it('ANNUAL = "ลาประจำปี"', () => {
+    expect(LEAVE_CATEGORY_LABEL['ANNUAL']).toBe('ลาประจำปี')
+  })
+
+  it('EVENT = "ลาพิเศษ"', () => {
+    expect(LEAVE_CATEGORY_LABEL['EVENT']).toBe('ลาพิเศษ')
+  })
+
+  it('contains exactly 2 entries', () => {
+    expect(Object.keys(LEAVE_CATEGORY_LABEL)).toHaveLength(2)
+  })
+
+  it('has no blank values', () => {
+    for (const v of Object.values(LEAVE_CATEGORY_LABEL)) {
+      expect(v.length).toBeGreaterThan(0)
+    }
+  })
+})
+
+// ── LEAVE_LIMIT_TYPE_LABEL ────────────────────────────────────────────────────
+
+describe('LEAVE_LIMIT_TYPE_LABEL', () => {
+  it('PER_YEAR = "ต่อปี"', () => {
+    expect(LEAVE_LIMIT_TYPE_LABEL['PER_YEAR']).toBe('ต่อปี')
+  })
+
+  it('PER_EVENT = "ต่อครั้ง"', () => {
+    expect(LEAVE_LIMIT_TYPE_LABEL['PER_EVENT']).toBe('ต่อครั้ง')
+  })
+
+  it('MEDICAL_BASED = "ตามใบรับรองแพทย์"', () => {
+    expect(LEAVE_LIMIT_TYPE_LABEL['MEDICAL_BASED']).toBe('ตามใบรับรองแพทย์')
+  })
+
+  it('contains exactly 3 entries', () => {
+    expect(Object.keys(LEAVE_LIMIT_TYPE_LABEL)).toHaveLength(3)
+  })
+
+  it('has no blank values', () => {
+    for (const v of Object.values(LEAVE_LIMIT_TYPE_LABEL)) {
+      expect(v.length).toBeGreaterThan(0)
+    }
+  })
+})
+
+// ── DAY_COUNT_TYPE_LABEL ──────────────────────────────────────────────────────
+
+describe('DAY_COUNT_TYPE_LABEL', () => {
+  it('WORKING_DAY = "วันทำการ"', () => {
+    expect(DAY_COUNT_TYPE_LABEL['WORKING_DAY']).toBe('วันทำการ')
+  })
+
+  it('CALENDAR_DAY = "วันปฏิทิน"', () => {
+    expect(DAY_COUNT_TYPE_LABEL['CALENDAR_DAY']).toBe('วันปฏิทิน')
+  })
+
+  it('contains exactly 2 entries', () => {
+    expect(Object.keys(DAY_COUNT_TYPE_LABEL)).toHaveLength(2)
+  })
+
+  it('has no blank values', () => {
+    for (const v of Object.values(DAY_COUNT_TYPE_LABEL)) {
+      expect(v.length).toBeGreaterThan(0)
+    }
   })
 })

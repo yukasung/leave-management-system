@@ -17,14 +17,12 @@ export default async function ProfilePage() {
       name:      true,
       email:     true,
       avatarUrl: true,
-      phone:     true,
-      department: { select: { name: true } },
       employee: {
         select: {
           employeeCode: true,
           firstName: true,
           lastName:  true,
-          position:  true,
+          phone:     true,          positionRef: { select: { name: true } },      department: { select: { name: true } },
           isAdmin:   true,
         },
       },
@@ -39,12 +37,12 @@ export default async function ProfilePage() {
     email:        user.email,
     isAdmin:      user.employee?.isAdmin ?? false,
     avatarUrl:    user.avatarUrl ?? null,
-    phone:        user.phone      ?? null,
-    department:   user.department?.name ?? null,
+    phone:        user.employee?.phone ?? null,
+    department:   user.employee?.department?.name ?? null,
     employeeCode: user.employee?.employeeCode ?? null,
     firstName:    user.employee?.firstName ?? null,
     lastName:     user.employee?.lastName  ?? null,
-    position:     user.employee?.position  ?? null,
+    position:     user.employee?.positionRef?.name ?? null,
   }
 
   const layoutUser = {

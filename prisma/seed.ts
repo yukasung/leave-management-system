@@ -96,7 +96,7 @@ async function main() {
   // Admin user (no department)
   const admin = await prisma.user.upsert({
     where: { email: 'admin@company.com' },
-    update: {},
+    update: { name: 'Admin', password: hashedPassword },
     create: {
       email: 'admin@company.com',
       name: 'Admin',
@@ -107,7 +107,7 @@ async function main() {
   // Manager user
   const manager = await prisma.user.upsert({
     where: { email: 'manager@company.com' },
-    update: {},
+    update: { name: 'Manager', password: hashedPassword },
     create: {
       email: 'manager@company.com',
       name: 'Manager',
@@ -115,14 +115,11 @@ async function main() {
     },
   })
 
-  // Department with manager
+  // Department
   const department = await prisma.department.upsert({
     where: { name: 'IT Department' },
-    update: { managerId: manager.id },
-    create: {
-      name: 'IT Department',
-      managerId: manager.id,
-    },
+    update: {},
+    create: { name: 'IT Department' },
   })
 
   // Additional departments per company structure
@@ -143,14 +140,7 @@ async function main() {
       email: 'employee@company.com',
       name: 'Employee',
       password: hashedPassword,
-      departmentId: department.id,
     },
-  })
-
-  // Assign manager to department
-  await prisma.user.update({
-    where: { id: manager.id },
-    data: { departmentId: department.id },
   })
 
   // Employee records — required so auth.ts can read isAdmin / isManager
@@ -161,8 +151,6 @@ async function main() {
       employeeCode: 'ADMIN001',
       firstName: 'Admin',
       lastName: 'System',
-      email: 'admin@company.com',
-      position: 'System Administrator',
       isAdmin: true,
       isManager: false,
       isProbation: false,
@@ -178,8 +166,6 @@ async function main() {
       employeeCode: 'MGR001',
       firstName: 'Manager',
       lastName: 'System',
-      email: 'manager@company.com',
-      position: 'IT Manager',
       isAdmin: false,
       isManager: true,
       isProbation: false,
@@ -196,8 +182,6 @@ async function main() {
       employeeCode: 'EMP001',
       firstName: 'Employee',
       lastName: 'System',
-      email: 'employee@company.com',
-      position: 'Developer',
       isAdmin: false,
       isManager: false,
       isProbation: false,

@@ -71,7 +71,7 @@ export default async function LeaveHistoryPage({
 
   const ORDER_BY: Record<SortKey, object> = {
     name:       { user: { name: sortDir } },
-    department: { user: { department: { name: sortDir } } },
+    department: { user: { employee: { department: { name: sortDir } } } },
     leaveType:  { leaveType: { name: sortDir } },
     startDate:  { leaveStartDateTime: sortDir },
     endDate:    { leaveEndDateTime: sortDir },
@@ -96,7 +96,7 @@ export default async function LeaveHistoryPage({
       ? {
           user: {
             ...(employee     ? { name: { contains: employee, mode: 'insensitive' as const } } : {}),
-            ...(departmentId ? { departmentId } : {}),
+            ...(departmentId ? { employee: { departmentId } } : {}),
           },
         }
       : {}),
@@ -112,8 +112,12 @@ export default async function LeaveHistoryPage({
         user: {
           select: {
             name: true,
-            employee: { select: { employeeCode: true } },
-            department: { select: { name: true } },
+            employee: {
+              select: {
+                employeeCode: true,
+                department: { select: { name: true } },
+              },
+            },
           },
         },
         leaveType: { select: { name: true, leaveCategory: { select: { name: true, color: true } } } },
@@ -247,7 +251,7 @@ export default async function LeaveHistoryPage({
                       rowNumber={skip + index + 1}
                       employeeCode={req.user.employee?.employeeCode ?? null}
                       userName={req.user.name}
-                      departmentName={req.user.department?.name ?? null}
+                      departmentName={req.user.employee?.department?.name ?? null}
                       leaveCategory={req.leaveType.leaveCategory}
                       leaveTypeName={req.leaveType.name}
                       startDate={formatDate(req.leaveStartDateTime)}

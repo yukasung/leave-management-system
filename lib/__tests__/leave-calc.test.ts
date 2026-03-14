@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   countWorkingDays,
   calculateLeaveDuration,
+  calculateCalendarDays,
+  formatLeaveDuration,
 } from '../leave-calc'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -163,5 +165,112 @@ describe('calculateLeaveDuration — public holidays', () => {
     const [s, e] = fullRange('2026-01-05', '2026-01-16')
     const res = calculateLeaveDuration(s, e, holidays)
     expect(res.totalDays).toBeCloseTo(8)
+  })
+})
+
+// ── calculateLeaveDuration — error paths ──────────────────────────────────────
+
+describe('calculateLeaveDuration — error paths', () => {
+  it('returns error when end equals start', () => {
+    const s = new Date('2026-01-05T09:30:00')
+    const res = calculateLeaveDuration(s, s)
+    expect(res.totalDays).toBe(0)
+    expect(res.error).toBeDefined()
+  })
+
+  it('returns error when end is before start', () => {
+    const s = new Date('2026-01-05T09:30:00')
+    const e = new Date('2026-01-05T08:00:00')
+    const res = calculateLeaveDuration(s, e)
+    expect(res.totalDays).toBe(0)
+    expect(res.error).toBeDefined()
+  })
+
+  it('returns error when leave starts and ends entirely on a public holiday', () => {
+    const holidays = new Set(['2026-01-05'])
+    const [s, e] = fullRange('2026-01-05', '2026-01-05')
+    const res = calculateLeaveDuration(s, e, holidays)
+    expect(res.totalDays).toBe(0)
+    expect(res.error).toBeDefined()
+  })
+})
+
+// ── calculateCalendarDays ─────────────────────────────────────────────────────
+
+describe('calculateCalendarDays', () => {
+  it('returns 1 day for same-day range', () => {
+    const d = new Date('2026-01-05T09:00:00')
+    const res = calculateCalendarDays(d, d)
+    expect(res.totalDays).toBe(1)
+    expect(res.error).toBeUndefined()
+  })
+
+  it('returns 7 days for a Mon–Sun range', () => {
+    const s = new Date('2026-01-05T00:00:00')
+    const e = new Date('2026-01-11T23:59:00')
+    const res = calculateCalendarDays(s, e)
+    expect(res.totalDays).toBe(7)
+  })
+
+  it('counts weekends — 14-day range = 14 days', () => {
+    const s = new Date('2026-01-05T00:00:00')
+    const e = new Date('2026-01-18T23:59:00')
+    const res = calculateCalendarDays(s, e)
+    expect(res.totalDays).toBe(14)
+  })
+
+  it('counts public holidays — they do NOT reduce the total', () => {
+    // If a holiday falls in the range it is still counted (maternity leave)
+    const s = new Date('2026-01-05T00:00:00')
+    const e = new Date('2026-01-09T23:59:00')    // 5 calendar days
+    const res = calculateCalendarDays(s, e)
+    expect(res.totalDays).toBe(5)
+  })
+
+  it('returns correct displayLabel', () => {
+    const s = new Date('2026-01-05T00:00:00')
+    const e = new Date('2026-02-05T00:00:00')    // 32 calendar days
+    const res = calculateCalendarDays(s, e)
+    expect(res.displayLabel).toBe('32 วันปฏิทิน')
+  })
+
+  it('returns error when end is before start', () => {
+    const s = new Date('2026-01-10T00:00:00')
+    const e = new Date('2026-01-05T00:00:00')
+    const res = calculateCalendarDays(s, e)
+    expect(res.totalDays).toBe(0)
+    expect(res.error).toBeDefined()
+  })
+})
+
+// ── formatLeaveDuration ───────────────────────────────────────────────────────
+
+describe('formatLeaveDuration', () => {
+  it('formats exactly 1 day', () => {
+    expect(formatLeaveDuration(1)).toBe('1 วันทำการ')
+  })
+
+  it('formats 5 full days', () => {
+    expect(formatLeaveDuration(5)).toBe('5 วันทำการ')
+  })
+
+  it('formats 1.5 days', () => {
+    expect(formatLeaveDuration(1.5)).toBe('1.5 วันทำการ')
+  })
+
+  it('formats 0.5 day as hours (0.5 * 7 = 3.5 ชั่วโมง)', () => {
+    expect(formatLeaveDuration(0.5)).toBe('3.5 ชั่วโมง')
+  })
+
+  it('formats ~0.143 as 1 ชั่วโมง (1h / 7h)', () => {
+    expect(formatLeaveDuration(1 / 7)).toBe('1 ชั่วโมง')
+  })
+
+  it('formats ~0.357 as 2.5 ชั่วโมง (2.5h / 7h)', () => {
+    expect(formatLeaveDuration(2.5 / 7)).toBe('2.5 ชั่วโมง')
+  })
+
+  it('formats 0 as 0 ชั่วโมง', () => {
+    expect(formatLeaveDuration(0)).toBe('0 ชั่วโมง')
   })
 })

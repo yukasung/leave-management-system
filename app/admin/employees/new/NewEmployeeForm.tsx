@@ -7,7 +7,7 @@ import AvatarUploader from '../AvatarUploader'
 import { User, Mail, Phone, Hash } from 'lucide-react'
 
 type Department = { id: string; name: string; manager: { employee: { id: string } | null } | null }
-type ManagerOption  = { id: string; firstName: string; lastName: string; position: string; department: { name: string } | null }
+type ManagerOption  = { id: string; firstName: string; lastName: string; positionRef: { name: string } | null; department: { name: string } | null }
 type PositionOption = { id: string; name: string; departmentId?: string | null }
 
 const initialState: CreateEmployeeState = {}
@@ -248,7 +248,7 @@ export default function NewEmployeeForm({
                           />
                         </td>
                         <td className="px-3 py-2.5 font-medium text-foreground">{m.firstName} {m.lastName}</td>
-                        <td className="px-3 py-2.5 text-muted-foreground">{m.position || <span className="italic opacity-50">ไม่ระบุ</span>}</td>
+                        <td className="px-3 py-2.5 text-muted-foreground">{m.positionRef?.name || <span className="italic opacity-50">ไม่ระบุ</span>}</td>
                         <td className="px-3 py-2.5 text-center text-muted-foreground">{m.department?.name ?? <span className="italic opacity-50">ไม่ระบุ</span>}</td>
                       </tr>
                     ))

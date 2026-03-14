@@ -33,6 +33,12 @@ const ADMIN_BOTTOM_ITEMS = [
   { href: '/admin/employees',   icon: Users,     label: 'พนักงาน' },
 ]
 
+const ADMIN_PERSONAL_ITEMS = [
+  { href: '/leave-request', icon: CalendarPlus, label: 'ขอลา'         },
+  { href: '/my-leaves',    icon: CalendarDays, label: 'การลาของฉัน' },
+  { href: '/leave-balance', icon: Wallet,      label: 'ยอดวันลา'    },
+]
+
 const LEAVE_REPORT_ITEMS = [
   { href: '/hr/leave-history',        icon: ClipboardList, label: 'ประวัติการลา'     },
   { href: '/hr/leave-balance-report', icon: Wallet,        label: 'ยอดวันลาคงเหลือ' },
@@ -115,6 +121,42 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
         {/* Top nav items (admin: dashboard + leave requests; users: all items) */}
         {(isAdmin ? ADMIN_TOP_ITEMS : USER_NAV_ITEMS).map(({ href: itemPath, icon: Icon, label }) => {
+          const active = pathname === itemPath || pathname.startsWith(itemPath + '/')
+          return (
+            <Link
+              key={itemPath}
+              href={href(itemPath)}
+              title={collapsed ? label : undefined}
+              className={cn(
+                'group relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
+                'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                active
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                collapsed ? 'justify-center px-2' : 'px-2.5',
+              )}
+            >
+              {active && !collapsed && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-5 rounded-r-full bg-primary" />
+              )}
+              <Icon
+                className={cn(
+                  'h-4 w-4 shrink-0 transition-colors',
+                  active
+                    ? 'text-primary'
+                    : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground',
+                )}
+              />
+              {!collapsed && <span className="truncate">{label}</span>}
+              {!collapsed && active && (
+                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary/70" />
+              )}
+            </Link>
+          )
+        })}
+
+        {/* Personal leave links — visible to both admin and regular users */}
+        {isAdmin && ADMIN_PERSONAL_ITEMS.map(({ href: itemPath, icon: Icon, label }) => {
           const active = pathname === itemPath || pathname.startsWith(itemPath + '/')
           return (
             <Link

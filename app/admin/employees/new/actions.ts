@@ -66,44 +66,63 @@ export async function createEmployee(
       return { success: false, errors }
     }
 
-    // ── Resolve position name from id ─────────────────────────────────────────
-    const positionRecord = await prisma.position.findUnique({
-      where: { id: positionId! },
-      select: { name: true },
-    })
-    if (!positionRecord) {
-      return { success: false, errors: { positionId: 'ไม่พบตำแหน่งที่เลือก' } }
-    }
-    const position = positionRecord.name
-
     // ── Uniqueness checks (parallel) ─────────────────────────────────────────
     const [existingCode, existingEmail] = await Promise.all([
       prisma.employee.findUnique({ where: { employeeCode }, select: { id: true } }),
-      prisma.employee.findUnique({ where: { email },        select: { id: true } }),
+      prisma.user.findUnique({ where: { email }, select: { id: true } }),
     ])
 
-    if (existingCode) errors.employeeCode = 'รหัสพนักงานนี้ถูกใช้งานแล้ว'
-    if (existingEmail) errors.email       = 'อีเมลนี้ถูกใช้งานแล้ว'
+    if (existingCode)  errors.employeeCode = 'รหัสพนักงานนี้ถูกใช้งานแล้ว'
+    if (existingEmail) errors.email        = 'อีเมลนี้ถูกใช้งานแล้ว'
 
     if (Object.keys(errors).length > 0) {
       return { success: false, errors }
     }
 
-    // ── Create employee + audit log ─────────────────────────────────────────
+    // ── Pre-compute values that can't run inside transaction ─────────────────
+    const currentYear     = new Date().getFullYear()
+    const defaultPassword = await hash('admin1234', 10)
+
+    const [leaveTypes, existingUser] = await Promise.all([
+      prisma.leaveType.findMany({ where: { maxDaysPerYear: { not: null } }, select: { id: true, maxDaysPerYear: true } }),
+      prisma.user.findUnique({ where: { email }, select: { id: true } }),
+    ])
+
+    // ── Single atomic transaction: Employee + User + LeaveBalances + AuditLog ─
     const employee = await prisma.$transaction(async (tx) => {
+      // 1. Resolve or create User account
+      let userId: string
+      if (existingUser) {
+        userId = existingUser.id
+        // Ensure avatarUrl is synced on existing user
+        await tx.user.update({
+          where: { id: userId },
+          data: { avatarUrl: avatarUrl ?? null },
+        })
+      } else {
+        const newUser = await tx.user.create({
+          data: {
+            email,
+            name:         `${firstName} ${lastName}`,
+            password:     defaultPassword,
+            avatarUrl:    avatarUrl ?? undefined,
+          },
+        })
+        userId = newUser.id
+      }
+
+      // 2. Create Employee linked to User
       const emp = await tx.employee.create({
         data: {
           employeeCode,
           firstName,
           lastName,
-          email,
           phone,
-          avatarUrl,
-          position,
           isAdmin,
           isManager,
           isProbation,
-          isActive:     true,
+          isActive: true,
+          userId,
           ...(positionId   ? { positionRef: { connect: { id: positionId   } } } : {}),
           ...(departmentId ? { department:  { connect: { id: departmentId } } } : {}),
           ...(approverIds.length > 0 ? { approvers: { connect: approverIds.map(id => ({ id })) } } : {}),
@@ -111,6 +130,19 @@ export async function createEmployee(
         select: { id: true, employeeCode: true, firstName: true, lastName: true },
       })
 
+      // 3. Create LeaveBalances for current year
+      await tx.leaveBalance.createMany({
+        data: leaveTypes.map((lt) => ({
+          userId,
+          leaveTypeId: lt.id,
+          year:        currentYear,
+          totalDays:   lt.maxDaysPerYear ?? 0,
+          usedDays:    0,
+        })),
+        skipDuplicates: true,
+      })
+
+      // 4. Audit log
       await tx.auditLog.create({
         data: {
           userId:      session.user.id,
@@ -123,40 +155,6 @@ export async function createEmployee(
 
       return emp
     })
-
-    // ── Create User account + LeaveBalances for current year ─────────────────
-    const currentYear = new Date().getFullYear()
-    const [leaveTypes, existingUser] = await Promise.all([
-      prisma.leaveType.findMany({ where: { maxDaysPerYear: { not: null } }, select: { id: true, maxDaysPerYear: true } }),
-      prisma.user.findUnique({ where: { email }, select: { id: true } }),
-    ])
-
-    let userId: string
-    if (existingUser) {
-      userId = existingUser.id
-      await prisma.employee.update({ where: { id: employee.id }, data: { userId } })
-    } else {
-      const defaultPassword = await hash('admin1234', 10)
-      const newUser = await prisma.user.create({
-        data: {
-          email,
-          name: `${firstName} ${lastName}`,
-          password: defaultPassword,
-        },
-      })
-      userId = newUser.id
-      await prisma.employee.update({ where: { id: employee.id }, data: { userId } })
-    }
-
-    await Promise.all(
-      leaveTypes.map((lt) =>
-        prisma.leaveBalance.upsert({
-          where: { userId_leaveTypeId_year: { userId, leaveTypeId: lt.id, year: currentYear } },
-          create: { userId, leaveTypeId: lt.id, year: currentYear, totalDays: lt.maxDaysPerYear ?? 0, usedDays: 0 },
-          update: {},
-        })
-      )
-    )
 
     revalidatePath('/admin/employees')
 

@@ -32,7 +32,7 @@ export default async function EmployeesPage({
     employeeCode: { employeeCode: order },
     firstName:    [{ firstName: order }, { lastName: order }],
     department:   [{ department: { name: order } }, { firstName: 'asc' as const }],
-    position:     [{ position: order }, { firstName: 'asc' as const }],
+    position:     [{ positionRef: { name: order } }, { firstName: 'asc' as const }],
     isActive:     [{ isActive: order === 'asc' ? 'desc' as const : 'asc' as const }, { firstName: 'asc' as const }],
   }
 
@@ -43,7 +43,6 @@ export default async function EmployeesPage({
             { firstName: { contains: search, mode: 'insensitive' as const } },
             { lastName: { contains: search, mode: 'insensitive' as const } },
             { employeeCode: { contains: search, mode: 'insensitive' as const } },
-            { email: { contains: search, mode: 'insensitive' as const } },
           ],
         }
       : {}),
@@ -61,9 +60,8 @@ export default async function EmployeesPage({
         employeeCode: true,
         firstName: true,
         lastName: true,
-        email: true,
-        avatarUrl: true,
-        position: true,
+        positionRef: { select: { name: true } },
+        user: { select: { email: true, avatarUrl: true } },
         isAdmin: true,
         isManager: true,
         isActive: true,
@@ -185,9 +183,9 @@ export default async function EmployeesPage({
                       employeeCode={emp.employeeCode}
                       firstName={emp.firstName}
                       lastName={emp.lastName}
-                      email={emp.email}
-                      avatarUrl={emp.avatarUrl ?? null}
-                      position={emp.position ?? null}
+                      email={emp.user?.email ?? ''}
+                      avatarUrl={emp.user?.avatarUrl ?? null}
+                      position={emp.positionRef?.name ?? null}
                       isAdmin={emp.isAdmin}
                       isManager={emp.isManager}
                       isActive={emp.isActive}

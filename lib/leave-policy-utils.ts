@@ -45,21 +45,18 @@ export const DAY_COUNT_TYPE_LABEL: Record<DayCountType, string> = {
 export function buildPolicySummary(lt: LeaveTypePolicy): string {
   const parts: string[] = []
 
-  if (lt.leaveCategory?.name) parts.push(lt.leaveCategory.name)
-
   if (lt.maxDaysPerYear !== null) {
-    parts.push(`ไม่เกิน ${lt.maxDaysPerYear} วัน${LEAVE_LIMIT_TYPE_LABEL[lt.leaveLimitType]}`)
-  } else if (lt.maxDaysPerRequest !== null) {
-    parts.push(`ไม่เกิน ${lt.maxDaysPerRequest} วัน${LEAVE_LIMIT_TYPE_LABEL[lt.leaveLimitType]}`)
-  } else if (lt.leaveLimitType === 'MEDICAL_BASED') {
+    parts.push(`ไม่เกิน ${lt.maxDaysPerYear} วันต่อปี`)
+  }
+  if (lt.maxDaysPerRequest !== null) {
+    parts.push(`ไม่เกิน ${lt.maxDaysPerRequest} วันต่อครั้ง`)
+  }
+  if (lt.leaveLimitType === 'MEDICAL_BASED') {
     parts.push('ตามใบรับรองแพทย์')
   }
-
-  parts.push(DAY_COUNT_TYPE_LABEL[lt.dayCountType])
-
   if (lt.requiresAttachment) parts.push('ต้องแนบเอกสาร')
   if (!lt.deductFromBalance) parts.push('ไม่หักสิทธิ์')
   if (!lt.allowDuringProbation) parts.push('ไม่อนุญาตช่วงทดลองงาน')
 
-  return parts.join(' · ')
+  return parts.length ? parts.join(' · ') : 'ไม่มีเงื่อนไขพิเศษ'
 }

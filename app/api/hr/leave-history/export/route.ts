@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       : {}),
     user: {
       ...(employee     ? { name: { contains: employee, mode: 'insensitive' as const } } : {}),
-      ...(departmentId ? { departmentId } : {}),
+      ...(departmentId ? { employee: { departmentId } } : {}),
     },
   }
 
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
     totalDays:  { totalDays: dirParam },
     status:     { status: dirParam },
     leaveType:  { leaveType: { name: dirParam } },
-    department: { user: { department: { name: dirParam } } },
+    department: { user: { employee: { department: { name: dirParam } } } },
     createdAt:  { createdAt: dirParam },
   }
   const orderBy = SORT_MAP[sortParam] ?? SORT_MAP['startDate']
@@ -74,8 +74,7 @@ export async function GET(req: NextRequest) {
       user: {
         select: {
           name:       true,
-          employee:   { select: { employeeCode: true } },
-          department: { select: { name: true } },
+          employee:   { select: { employeeCode: true, department: { select: { name: true } } } },
         },
       },
       leaveType: { select: { name: true, leaveCategory: { select: { name: true } } } },
@@ -107,7 +106,7 @@ export async function GET(req: NextRequest) {
     i + 1,
     r.user.name,
     r.user.employee?.employeeCode ?? '',
-    r.user.department?.name ?? '',
+    r.user.employee?.department?.name ?? '',
     r.leaveType.leaveCategory?.name ?? '',
     r.leaveType.name,
     formatThaiDateShort(r.leaveStartDateTime),

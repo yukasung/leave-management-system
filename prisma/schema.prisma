@@ -12,10 +12,6 @@ model User {
   name          String
   password      String?
   avatarUrl     String?
-  phone         String?
-  departmentId  String?
-  department    Department? @relation("DepartmentMembers", fields: [departmentId], references: [id])
-  managedDepartments Department[] @relation("DepartmentManager")
   leaveRequests LeaveRequest[]
   leaveBalances LeaveBalance[]
   approvals     Approval[]
@@ -28,9 +24,6 @@ model User {
 model Department {
   id        String     @id @default(uuid())
   name      String     @unique
-  managerId String?
-  manager   User?      @relation("DepartmentManager", fields: [managerId], references: [id])
-  users     User[]     @relation("DepartmentMembers")
   employees Employee[]
   positions Position[]
   createdAt DateTime   @default(now())
@@ -167,9 +160,7 @@ model Employee {
   employeeCode String      @unique
   firstName    String
   lastName     String
-  email        String      @unique
   phone        String?
-  avatarUrl    String?
 
   // 1:1 link to User account (optional — employee may not have a login yet)
   userId       String?     @unique
@@ -178,7 +169,6 @@ model Employee {
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
 
-  position     String
   positionId   String?
   positionRef  Position?   @relation(fields: [positionId], references: [id])
 

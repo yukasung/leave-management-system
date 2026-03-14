@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
         select: {
           name: true,
           email: true,
-          department: { select: { name: true } },
+          employee: { select: { department: { select: { name: true } } } },
         },
       },
       leaveType: { select: { name: true } },
@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
     index + 1,
     req.user.name,
     req.user.email,
-    req.user.department?.name ?? '',
+    req.user.employee?.department?.name ?? '',
     req.leaveType.name,
     formatThaiDateShort(req.leaveStartDateTime),
     formatThaiDateShort(req.leaveEndDateTime),

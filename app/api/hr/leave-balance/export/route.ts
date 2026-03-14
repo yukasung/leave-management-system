@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     ...(leaveCategory ? { leaveType: { leaveCategory: { key: leaveCategory } } } : {}),
     user: {
       ...(employee     ? { name: { contains: employee, mode: 'insensitive' as const } } : {}),
-      ...(departmentId ? { departmentId } : {}),
+      ...(departmentId ? { employee: { departmentId } } : {}),
     },
   }
 
@@ -34,8 +34,7 @@ export async function GET(req: NextRequest) {
       user: {
         select: {
           name:       true,
-          employee:   { select: { employeeCode: true } },
-          department: { select: { name: true } },
+          employee:   { select: { employeeCode: true, department: { select: { name: true } } } },
         },
       },
       leaveType: { select: { name: true, leaveCategory: { select: { name: true } } } },
@@ -63,7 +62,7 @@ export async function GET(req: NextRequest) {
       i + 1,
       b.user.name,
       b.user.employee?.employeeCode ?? '',
-      b.user.department?.name ?? '',
+      b.user.employee?.department?.name ?? '',
       b.leaveType.leaveCategory?.name ?? '',
       b.leaveType.name,
       parseFloat(b.totalDays.toFixed(2)),

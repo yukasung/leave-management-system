@@ -31,6 +31,7 @@ export async function updateEmployee(
     const positionId   = (formData.get('positionId')   as string | null)?.trim() || null
     const phone        = (formData.get('phone')        as string | null)?.trim() || null
     const avatarUrl    = (formData.get('avatarUrl')    as string | null)?.trim() || null
+
     const role         = formData.get('role') as string | null
     const isAdmin      = role === 'admin'
     const isManager    = role === 'manager'
@@ -65,20 +66,10 @@ export async function updateEmployee(
       return { success: false, errors }
     }
 
-    // ── Resolve position name from id ──────────────────────────────────────
-    const positionRecord = await prisma.position.findUnique({
-      where: { id: positionId! },
-      select: { name: true },
-    })
-    if (!positionRecord) {
-      return { success: false, errors: { positionId: 'ไม่พบตำแหน่งที่เลือก' } }
-    }
-    const position = positionRecord.name
-
     // ── Verify employee exists ────────────────────────────────────────────────
     const existing = await prisma.employee.findUnique({
       where: { id },
-      select: { id: true, firstName: true, lastName: true, employeeCode: true },
+      select: { id: true, firstName: true, lastName: true, employeeCode: true, userId: true },
     })
     if (!existing) {
       return { success: false, errors: { general: 'ไม่พบข้อมูลพนักงาน' } }
@@ -89,9 +80,8 @@ export async function updateEmployee(
       await tx.employee.update({
         where: { id },
         data: {
-          position,
           phone,
-          avatarUrl,
+
           positionRef: positionId
             ? { connect: { id: positionId } }
             : { disconnect: true },
@@ -105,13 +95,21 @@ export async function updateEmployee(
         },
       })
 
+      // Keep User fields in sync
+      if (existing.userId) {
+        await tx.user.update({
+          where: { id: existing.userId },
+          data: { avatarUrl: avatarUrl ?? null },
+        })
+      }
+
       await tx.auditLog.create({
         data: {
           userId:      session.user.id,
           action:      'UPDATE_EMPLOYEE',
           entityType:  'Employee',
           entityId:    id,
-          description: `Updated employee ${existing.firstName} ${existing.lastName} (${existing.employeeCode}): isAdmin=${isAdmin}, position=${position}`,
+          description: `Updated employee ${existing.firstName} ${existing.lastName} (${existing.employeeCode}): isAdmin=${isAdmin}, positionId=${positionId}`,
         },
       })
     })

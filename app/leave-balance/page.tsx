@@ -9,15 +9,16 @@ export default async function LeaveBalancePage() {
 
   const currentYear = new Date().getFullYear()
 
-  const [balances, specialLeaveTypes, usedSpecial, dbUser] = await Promise.all([
+  const [balances, allQuotaLeaveTypes, specialLeaveTypes, usedSpecial, dbUser] = await Promise.all([
     prisma.leaveBalance.findMany({
       where: { userId: session.user.id },
-      orderBy: { leaveType: { name: 'asc' } },
-      include: {
-        leaveType: {
-          select: { name: true, maxDaysPerYear: true, maxDaysPerRequest: true },
-        },
-      },
+      select: { leaveTypeId: true, totalDays: true, usedDays: true },
+    }),
+    // All leave types that have a yearly cap — shown regardless of whether the user has a balance record
+    prisma.leaveType.findMany({
+      where: { maxDaysPerYear: { not: null } },
+      select: { id: true, name: true, maxDaysPerYear: true },
+      orderBy: { name: 'asc' },
     }),
     // Special leave types have no yearly quota — fetched directly
     prisma.leaveType.findMany({
@@ -45,6 +46,20 @@ export default async function LeaveBalancePage() {
     }),
   ])
 
+  // Map leaveTypeId → balance record
+  const balanceMap = new Map(balances.map((b) => [b.leaveTypeId, b]))
+
+  // Merge all quota leave types with balance data (fallback to 0 if no record)
+  const quotaItems = allQuotaLeaveTypes.map((lt) => {
+    const b = balanceMap.get(lt.id)
+    return {
+      id:        lt.id,
+      name:      lt.name,
+      totalDays: b?.totalDays ?? lt.maxDaysPerYear ?? 0,
+      usedDays:  b?.usedDays  ?? 0,
+    }
+  })
+
   // Map leaveTypeId → usedDays for special types
   const specialUsedMap = new Map(
     usedSpecial.map((r) => [r.leaveTypeId, r._sum.totalDays ?? 0])
@@ -67,20 +82,18 @@ export default async function LeaveBalancePage() {
           <p className="text-sm text-muted-foreground mt-0.5">ปี {new Date().getFullYear() + 543}</p>
         </div>
 
-        {balances.length === 0 && specialLeaveTypes.length === 0 ? (
+        {quotaItems.length === 0 && specialLeaveTypes.length === 0 ? (
           <div className="rounded-xl border border-border bg-card shadow-sm py-20 text-center text-muted-foreground">
             ยังไม่มีข้อมูลวันลาสะสม
           </div>
         ) : (() => {
-          const quotaBalances = balances  // All balances are now annual-quota types
-
           return (
             <div className="space-y-6">
               {/* ── Section 1: Annual quota leave types ── */}
-              {quotaBalances.length > 0 && (
+              {quotaItems.length > 0 && (
                 <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
                   <div className="px-5 py-3 bg-muted/40 border-b border-border">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ประเภทลาแบบโควต้ารายปี</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ลาประจำปี</p>
                   </div>
                   <table className="w-full text-sm">
                     <thead className="bg-muted/20 border-b border-border">
@@ -92,21 +105,21 @@ export default async function LeaveBalancePage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {quotaBalances.map((balance) => {
-                        const remaining = balance.totalDays - balance.usedDays
+                      {quotaItems.map((item) => {
+                        const remaining = item.totalDays - item.usedDays
                         const isLow   = remaining <= 2 && remaining > 0
                         const isEmpty = remaining <= 0
                         const fmt = (n: number) => parseFloat(n.toFixed(2))
                         return (
-                          <tr key={balance.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition">
+                          <tr key={item.id} className="hover:bg-primary/3 dark:hover:bg-primary/10 transition">
                             <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">
-                              {balance.leaveType.name}
+                              {item.name}
                             </td>
                             <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                              {fmt(balance.totalDays)}
+                              {fmt(item.totalDays)}
                             </td>
                             <td className="px-5 py-4 text-center text-muted-foreground whitespace-nowrap">
-                              {fmt(balance.usedDays)}
+                              {fmt(item.usedDays)}
                             </td>
                             <td className="px-5 py-4 text-center whitespace-nowrap">
                               <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold border ${
@@ -131,7 +144,7 @@ export default async function LeaveBalancePage() {
               {specialLeaveTypes.length > 0 && (
                 <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
                   <div className="px-5 py-3 bg-muted/40 border-b border-border">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ประเภทลาตามสิทธิ์พิเศษ</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ลาพิเศษ</p>
                   </div>
                   <table className="w-full text-sm">
                     <thead className="bg-muted/20 border-b border-border">

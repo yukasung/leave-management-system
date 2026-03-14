@@ -6,7 +6,7 @@ import { updateEmployee, deactivateEmployee, reactivateEmployee, type UpdateEmpl
 import AvatarUploader from '../AvatarUploader'
 
 type Department   = { id: string; name: string; manager: { employee: { id: string } | null } | null }
-type ManagerOption  = { id: string; firstName: string; lastName: string; position: string; department: { name: string } | null }
+type ManagerOption  = { id: string; firstName: string; lastName: string; positionRef: { name: string } | null; department: { name: string } | null }
 type PositionOption = { id: string; name: string; departmentId?: string | null }
 
 export type EmployeeData = {
@@ -14,10 +14,9 @@ export type EmployeeData = {
   employeeCode: string
   firstName:    string
   lastName:     string
-  email:        string
+  email:        string   // from User.email (read-only)
   phone:        string | null
   avatarUrl:    string | null
-  position:     string
   positionId:   string | null
   isAdmin:      boolean
   isManager:    boolean
@@ -250,7 +249,7 @@ export default function EditEmployeeForm({
                                   />
                                 </td>
                                 <td className="px-3 py-2.5 font-medium text-foreground">{m.firstName} {m.lastName}</td>
-                                <td className="px-3 py-2.5 text-muted-foreground">{m.position || <span className="italic opacity-50">ไม่ระบุ</span>}</td>
+                                <td className="px-3 py-2.5 text-muted-foreground">{m.positionRef?.name || <span className="italic opacity-50">ไม่ระบุ</span>}</td>
                                 <td className="px-3 py-2.5 text-center text-muted-foreground">{m.department?.name ?? <span className="italic opacity-50">ไม่ระบุ</span>}</td>
                               </tr>
                             ))

@@ -17,27 +17,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        })
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email as string },
+          })
 
-        if (!user || !user.password) return null
+          if (!user || !user.password) return null
 
-        const isValid = await compare(credentials.password as string, user.password)
-        if (!isValid) return null
+          const isValid = await compare(credentials.password as string, user.password)
+          if (!isValid) return null
 
-        // Resolve admin flag from employee record
-        const employee = await prisma.employee.findUnique({
-          where: { userId: user.id },
-          select: { isAdmin: true, isManager: true },
-        })
+          // Resolve admin flag from employee record
+          const employee = await prisma.employee.findUnique({
+            where: { userId: user.id },
+            select: { isAdmin: true, isManager: true },
+          })
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          isAdmin: employee?.isAdmin ?? false,
-          isManager: employee?.isManager ?? false,
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            isAdmin: employee?.isAdmin ?? false,
+            isManager: employee?.isManager ?? false,
+          }
+        } catch (err) {
+          console.error('[auth.authorize] error:', err)
+          return null
         }
       },
     }),

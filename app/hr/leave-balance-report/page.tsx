@@ -58,7 +58,7 @@ export default async function LeaveBalanceReportPage({
     ...(leaveCategory  ? { leaveType: { leaveCategory: { key: leaveCategory } } } : {}),
     user: {
       ...(employee     ? { name: { contains: employee, mode: 'insensitive' as const } } : {}),
-      ...(departmentId ? { departmentId } : {}),
+      ...(departmentId ? { employee: { departmentId } } : {}),
     },
   }
 
@@ -73,8 +73,12 @@ export default async function LeaveBalanceReportPage({
         user: {
           select: {
             name: true,
-            employee: { select: { employeeCode: true } },
-            department: { select: { name: true } },
+            employee: {
+              select: {
+                employeeCode: true,
+                department: { select: { name: true } },
+              },
+            },
           },
         },
         leaveType: { select: { name: true, leaveCategory: { select: { name: true, color: true } } } },
@@ -205,7 +209,7 @@ export default async function LeaveBalanceReportPage({
 
                         {/* Department */}
                         <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">
-                          {b.user.department?.name ?? <span className="italic opacity-40">—</span>}
+                          {b.user.employee?.department?.name ?? <span className="italic opacity-40">—</span>}
                         </td>
 
                         {/* Leave category */}
