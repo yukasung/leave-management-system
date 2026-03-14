@@ -20,6 +20,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           const user = await prisma.user.findUnique({
             where: { email: credentials.email as string },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              password: true,
+              role: { select: { name: true } },
+            },
           })
 
           if (!user || !user.password) return null
@@ -27,18 +34,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const isValid = await compare(credentials.password as string, user.password)
           if (!isValid) return null
 
-          // Resolve admin flag from employee record
-          const employee = await prisma.employee.findUnique({
-            where: { userId: user.id },
-            select: { isAdmin: true, isManager: true },
-          })
+          const roleName = user.role?.name ?? 'EMPLOYEE'
 
           return {
             id: user.id,
             email: user.email,
             name: user.name,
-            isAdmin: employee?.isAdmin ?? false,
-            isManager: employee?.isManager ?? false,
+            isAdmin: roleName === 'ADMIN' || roleName === 'HR',
+            isManager: roleName === 'ADMIN' || roleName === 'HR' || roleName === 'MANAGER',
+            role: roleName,
           }
         } catch (err) {
           console.error('[auth.authorize] error:', err)
@@ -53,6 +57,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id
         token.isAdmin = (user as { isAdmin: boolean }).isAdmin
         token.isManager = (user as { isManager: boolean }).isManager
+        token.role = (user as { role: string }).role
         return token
       }
       // Ensure token.id is always set (fall back to token.sub which NextAuth sets automatically)
@@ -80,13 +85,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
       }
       // Re-hydrate on every token refresh in case the token pre-dates the field
-      if (token.id && (token.isAdmin === undefined || token.isManager === undefined)) {
-        const employee = await prisma.employee.findUnique({
-          where: { userId: token.id as string },
-          select: { isAdmin: true, isManager: true },
+      if (token.id && (token.isAdmin === undefined || token.isManager === undefined || token.role === undefined)) {
+        const freshUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: { select: { name: true } } },
         })
-        token.isAdmin = employee?.isAdmin ?? false
-        token.isManager = employee?.isManager ?? false
+        const roleName = freshUser?.role?.name ?? 'EMPLOYEE'
+        token.isAdmin = roleName === 'ADMIN' || roleName === 'HR'
+        token.isManager = roleName === 'ADMIN' || roleName === 'HR' || roleName === 'MANAGER'
+        token.role = roleName
       }
       return token
     },
@@ -95,6 +102,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = (token.id ?? token.sub) as string
         session.user.isAdmin = token.isAdmin as boolean
         session.user.isManager = token.isManager as boolean
+        session.user.role = token.role as string
       }
       return session
     },

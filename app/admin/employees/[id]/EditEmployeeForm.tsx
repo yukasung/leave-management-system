@@ -5,7 +5,7 @@ import { useRouter } from '@/i18n/navigation'
 import { updateEmployee, deactivateEmployee, reactivateEmployee, type UpdateEmployeeState } from './actions'
 import AvatarUploader from '../AvatarUploader'
 
-type Department   = { id: string; name: string; manager: { employee: { id: string } | null } | null }
+type Department   = { id: string; name: string }
 type ManagerOption  = { id: string; firstName: string; lastName: string; positionRef: { name: string } | null; department: { name: string } | null }
 type PositionOption = { id: string; name: string; departmentId?: string | null }
 
@@ -18,8 +18,7 @@ export type EmployeeData = {
   phone:        string | null
   avatarUrl:    string | null
   positionId:   string | null
-  isAdmin:      boolean
-  isManager:    boolean
+  role:         string | null
   isProbation:  boolean
   isActive:     boolean
   departmentId: string | null
@@ -46,17 +45,26 @@ export default function EditEmployeeForm({
   const [state, formAction, pending] = useActionState(boundAction, initialState)
 
   const [selectedDeptId,    setSelectedDeptId]    = useState(employee.departmentId ?? '')
-  const [selectedManagerId, setSelectedManagerId] = useState(employee.managerId ?? '')
   const [confirmDeactivate, setConfirmDeactivate] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
   const [reactivating, setReactivating] = useState(false)
   const [deactivateMsg, setDeactivateMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
 
   function handleDeptChange(deptId: string) {
     setSelectedDeptId(deptId)
-    const dept = departments.find((d) => d.id === deptId)
-    const deptManagerEmployeeId = dept?.manager?.employee?.id
-    if (deptManagerEmployeeId) setSelectedManagerId(deptManagerEmployeeId)
+  }
+
+  function handlePasswordConfirm(e: React.FormEvent<HTMLFormElement>) {
+    const form = e.currentTarget
+    const np = (form.elements.namedItem('newPassword') as HTMLInputElement)?.value ?? ''
+    const cp = (form.elements.namedItem('confirmPassword') as HTMLInputElement)?.value ?? ''
+    if (np && np !== cp) {
+      e.preventDefault()
+      setPasswordError('รหัสผ่านไม่ตรงกัน')
+      return
+    }
+    setPasswordError(null)
   }
 
   useEffect(() => {
@@ -102,7 +110,7 @@ export default function EditEmployeeForm({
         </div>
       )}
 
-      <form action={formAction}>
+      <form action={formAction} onSubmit={handlePasswordConfirm}>
 
         {/* Alerts */}
         {e.general && (
@@ -147,11 +155,24 @@ export default function EditEmployeeForm({
               </span>
             </div>
 
-            {/* Contact details */}
-            <div className="px-6 pb-6 space-y-4 border-t border-border pt-5">
+              <div className="px-6 pb-6 space-y-4 border-t border-border pt-5">
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">อีเมล</p>
                 <p className="text-sm text-foreground truncate">{employee.email}</p>
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1.5" htmlFor="emp-code">
+                  รหัสพนักงาน <Required />
+                </label>
+                <input
+                  id="emp-code"
+                  type="text"
+                  name="employeeCode"
+                  defaultValue={employee.employeeCode}
+                  required
+                  className={inputCls(!!e.employeeCode)}
+                />
+                <FieldError msg={e.employeeCode} />
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1.5" htmlFor="emp-phone">
@@ -287,9 +308,9 @@ export default function EditEmployeeForm({
                     name="role"
                     value={value}
                     defaultChecked={
-                      value === 'admin'   ? employee.isAdmin :
-                      value === 'manager' ? (!employee.isAdmin && employee.isManager) :
-                      (!employee.isAdmin && !employee.isManager)
+                      value === 'admin'   ? employee.role === 'ADMIN' :
+                      value === 'manager' ? employee.role === 'MANAGER' :
+                      (employee.role !== 'ADMIN' && employee.role !== 'MANAGER')
                     }
                     className="mt-0.5 h-4 w-4 border-input text-primary focus:ring-primary"
                   />
@@ -300,6 +321,47 @@ export default function EditEmployeeForm({
                   </span>
                 </label>
               ))}
+            </div>
+
+            {/* Change Password */}
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-4">
+              <div className="flex items-center gap-2 pb-1 border-b border-border">
+                <span className="w-1 h-4 rounded-full bg-primary inline-block" />
+                <h3 className="text-sm font-semibold text-foreground">เปลี่ยนรหัสผ่าน</h3>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-1">เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยนรหัสผ่าน</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5" htmlFor="new-password">
+                    รหัสผ่านใหม่
+                  </label>
+                  <input
+                    id="new-password"
+                    type="password"
+                    name="newPassword"
+                    autoComplete="new-password"
+                    placeholder="อย่างน้อย 6 ตัวอักษร"
+                    className={inputCls(!!(e.password || passwordError))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5" htmlFor="confirm-password">
+                    ยืนยันรหัสผ่านใหม่
+                  </label>
+                  <input
+                    id="confirm-password"
+                    type="password"
+                    name="confirmPassword"
+                    autoComplete="new-password"
+                    placeholder="กรอกรหัสผ่านอีกครั้ง"
+                    className={inputCls(!!(e.password || passwordError))}
+                    onChange={() => setPasswordError(null)}
+                  />
+                </div>
+              </div>
+              {(e.password || passwordError) && (
+                <FieldError msg={e.password ?? passwordError ?? undefined} />
+              )}
             </div>
 
             {/* Actions */}

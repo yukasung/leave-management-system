@@ -56,8 +56,7 @@ export default async function EmployeesPage({
         firstName: true,
         lastName: true,
         positionRef: { select: { name: true } },
-        user: { select: { email: true, avatarUrl: true } },
-        isAdmin: true,
+        user: { select: { email: true, avatarUrl: true, role: { select: { name: true } } } },
         isActive: true,
         isProbation: true,
         department: { select: { id: true, name: true } },
@@ -200,7 +199,7 @@ export default async function EmployeesPage({
                             >
                               {emp.isActive ? 'ทำงานอยู่' : 'ไม่ทำงาน'}
                             </span>
-                            {emp.isAdmin && (
+                            {(emp.user?.role?.name === 'ADMIN' || emp.user?.role?.name === 'HR') && (
                               <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 dark:border-violet-800/50">
                                 ผู้ดูแล
                               </span>

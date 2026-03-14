@@ -6,7 +6,7 @@ import { createEmployee, type CreateEmployeeState } from './actions'
 import AvatarUploader from '../AvatarUploader'
 import { User, Mail, Phone, Hash } from 'lucide-react'
 
-type Department = { id: string; name: string; manager: { employee: { id: string } | null } | null }
+type Department = { id: string; name: string }
 type ManagerOption  = { id: string; firstName: string; lastName: string; positionRef: { name: string } | null; department: { name: string } | null }
 type PositionOption = { id: string; name: string; departmentId?: string | null }
 

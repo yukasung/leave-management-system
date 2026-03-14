@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache'
 export type DepartmentFormState = {
   success: boolean
   message: string
-  errors?: { name?: string; managerId?: string }
+  errors?: { name?: string }
 }
 
 export async function createDepartment(
@@ -20,7 +20,6 @@ export async function createDepartment(
   }
 
   const name = (formData.get('name') as string | null)?.trim() ?? ''
-  const managerId = (formData.get('managerId') as string | null)?.trim() || null
 
   if (!name) {
     return { success: false, message: 'กรุณากรอกชื่อแผนก', errors: { name: 'ชื่อแผนกจำเป็น' } }
@@ -32,7 +31,7 @@ export async function createDepartment(
   }
 
   const dept = await prisma.department.create({
-    data: { name, managerId },
+    data: { name },
   })
 
   await prisma.auditLog.create({

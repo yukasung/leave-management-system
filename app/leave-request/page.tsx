@@ -25,7 +25,7 @@ export default async function LeaveRequestPage() {
       select: {
         id: true,
         name: true,
-        leaveCategory: { select: { name: true } },
+        leaveCategory: { select: { name: true, sortOrder: true } },
         leaveLimitType: true,
         dayCountType: true,
         maxDaysPerYear: true,

@@ -16,7 +16,7 @@ export default async function NewEmployeePage() {
       select: { id: true, name: true },
     }),
     prisma.employee.findMany({
-      where: { isActive: true, isManager: true, isAdmin: false },
+      where: { isActive: true, user: { role: { name: { in: ['MANAGER', 'ADMIN'] } } } },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
       select: { id: true, firstName: true, lastName: true, positionRef: { select: { name: true } }, department: { select: { name: true } } },
     }),

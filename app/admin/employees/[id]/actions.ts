@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import bcrypt from 'bcryptjs'
 
 export type UpdateEmployeeState = {
   success?: boolean
@@ -11,6 +12,8 @@ export type UpdateEmployeeState = {
     departmentId?: string
     positionId?: string
     managerId?: string
+    employeeCode?: string
+    password?: string
     general?: string
   }
 }
@@ -31,22 +34,24 @@ export async function updateEmployee(
     const positionId   = (formData.get('positionId')   as string | null)?.trim() || null
     const phone        = (formData.get('phone')        as string | null)?.trim() || null
     const avatarUrl    = (formData.get('avatarUrl')    as string | null)?.trim() || null
+    const employeeCode = (formData.get('employeeCode') as string | null)?.trim() || null
+    const newPassword  = (formData.get('newPassword')  as string | null)?.trim() || null
+    const confirmPassword = (formData.get('confirmPassword') as string | null)?.trim() || null
 
     const role         = formData.get('role') as string | null
-    const isAdmin      = role === 'admin'
-    const isManager    = role === 'manager'
+    const roleName     = role === 'admin' ? 'ADMIN' : role === 'manager' ? 'MANAGER' : 'EMPLOYEE'
     const approverIds  = (formData.getAll('approverIds') as string[]).filter(Boolean)
     const departmentId = (formData.get('departmentId') as string | null)?.trim() || null
     const isProbation  = formData.get('isProbation') === 'on'
 
     // ── Guard: cannot remove the last admin ──────────────────────────────────
-    if (!isAdmin) {
+    if (roleName !== 'ADMIN') {
       const currentEmp = await prisma.employee.findUnique({
         where: { id },
-        select: { isAdmin: true },
+        select: { user: { select: { role: { select: { name: true } } } } },
       })
-      if (currentEmp?.isAdmin) {
-        const adminCount = await prisma.employee.count({ where: { isAdmin: true } })
+      if (currentEmp?.user?.role?.name === 'ADMIN') {
+        const adminCount = await prisma.user.count({ where: { role: { name: 'ADMIN' } } })
         if (adminCount <= 1) {
           return {
             success: false,
@@ -56,11 +61,30 @@ export async function updateEmployee(
       }
     }
 
+    // ── Look up target role record ────────────────────────────────────────────
+    const roleRecord = await prisma.role.findUnique({
+      where: { name: roleName as 'ADMIN' | 'HR' | 'MANAGER' | 'EMPLOYEE' },
+      select: { id: true },
+    })
+
     // ── Validation ────────────────────────────────────────────────────────────
     const errors: UpdateEmployeeState['errors'] = {}
 
     if (!departmentId) errors.departmentId = 'กรุณาเลือกแผนก'
     if (!positionId)   errors.positionId   = 'กรุณาเลือกตำแหน่ง'
+    if (!employeeCode) {
+      errors.employeeCode = 'กรุณากรอกรหัสพนักงาน'
+    } else {
+      const duplicate = await prisma.employee.findFirst({
+        where: { employeeCode, NOT: { id } },
+        select: { id: true },
+      })
+      if (duplicate) errors.employeeCode = 'รหัสพนักงานนี้ถูกใช้งานแล้ว'
+    }
+    if (newPassword) {
+      if (newPassword.length < 6) errors.password = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'
+      else if (newPassword !== confirmPassword) errors.password = 'รหัสผ่านไม่ตรงกัน'
+    }
 
     if (Object.keys(errors).length > 0) {
       return { success: false, errors }
@@ -81,12 +105,10 @@ export async function updateEmployee(
         where: { id },
         data: {
           phone,
-
+          employeeCode: employeeCode!,
           positionRef: positionId
             ? { connect: { id: positionId } }
             : { disconnect: true },
-          isAdmin,
-          isManager,
           isProbation,
           approvers: { set: approverIds.map(id => ({ id })) },
           department: departmentId
@@ -95,11 +117,18 @@ export async function updateEmployee(
         },
       })
 
-      // Keep User fields in sync
+      // Keep User fields in sync (avatarUrl, role, password)
       if (existing.userId) {
+        const userUpdateData: Record<string, unknown> = {
+          avatarUrl: avatarUrl ?? null,
+          ...(roleRecord ? { roleId: roleRecord.id } : {}),
+        }
+        if (newPassword) {
+          userUpdateData.password = await bcrypt.hash(newPassword, 12)
+        }
         await tx.user.update({
           where: { id: existing.userId },
-          data: { avatarUrl: avatarUrl ?? null },
+          data: userUpdateData,
         })
       }
 
@@ -109,7 +138,7 @@ export async function updateEmployee(
           action:      'UPDATE_EMPLOYEE',
           entityType:  'Employee',
           entityId:    id,
-          description: `Updated employee ${existing.firstName} ${existing.lastName} (${existing.employeeCode}): isAdmin=${isAdmin}, positionId=${positionId}`,
+          description: `Updated employee ${existing.firstName} ${existing.lastName} (${existing.employeeCode}): role=${roleName}, positionId=${positionId}`,
         },
       })
     })

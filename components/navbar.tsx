@@ -12,7 +12,7 @@ import {
 import { logout } from '@/app/actions/auth'
 import { ThemeToggle } from '@/components/theme-toggle'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 
 export type AdminUser = {
   name: string
@@ -32,6 +32,7 @@ export default function Navbar({
   const params = useParams()
   const locale = (params?.locale as string) || 'th'
   const lp = (path: string) => `/${locale}${path}`
+  const router = useRouter()
 
   const initials = user?.name
     ? user.name.trim().split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -67,16 +68,12 @@ export default function Navbar({
               {user.email}
             </p>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Link href={lp('/profile')} className="w-full">
-                โปรไฟล์
-              </Link>
+            <DropdownMenuItem onClick={() => router.push(lp('/profile'))}>
+              โปรไฟล์
             </DropdownMenuItem>
             {user.isAdmin && (
-              <DropdownMenuItem>
-                <Link href={lp('/admin/settings')} className="w-full">
-                  ตั้งค่า
-                </Link>
+              <DropdownMenuItem onClick={() => router.push(lp('/admin/settings'))}>
+                ตั้งค่า
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />

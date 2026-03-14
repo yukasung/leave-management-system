@@ -1,8 +1,9 @@
 /**
- * Permission Guard  simple isAdmin-based authorization.
+ * Permission Guard — role-based authorization.
  *
- * In this system there are no roles. Every user is either an admin or not.
- * Admin users can manage employees, view all leave, and act as fallback approvers.
+ * Roles: ADMIN > HR > MANAGER > EMPLOYEE
+ * isAdmin  = ADMIN or HR
+ * isManager = ADMIN, HR, or MANAGER
  */
 import 'server-only'
 
@@ -18,10 +19,10 @@ export class PermissionError extends Error {
 // Legacy alias so existing catch blocks don't break
 export { PermissionError as RoleGuardError }
 
-//  Guard 
+//  Guards 
 
 /**
- * Throws PermissionError if the caller is not an admin.
+ * Throws PermissionError if the caller is not an admin (ADMIN or HR role).
  */
 export function assertAdmin(isAdmin: boolean): void {
   if (!isAdmin) {
@@ -29,7 +30,22 @@ export function assertAdmin(isAdmin: boolean): void {
   }
 }
 
+/**
+ * Throws PermissionError if the caller does not have the given role(s).
+ */
+export function assertRole(role: string, ...allowed: string[]): void {
+  if (!allowed.includes(role)) {
+    throw new PermissionError(`ไม่มีสิทธิ์เข้าถึง (ต้องการ: ${allowed.join(', ')})`)
+  }
+}
+
+/**
+ * Returns true if the caller has one of the allowed roles.
+ */
+export const hasRole = (role: string, ...allowed: string[]): boolean =>
+  allowed.includes(role)
+
 //  Helpers used by service layer 
 
-/** True when the caller is privileged (admin). Used by service functions. */
+/** True when the caller is privileged (admin or HR). */
 export const isPrivileged = (isAdmin: boolean): boolean => isAdmin

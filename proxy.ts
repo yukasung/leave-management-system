@@ -12,10 +12,14 @@ export default auth((req) => {
   const { nextUrl, auth: session } = req
   const isLoggedIn = !!session
 
+  const isSetupPage = nextUrl.pathname === '/setup' || nextUrl.pathname.startsWith('/setup/')
   const isAuthPage = nextUrl.pathname.startsWith('/login')
     || nextUrl.pathname.match(/^\/(th|en)\/login/) !== null
   const isApiAuth  = nextUrl.pathname.startsWith('/api/auth')
   const isApiRoute = nextUrl.pathname.startsWith('/api/')
+
+  // Setup page is accessible without authentication (first-time system init)
+  if (isSetupPage) return NextResponse.next()
 
   if (isApiAuth || isApiRoute) return NextResponse.next()
 

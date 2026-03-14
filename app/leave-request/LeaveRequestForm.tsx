@@ -28,7 +28,6 @@ const DEFAULT_END_TIME   = `${String(WORK_END_HOUR).padStart(2, '0')}:${String(W
 
 export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByType }: Props) {
   const [state, formAction, pending] = useActionState(createLeaveRequest, initialState)
-
   // ── Two-step flow state ────────────────────────────────────────────────────
   type Phase = 'form' | 'done'
   const [phase, setPhase] = useState<Phase>('form')
@@ -252,12 +251,20 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="" disabled>-- เลือกหมวดหมู่ --</option>
-            {Array.from(new Map(
-              leaveTypes.filter((lt) => lt.leaveCategory !== null)
-                        .map((lt) => [lt.leaveCategory!.name, lt.leaveCategory!.name])
-            ).values()).map((catName) => (
-              <option key={catName} value={catName}>{catName}</option>
-            ))}
+            {Array.from(
+              leaveTypes
+                .filter((lt) => lt.leaveCategory !== null)
+                .reduce((map, lt) => {
+                  const cat = lt.leaveCategory!
+                  if (!map.has(cat.name)) map.set(cat.name, (cat as { name: string; sortOrder?: number }).sortOrder ?? 99)
+                  return map
+                }, new Map<string, number>())
+                .entries()
+            )
+              .sort((a, b) => a[1] - b[1])
+              .map(([catName]) => (
+                <option key={catName} value={catName}>{catName}</option>
+              ))}
           </select>
         </div>
 

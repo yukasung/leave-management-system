@@ -61,9 +61,7 @@ export default async function EmployeesPage({
         firstName: true,
         lastName: true,
         positionRef: { select: { name: true } },
-        user: { select: { email: true, avatarUrl: true } },
-        isAdmin: true,
-        isManager: true,
+        user: { select: { email: true, avatarUrl: true, role: { select: { name: true } } } },
         isActive: true,
         isProbation: true,
         department: { select: { id: true, name: true } },
@@ -176,7 +174,9 @@ export default async function EmployeesPage({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {employees.map((emp) => (
+                  {employees.map((emp) => {
+                    const roleName = emp.user?.role?.name ?? 'EMPLOYEE'
+                    return (
                     <EmployeeRow
                       key={emp.id}
                       id={emp.id}
@@ -186,13 +186,14 @@ export default async function EmployeesPage({
                       email={emp.user?.email ?? ''}
                       avatarUrl={emp.user?.avatarUrl ?? null}
                       position={emp.positionRef?.name ?? null}
-                      isAdmin={emp.isAdmin}
-                      isManager={emp.isManager}
+                      isAdmin={roleName === 'ADMIN' || roleName === 'HR'}
+                      isManager={roleName === 'MANAGER'}
                       isActive={emp.isActive}
                       isProbation={emp.isProbation}
                       departmentName={emp.department?.name ?? null}
                     />
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

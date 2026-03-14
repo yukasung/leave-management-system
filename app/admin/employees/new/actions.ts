@@ -43,8 +43,7 @@ export async function createEmployee(
     const departmentId = (formData.get('departmentId') as string | null)?.trim() || null
     const positionId   = (formData.get('positionId')   as string | null)?.trim() || null
     const role         = formData.get('role') as string | null
-    const isAdmin      = role === 'admin'
-    const isManager    = role === 'manager'
+    const roleName     = role === 'admin' ? 'ADMIN' : role === 'manager' ? 'MANAGER' : 'EMPLOYEE'
     const approverIds  = (formData.getAll('approverIds') as string[]).filter(Boolean)
     const isProbation  = formData.get('isProbation') === 'on'
 
@@ -83,9 +82,10 @@ export async function createEmployee(
     const currentYear     = new Date().getFullYear()
     const defaultPassword = await hash('admin1234', 10)
 
-    const [leaveTypes, existingUser] = await Promise.all([
+    const [leaveTypes, existingUser, roleRecord] = await Promise.all([
       prisma.leaveType.findMany({ where: { maxDaysPerYear: { not: null } }, select: { id: true, maxDaysPerYear: true } }),
       prisma.user.findUnique({ where: { email }, select: { id: true } }),
+      prisma.role.findUnique({ where: { name: roleName as 'ADMIN' | 'HR' | 'MANAGER' | 'EMPLOYEE' }, select: { id: true } }),
     ])
 
     // ── Single atomic transaction: Employee + User + LeaveBalances + AuditLog ─
@@ -97,15 +97,16 @@ export async function createEmployee(
         // Ensure avatarUrl is synced on existing user
         await tx.user.update({
           where: { id: userId },
-          data: { avatarUrl: avatarUrl ?? null },
+          data: { avatarUrl: avatarUrl ?? null, ...(roleRecord ? { roleId: roleRecord.id } : {}) },
         })
       } else {
         const newUser = await tx.user.create({
           data: {
             email,
-            name:         `${firstName} ${lastName}`,
-            password:     defaultPassword,
-            avatarUrl:    avatarUrl ?? undefined,
+            name:      `${firstName} ${lastName}`,
+            password:  defaultPassword,
+            avatarUrl: avatarUrl ?? undefined,
+            ...(roleRecord ? { roleId: roleRecord.id } : {}),
           },
         })
         userId = newUser.id
@@ -118,8 +119,6 @@ export async function createEmployee(
           firstName,
           lastName,
           phone,
-          isAdmin,
-          isManager,
           isProbation,
           isActive: true,
           userId,

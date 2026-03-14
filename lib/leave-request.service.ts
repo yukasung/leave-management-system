@@ -97,7 +97,7 @@ async function resolveApproverTarget(
 
   // 3. Fallback: all admin users receive the request (any one can approve)
   const adminUsers = await prisma.user.findMany({
-    where: { employee: { isAdmin: true } },
+    where: { role: { name: { in: ['ADMIN', 'HR'] } } },
     orderBy: { createdAt: 'asc' },
     select: { id: true },
   })
@@ -539,7 +539,7 @@ export async function submitLeave(
             select: { email: true },
           }),
           prisma.user.findMany({
-            where:  { employee: { isAdmin: true, isActive: true } },
+            where:  { isActive: true, role: { name: { in: ['ADMIN', 'HR'] } } },
             select: { email: true },
           }),
         ])
@@ -736,7 +736,7 @@ export async function cancelLeave(
     void (async () => {
       try {
         const adminRows = await prisma.user.findMany({
-          where:  { employee: { isAdmin: true, isActive: true } },
+          where:  { isActive: true, role: { name: { in: ['ADMIN', 'HR'] } } },
           select: { email: true },
         })
         const recipients = adminRows.map((u) => u.email).filter((e): e is string => !!e)

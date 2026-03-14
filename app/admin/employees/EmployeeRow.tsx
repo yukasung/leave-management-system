@@ -76,7 +76,7 @@ export default function EmployeeRow({
               ผู้ดูแลระบบ
             </span>
           )}
-          {isManager && (
+          {!isAdmin && isManager && (
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50">
               ผู้อนุมัติการลา
             </span>

@@ -7,6 +7,23 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
+  // ── Roles ─────────────────────────────────────────────────────────────────
+  const rolesData = [
+    { name: 'ADMIN' as const,    description: 'ผู้ดูแลระบบ' },
+    { name: 'HR' as const,       description: 'HR / บุคคล' },
+    { name: 'MANAGER' as const,  description: 'ผู้จัดการ' },
+    { name: 'EMPLOYEE' as const, description: 'พนักงาน' },
+  ]
+  const roleMap: Record<string, string> = {}
+  for (const r of rolesData) {
+    const role = await prisma.role.upsert({
+      where: { name: r.name },
+      update: { description: r.description },
+      create: r,
+    })
+    roleMap[r.name] = role.id
+  }
+
   // ── Leave types per company policy ────────────────────────────────────────
   const leaveTypesData = [
     {
@@ -91,27 +108,63 @@ async function main() {
     })
   }
 
+  // ── Leave categories ───────────────────────────────────────────────────────
+  const categoriesData = [
+    { key: 'annual',  name: 'ลาประจำปี', color: 'blue', sortOrder: 1 },
+    { key: 'special', name: 'ลาพิเศษ',   color: 'pink', sortOrder: 2 },
+  ]
+  const catMap: Record<string, string> = {}
+  for (const cat of categoriesData) {
+    const record = await prisma.leaveCategoryConfig.upsert({
+      where: { key: cat.key },
+      update: { name: cat.name, color: cat.color, sortOrder: cat.sortOrder },
+      create: cat,
+    })
+    catMap[cat.key] = record.id
+  }
+
+  // Assign leave types to categories
+  const typeToCategory: Record<string, string> = {
+    'ลาป่วย':         'annual',
+    'ลากิจส่วนตัว':   'annual',
+    'ลาพักร้อน':      'annual',
+    'ลาฌาปนกิจ':      'special',
+    'ลาแต่งงาน':      'special',
+    'ลาอุปสมบท':      'special',
+    'ลาคลอดบุตร':     'special',
+    'ลาทำหมัน':       'special',
+    'ลาพัฒนาความรู้': 'special',
+  }
+  for (const [typeName, catKey] of Object.entries(typeToCategory)) {
+    await prisma.leaveType.updateMany({
+      where: { name: typeName },
+      data: { leaveCategoryId: catMap[catKey] },
+    })
+  }
+
   const hashedPassword = await hash('admin1234', 10)
 
   // Admin user (no department)
   const admin = await prisma.user.upsert({
     where: { email: 'admin@company.com' },
-    update: { name: 'Admin', password: hashedPassword },
+    update: { name: 'Admin', password: hashedPassword, roleId: roleMap['ADMIN'] },
     create: {
       email: 'admin@company.com',
       name: 'Admin',
       password: hashedPassword,
+      roleId: roleMap['ADMIN'],
     },
   })
 
   // Manager user
   const manager = await prisma.user.upsert({
     where: { email: 'manager@company.com' },
-    update: { name: 'Manager', password: hashedPassword },
+    update: { name: 'Manager', password: hashedPassword, roleId: roleMap['MANAGER'] },
     create: {
       email: 'manager@company.com',
       name: 'Manager',
       password: hashedPassword,
+      roleId: roleMap['MANAGER'],
     },
   })
 
@@ -135,24 +188,23 @@ async function main() {
   // Employee user belonging to the department
   const employee = await prisma.user.upsert({
     where: { email: 'employee@company.com' },
-    update: {},
+    update: { password: hashedPassword, roleId: roleMap['EMPLOYEE'] },
     create: {
       email: 'employee@company.com',
       name: 'Employee',
       password: hashedPassword,
+      roleId: roleMap['EMPLOYEE'],
     },
   })
 
   // Employee records — required so auth.ts can read isAdmin / isManager
   await prisma.employee.upsert({
     where: { employeeCode: 'ADMIN001' },
-    update: { isAdmin: true, isManager: false, userId: admin.id },
+    update: { userId: admin.id },
     create: {
       employeeCode: 'ADMIN001',
       firstName: 'Admin',
       lastName: 'System',
-      isAdmin: true,
-      isManager: false,
       isProbation: false,
       isActive: true,
       userId: admin.id,
@@ -161,13 +213,11 @@ async function main() {
 
   await prisma.employee.upsert({
     where: { employeeCode: 'MGR001' },
-    update: { isAdmin: false, isManager: true, userId: manager.id, departmentId: department.id },
+    update: { userId: manager.id, departmentId: department.id },
     create: {
       employeeCode: 'MGR001',
       firstName: 'Manager',
       lastName: 'System',
-      isAdmin: false,
-      isManager: true,
       isProbation: false,
       isActive: true,
       userId: manager.id,
@@ -182,8 +232,6 @@ async function main() {
       employeeCode: 'EMP001',
       firstName: 'Employee',
       lastName: 'System',
-      isAdmin: false,
-      isManager: false,
       isProbation: false,
       isActive: true,
       userId: employee.id,
