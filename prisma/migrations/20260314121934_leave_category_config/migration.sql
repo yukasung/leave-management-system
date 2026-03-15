@@ -21,14 +21,21 @@ VALUES
 -- Add leaveCategoryId column to LeaveType (nullable FK)
 ALTER TABLE "LeaveType" ADD COLUMN "leaveCategoryId" TEXT;
 
--- Populate leaveCategoryId from existing leaveCategory enum values
-UPDATE "LeaveType" lt
-SET "leaveCategoryId" = lcc."id"
-FROM "LeaveCategoryConfig" lcc
-WHERE lcc."key" = lt."leaveCategory"::TEXT;
+-- Populate leaveCategoryId from existing leaveCategory enum values (only if column exists)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'LeaveType' AND column_name = 'leaveCategory'
+  ) THEN
+    UPDATE "LeaveType" lt
+    SET "leaveCategoryId" = lcc."id"
+    FROM "LeaveCategoryConfig" lcc
+    WHERE lcc."key" = lt."leaveCategory"::TEXT;
 
--- Drop old enum column
-ALTER TABLE "LeaveType" DROP COLUMN "leaveCategory";
+    ALTER TABLE "LeaveType" DROP COLUMN "leaveCategory";
+  END IF;
+END $$;
 
 -- AddForeignKey
 ALTER TABLE "LeaveType" ADD CONSTRAINT "LeaveType_leaveCategoryId_fkey"
