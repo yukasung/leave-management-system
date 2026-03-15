@@ -86,7 +86,7 @@ export async function fetchThailandPublicHolidays(
         },
         // Allow Railway's Node.js to handle BOT API's TLS certificate chain
         rejectUnauthorized: false,
-        timeout: 10000,
+        timeout: 30000,
       },
       (res) => {
         const chunks: Buffer[] = [];
@@ -107,7 +107,7 @@ export async function fetchThailandPublicHolidays(
     );
     req.on("timeout", () => {
       req.destroy();
-      reject(new Error("BOT API ไม่ตอบสนองภายใน 10 วินาที"));
+      reject(new Error("BOT API ไม่ตอบสนองภายใน 30 วินาที"));
     });
     req.on("error", (err) => {
       reject(new Error(`ไม่สามารถเชื่อมต่อ BOT API (${url}): ${err.message}`));

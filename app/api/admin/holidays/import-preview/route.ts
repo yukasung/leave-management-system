@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { fetchThailandPublicHolidays } from "@/lib/holiday-import.service";
 
 /**
  * GET /api/admin/holidays/import-preview?year=2026
  *
- * NOTE: This route is kept for backward compatibility but the client now
- * calls the BOT API directly from the browser to avoid server-side network
- * restrictions (Railway servers outside Thailand cannot reach BOT API).
+ * Fetches holiday data from the Bank of Thailand API server-side and returns
+ * a preview list without persisting anything to the database.
  *
- * The route now simply returns an empty scaffold so old calls don't break.
+ * Deployed on Railway ap-southeast-1 (Singapore) which can reach gateway.api.bot.or.th.
  */
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -19,5 +19,25 @@ export async function GET(req: NextRequest) {
   const year = parseInt(yearParam ?? "", 10);
   if (isNaN(year)) return NextResponse.json({ error: "Missing year" }, { status: 400 });
 
-  return NextResponse.json({ year, total: 0, holidays: [], clientSideFetch: true });
+  let holidays;
+  try {
+    holidays = await fetchThailandPublicHolidays(year);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error while fetching holidays";
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+
+  return NextResponse.json({
+    year,
+    total: holidays.length,
+    warning:
+      holidays.length === 0
+        ? `ธนาคารแห่งประเทศไทย API ไม่มีข้อมูลวันหยุดสำหรับปี ${year} ` +
+          `กรุณาตรวจสอบ BOT_API_KEY ใน Railway Variables หรือเพิ่มวันหยุดด้วยตนเอง`
+        : undefined,
+    holidays: holidays.map((h) => ({
+      date: h.date.toISOString().slice(0, 10),
+      name: h.name,
+    })),
+  });
 }

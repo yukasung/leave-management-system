@@ -84,27 +84,22 @@ export default function HolidayImportClient() {
     setImportResult(null)
     setBotError('')
     try {
-      // Call BOT API directly from browser (avoids Railway server geo-restrictions)
-      const token = process.env.NEXT_PUBLIC_BOT_API_TOKEN ?? ''
-      const botUrl = `https://gateway.api.bot.or.th/financial-institutions-holidays/?year=${year}`
-      const res = await fetch(botUrl, {
-        headers: {
-          accept: 'application/json',
-          Authorization: token,
-        },
-      })
-      if (!res.ok) throw new Error(`BOT API ตอบกลับสถานะ ${res.status}`)
-      const json = await res.json()
-      const items: Array<{ Date: string; HolidayDescriptionThai?: string; HolidayDescription?: string }> =
-        json?.result?.data ?? []
-      const holidays = items
-        .filter((h) => /^\d{4}-\d{2}-\d{2}$/.test(h.Date ?? ''))
-        .map((h) => ({
-          date: h.Date,
-          name: h.HolidayDescriptionThai?.trim() || h.HolidayDescription?.trim() || h.Date,
-          nameEn: h.HolidayDescription?.trim() || '',
-        }))
-      setPreview({ year, total: holidays.length, holidays })
+      let res = await fetch(`/api/admin/holidays/import-preview?year=${year}`)
+      // Retry once on 404 (dev server may not have compiled the route yet)
+      if (res.status === 404) {
+        await new Promise((r) => setTimeout(r, 800))
+        res = await fetch(`/api/admin/holidays/import-preview?year=${year}`)
+      }
+      if (!res.ok) {
+        let errMsg = `HTTP ${res.status}`
+        try {
+          const body = await res.json()
+          if (body?.error) errMsg = body.error
+        } catch { /* non-JSON response */ }
+        throw new Error(errMsg)
+      }
+      const data: PreviewResponse = await res.json()
+      setPreview(data)
       setBotStage('previewed')
     } catch (err) {
       setBotError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ')
@@ -119,7 +114,7 @@ export default function HolidayImportClient() {
       const res = await fetch('/api/admin/holidays/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ year, mode, holidays: preview?.holidays }),
+        body: JSON.stringify({ year, mode }),
       })
       if (!res.ok) {
         const lody = await res.json().catch(() => ({}))

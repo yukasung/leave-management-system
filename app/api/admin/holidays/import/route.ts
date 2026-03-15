@@ -65,32 +65,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── Fetch from external API OR accept pre-fetched data from client ─────────
-  // Railway servers (outside Thailand) cannot reach BOT API due to geo-restrictions.
-  // The client fetches BOT API directly from the browser and passes holidays in body.
-  interface HolidayInput { date: string; name: string; nameEn?: string }
+  // ── Fetch from Bank of Thailand API (server-side) ───────────────────────────
+  // Deployed on Railway ap-southeast-1 (Singapore) which can reach gateway.api.bot.or.th.
   let fetched: Array<{ date: Date; name: string; nameEn: string }>;
-
-  const clientHolidays = raw?.holidays as HolidayInput[] | undefined;
-
-  if (Array.isArray(clientHolidays) && clientHolidays.length > 0) {
-    // Use client-provided holidays (fetched directly from browser)
-    fetched = clientHolidays
-      .filter((h) => typeof h.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(h.date))
-      .map((h) => ({
-        date: new Date(`${h.date}T00:00:00.000Z`),
-        name: h.name || h.date,
-        nameEn: h.nameEn || h.name || h.date,
-      }));
-  } else {
-    // Fallback: try server-side fetch (may fail on Railway)
-    try {
-      const { fetchThailandPublicHolidays } = await import("@/lib/holiday-import.service");
-      fetched = await fetchThailandPublicHolidays(year);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error while fetching holidays";
-      return NextResponse.json({ error: message }, { status: 502 });
-    }
+  try {
+    fetched = await fetchThailandPublicHolidays(year);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error while fetching holidays";
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 
   if (fetched.length === 0) {
