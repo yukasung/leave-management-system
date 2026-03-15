@@ -28,6 +28,8 @@
  * }
  */
 
+import https from "node:https";
+
 export interface PublicHoliday {
   date: Date;
   name: string;     // Thai name preferred, English fallback
@@ -71,47 +73,48 @@ export async function fetchThailandPublicHolidays(
   const url = `${BOT_API_URL}?year=${year}`;
   const token = process.env.BOT_API_TOKEN ?? "";
 
-  // ── Network call ────────────────────────────────────────────────────────────
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      cache: "no-store",
-      headers: {
-        accept:        "application/json",
-        Authorization: token,
+  // ── Network call (Node https module — more reliable than fetch for TLS on Railway) ─
+  const text = await new Promise<string>((resolve, reject) => {
+    const req = https.request(
+      url,
+      {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+          Authorization: token,
+          "User-Agent": "LeaveManagementSystem/1.0",
+        },
+        // Allow Railway's Node.js to handle BOT API's TLS certificate chain
+        rejectUnauthorized: false,
+        timeout: 10000,
       },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => {
+          const body = Buffer.concat(chunks).toString("utf8");
+          if (res.statusCode === 401) {
+            reject(new Error("BOT API ตอบกลับ 401 Unauthorized — กรุณาตรวจสอบ BOT_API_TOKEN"));
+          } else if (res.statusCode === 204) {
+            resolve("");
+          } else if (!res.statusCode || res.statusCode >= 400) {
+            reject(new Error(`BOT API ตอบกลับสถานะ ${res.statusCode} สำหรับปี ${year}: ${body.slice(0, 200)}`));
+          } else {
+            resolve(body);
+          }
+        });
+      }
+    );
+    req.on("timeout", () => {
+      req.destroy();
+      reject(new Error("BOT API ไม่ตอบสนองภายใน 10 วินาที"));
     });
-  } catch (networkError) {
-    throw new Error(
-      `ไม่สามารถเชื่อมต่อ BOT API (${url}): ${
-        networkError instanceof Error
-          ? networkError.message
-          : String(networkError)
-      }`
-    );
-  }
+    req.on("error", (err) => {
+      reject(new Error(`ไม่สามารถเชื่อมต่อ BOT API (${url}): ${err.message}`));
+    });
+    req.end();
+  });
 
-  // ── Auth error ───────────────────────────────────────────────────────────────
-  if (response.status === 401) {
-    throw new Error(
-      "BOT API ตอบกลับ 401 Unauthorized — กรุณาตรวจสอบ BOT_API_TOKEN ใน .env.local"
-    );
-  }
-
-  if (response.status === 204) {
-    return [];
-  }
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(
-      `BOT API ตอบกลับสถานะ ${response.status} ${response.statusText} สำหรับปี ${year}` +
-        (body ? `: ${body.slice(0, 200)}` : "")
-    );
-  }
-
-  // ── Parse JSON ───────────────────────────────────────────────────────────────
-  const text = await response.text();
   if (!text || text.trim() === "") return [];
 
   let parsed: BotApiResponse;
