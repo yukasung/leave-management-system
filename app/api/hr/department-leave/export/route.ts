@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     }),
     prisma.leaveRequest.findMany({
       where,
-      select: { totalDays: true, user: { select: { departmentId: true } } },
+      select: { totalDays: true, user: { select: { employee: { select: { departmentId: true } } } } },
     }),
   ])
 
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
   map.set('__none__', { id: '__none__', name: 'ไม่ระบุแผนก', empCount: 0, requests: 0, days: 0 })
 
   for (const r of requests) {
-    const key = r.user.departmentId ?? '__none__'
+    const key = r.user.employee?.departmentId ?? '__none__'
     const row = map.get(key)
     if (row) { row.requests++; row.days += r.totalDays }
   }
