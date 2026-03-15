@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
           },
         }
       : {}),
-    ...(departmentId ? { user: { departmentId } } : {}),
+    ...(departmentId ? { user: { employee: { departmentId } } } : {}),
     ...(approverId
       ? { approvals: { some: { approverId, status: 'PENDING' as const } } }
       : {}),
@@ -48,8 +48,8 @@ export async function GET(req: NextRequest) {
     include: {
       user: {
         select: {
-          name:       true,
-          department: { select: { name: true } },
+          name:     true,
+          employee: { select: { department: { select: { name: true } } } },
         },
       },
       leaveType: { select: { name: true } },
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
   const dataRows = requests.map((r, i) => [
     i + 1,
     r.user.name,
-    r.user.department?.name ?? '',
+    r.user.employee?.department?.name ?? '',
     r.leaveType.name,
     formatThaiDateShort(r.leaveStartDateTime),
     formatThaiDateShort(r.leaveEndDateTime),
