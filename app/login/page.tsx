@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { seedRoles } from '@/lib/seed-roles'
 import LoginForm from './LoginForm'
 
+export const dynamic = 'force-dynamic'
+
 export default async function LoginPage() {
   // Ensure roles exist before any authentication attempt
   await seedRoles()
