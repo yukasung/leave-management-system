@@ -54,6 +54,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user }) {
+      // On sign-in: populate token from the user object returned by authorize()
       if (user) {
         token.id = user.id
         token.isAdmin = (user as { isAdmin: boolean }).isAdmin
@@ -61,49 +62,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = (user as { role: string }).role
         return token
       }
-
-      // ⚠️ Next.js middleware runs on the Edge runtime which does NOT support
-      // the `pg` (node-postgres) driver used by PrismaPg. Skip all DB queries
-      // here — the token already contains the necessary fields from sign-in.
-      if (process.env.NEXT_RUNTIME === 'edge') {
-        return token
-      }
-
-      // Ensure token.id is always set (fall back to token.sub which NextAuth sets automatically)
+      // Ensure token.id is always set
       if (!token.id && token.sub) {
         token.id = token.sub
       }
-      // Re-validate: if token.id no longer exists in DB (e.g. after DB reset), re-derive from email
-      if (token.id && token.email) {
-        const userExists = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { id: true },
-        })
-        if (!userExists) {
-          const freshUser = await prisma.user.findUnique({
-            where: { email: token.email as string },
-            select: { id: true },
-          })
-          if (freshUser) {
-            token.id = freshUser.id
-            token.sub = freshUser.id
-            // Force re-hydration of flags
-            token.isAdmin = undefined
-            token.isManager = undefined
-          }
-        }
-      }
-      // Re-hydrate on every token refresh in case the token pre-dates the field
-      if (token.id && (token.isAdmin === undefined || token.isManager === undefined || token.role === undefined)) {
-        const freshUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { role: { select: { name: true } } },
-        })
-        const roleName = freshUser?.role?.name ?? 'EMPLOYEE'
-        token.isAdmin = roleName === 'ADMIN' || roleName === 'HR'
-        token.isManager = roleName === 'ADMIN' || roleName === 'HR' || roleName === 'MANAGER'
-        token.role = roleName
-      }
+      // Token is self-contained — all role data was embedded at sign-in.
+      // We intentionally avoid DB calls here so this callback is safe in both
+      // Edge (middleware) and Node.js runtimes, and never causes redirect loops
+      // when the database is temporarily unavailable.
       return token
     },
     async session({ session, token }) {
