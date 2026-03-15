@@ -32,19 +32,19 @@ export default async function DepartmentsPage() {
   }
 
   return (
-    <AdminLayout title="??????????" user={user}>
+    <AdminLayout title="จัดการแผนก" user={user}>
       <div className="space-y-4 max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">??????????</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">??????? {departments.length} ????</p>
+            <h2 className="text-lg font-semibold text-foreground">จัดการแผนก</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">แผนกทั้งหมด {departments.length} แผนก</p>
           </div>
           <Link
             href="/admin/departments/new"
             className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
-            <span className="text-lg leading-none">+</span> ?????????
+            <span className="text-lg leading-none">+</span> เพิ่มแผนก
           </Link>
         </div>
 
@@ -52,9 +52,9 @@ export default async function DepartmentsPage() {
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
           {departments.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
-              <p className="text-4xl mb-3">??</p>
-              <p className="font-medium">????????????</p>
-              <p className="text-sm mt-1">???????????????????????</p>
+              <p className="text-4xl mb-3">🏢</p>
+              <p className="font-medium">ยังไม่มีแผนก</p>
+              <p className="text-sm mt-1">เริ่มต้นด้วยการเพิ่มแผนกแรก</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -62,8 +62,8 @@ export default async function DepartmentsPage() {
                 <thead className="bg-muted/40 border-b border-border">
                   <tr>
                     <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">????????</th>
-                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">????????????</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ชื่อแผนก</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวนพนักงาน</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
