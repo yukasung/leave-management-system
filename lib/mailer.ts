@@ -7,14 +7,19 @@ let _transporter: nodemailer.Transporter | null = null
 function getTransporter(): nodemailer.Transporter {
   if (_transporter) return _transporter
 
+  const host = process.env.SMTP_HOST
+  const user = process.env.SMTP_USER
+  const pass = process.env.SMTP_PASS
+
+  if (!host || !user || !pass) {
+    console.warn('[mailer] SMTP not configured — missing SMTP_HOST, SMTP_USER, or SMTP_PASS env vars. Emails will not be sent.')
+  }
+
   _transporter = nodemailer.createTransport({
-    host:   process.env.SMTP_HOST,
+    host,
     port:   Number(process.env.SMTP_PORT ?? 587),
     secure: process.env.SMTP_SECURE === 'true',   // true = port 465, false = STARTTLS
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
+    auth: { user, pass },
   })
 
   return _transporter
@@ -32,15 +37,25 @@ export type MailOptions = {
 // ── sendMail ──────────────────────────────────────────────────────────────────
 
 export async function sendMail(options: MailOptions): Promise<void> {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn('[mailer] Skipping email — SMTP not configured. To:', options.to, '| Subject:', options.subject)
+    return
+  }
+
   const transporter = getTransporter()
+  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER
+
+  console.log('[mailer] Sending email | To:', options.to, '| Subject:', options.subject, '| From:', from)
 
   await transporter.sendMail({
-    from:    process.env.SMTP_FROM ?? process.env.SMTP_USER,
+    from,
     to:      Array.isArray(options.to) ? options.to.join(', ') : options.to,
     subject: options.subject,
     html:    options.html,
     text:    options.text,
   })
+
+  console.log('[mailer] Email sent successfully | To:', options.to)
 }
 
 // ── Email Templates ───────────────────────────────────────────────────────────
