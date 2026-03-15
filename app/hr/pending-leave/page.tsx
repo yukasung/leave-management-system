@@ -66,7 +66,7 @@ export default async function PendingLeavePage({
           },
         }
       : {}),
-    ...(departmentId ? { user: { departmentId } } : {}),
+    ...(departmentId ? { user: { employee: { departmentId } } } : {}),
     ...(approverId
       ? { approvals: { some: { approverId, status: 'PENDING' as const } } }
       : {}),
@@ -85,8 +85,8 @@ export default async function PendingLeavePage({
       include: {
         user: {
           select: {
-            name:       true,
-            department: { select: { name: true } },
+            name:     true,
+            employee: { select: { department: { select: { name: true } } } },
           },
         },
         leaveType: { select: { name: true } },
@@ -113,7 +113,7 @@ export default async function PendingLeavePage({
     return {
       id:           r.id,
       employeeName: r.user.name,
-      department:   r.user.department?.name ?? '-',
+      department:   r.user.employee?.department?.name ?? '-',
       leaveType:    r.leaveType.name,
       startDate:    r.leaveStartDateTime,
       endDate:      r.leaveEndDateTime,
