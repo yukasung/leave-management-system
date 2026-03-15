@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { formatThaiDateShortFromISO, toBE } from '@/lib/date-utils'
 import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
@@ -35,6 +35,7 @@ interface ImportResult {
 }
 
 type botStage = 'idle' | 'previewing' | 'previewed' | 'importing' | 'done' | 'error'
+type csvStage = 'idle' | 'parsed' | 'importing' | 'done' | 'error'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -135,6 +136,119 @@ export default function HolidayImportClient() {
     setPreview(null)
     setImportResult(null)
     setBotError('')
+  }
+
+  // ── CSV/Excel upload state ───────────────────────────────────────────────────
+  const [csvStage, setCsvStage]           = useState<csvStage>('idle')
+  const [csvPreview, setCsvPreview]       = useState<HolidayPreview[] | null>(null)
+  const [csvImportResult, setCsvImportResult] = useState<ImportResult | null>(null)
+  const [csvError, setCsvError]           = useState('')
+  const csvFileRef                        = useRef<HTMLInputElement>(null)
+
+  function parseDateToISO(raw: string): string | null {
+    const s = raw.trim()
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+    // DD/MM/YYYY or DD/MM/YY (handle Buddhist Era > 2500)
+    const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/)
+    if (dmy) {
+      const d = dmy[1].padStart(2, '0')
+      const m = dmy[2].padStart(2, '0')
+      let y = parseInt(dmy[3])
+      if (y < 100) y += 2000
+      if (y > 2500) y -= 543   // Buddhist Era → Common Era
+      return `${y}-${m}-${d}`
+    }
+    return null
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setCsvStage('idle')
+    setCsvPreview(null)
+    setCsvError('')
+    setCsvImportResult(null)
+    try {
+      const XLSX = await import('xlsx')
+      const data = await file.arrayBuffer()
+      const workbook = XLSX.read(data)
+      const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false })
+
+      // Detect header row and column indices
+      let headerRow = -1
+      let dateCol = 0
+      let nameCol = 1
+
+      for (let i = 0; i < Math.min(5, rows.length); i++) {
+        const cells = (rows[i] as unknown[]).map((c) => String(c ?? '').toLowerCase())
+        const hasDate = cells.some((c) => c.includes('date') || c.includes('วันที่'))
+        if (hasDate) {
+          headerRow = i
+          const dIdx = cells.findIndex((c) => c.includes('date') || c.includes('วันที่'))
+          dateCol = dIdx >= 0 ? dIdx : 0
+          // Prefer Thai name column
+          const thIdx = cells.findIndex((c) => c.includes('thai') || c.includes('ชื่อ') || c.includes('descriptionthai'))
+          const enIdx = cells.findIndex((c) => c.includes('description') && !c.includes('thai'))
+          nameCol = thIdx >= 0 ? thIdx : enIdx >= 0 ? enIdx : 1
+          break
+        }
+      }
+
+      const holidays: HolidayPreview[] = []
+      for (let i = headerRow + 1; i < rows.length; i++) {
+        const row = rows[i] as unknown[]
+        if (!row || row.length === 0) continue
+        const dateRaw = String(row[dateCol] ?? '').trim()
+        const nameRaw = String(row[nameCol] ?? '').trim()
+        if (!dateRaw || !nameRaw) continue
+        const isoDate = parseDateToISO(dateRaw)
+        if (!isoDate) continue
+        holidays.push({ date: isoDate, name: nameRaw })
+      }
+
+      if (holidays.length === 0)
+        throw new Error('ไม่พบข้อมูลวันหยุดในไฟล์ กรุณาตรวจสอบรูปแบบไฟล์ (คอลัมน์วันที่และชื่อวันหยุด)')
+
+      setCsvPreview(holidays)
+      setCsvStage('parsed')
+    } catch (err) {
+      setCsvError(err instanceof Error ? err.message : 'อ่านไฟล์ไม่สำเร็จ')
+      setCsvStage('error')
+    }
+  }
+
+  async function handleCSVImport(mode: 'upsert' | 'replace' = 'upsert') {
+    if (!csvPreview) return
+    setCsvStage('importing')
+    setCsvError('')
+    try {
+      const res = await fetch('/api/admin/holidays/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ year, mode, holidays: csvPreview }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`)
+      }
+      const data: ImportResult = await res.json()
+      setCsvImportResult(data)
+      setCsvStage('done')
+      await loadSaved(year)
+      if (csvFileRef.current) csvFileRef.current.value = ''
+    } catch (err) {
+      setCsvError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด')
+      setCsvStage('error')
+    }
+  }
+
+  function resetCSV() {
+    setCsvStage('idle')
+    setCsvPreview(null)
+    setCsvError('')
+    setCsvImportResult(null)
+    if (csvFileRef.current) csvFileRef.current.value = ''
   }
 
   // ── Manual add state ─────────────────────────────────────────────────────────
@@ -330,6 +444,124 @@ export default function HolidayImportClient() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      {/* ───────── SECTION 2.5: CSV / Excel upload ──────────────────────────── */}
+      <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-4">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">
+            นำเข้าวันหยุดจากไฟล์ CSV / Excel
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            ใช้เมื่อ BOT API ไม่สามารถเชื่อมต่อได้ — ดาวน์โหลดไฟล์จาก{' '}
+            <a
+              href="https://app.bot.or.th/BOTHWS/faces/pages/form/frm_fin_inst_holiday.xhtml"
+              target="_blank"
+              rel="noreferrer"
+              className="underline text-primary"
+            >
+              เว็บไซต์ ธปท.
+            </a>{' '}
+            แล้วอัปโหลดที่นี่
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="inline-flex items-center gap-2 cursor-pointer border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            📂 เลือกไฟล์ (.xlsx / .csv)
+            <input
+              ref={csvFileRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </label>
+
+          {csvStage === 'parsed' && csvPreview && csvPreview.length > 0 && (
+            <>
+              {saved.length > 0 && (
+                <button
+                  onClick={() => handleCSVImport('upsert')}
+                  className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  อัปเดตข้อมูล (Upsert)
+                </button>
+              )}
+              <button
+                onClick={() => handleCSVImport('replace')}
+                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              >
+                {saved.length === 0 ? 'นำเข้าข้อมูล' : 'นำเข้าใหม่ทั้งหมด (Replace)'}
+              </button>
+            </>
+          )}
+
+          {csvStage === 'importing' && (
+            <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+              <Spinner /> กำลังนำเข้าข้อมูล…
+            </span>
+          )}
+
+          {(csvStage === 'parsed' || csvStage === 'done' || csvStage === 'error') && (
+            <button
+              onClick={resetCSV}
+              className="inline-flex items-center gap-2 border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              ล้าง
+            </button>
+          )}
+        </div>
+
+        {csvStage === 'error' && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <span className="font-semibold">เกิดข้อผิดพลาด:</span> {csvError}
+          </div>
+        )}
+
+        {csvStage === 'done' && csvImportResult && (
+          <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+            <p className="font-semibold text-green-700 mb-1">
+              ✅ นำเข้าสำเร็จ ({csvImportResult.mode === 'replace' ? 'Replace' : 'Upsert'})
+            </p>
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>ดึงข้อมูลทั้งหมด: <strong>{csvImportResult.totalFetched}</strong> วัน</li>
+              <li>นำเข้าใหม่: <strong>{csvImportResult.totalInserted}</strong> วัน</li>
+              {csvImportResult.mode === 'upsert' && (
+                <li>อัปเดตชื่อ: <strong>{csvImportResult.totalUpdated}</strong> วัน</li>
+              )}
+              <li>ข้ามรายการ: <strong>{csvImportResult.totalSkipped}</strong> วัน</li>
+            </ul>
+          </div>
+        )}
+
+        {csvStage === 'parsed' && csvPreview && csvPreview.length > 0 && (
+          <div className="rounded-lg border border-border overflow-hidden">
+            <div className="px-4 py-2 bg-muted/40 border-b border-border text-xs text-muted-foreground">
+              พบ <strong>{csvPreview.length}</strong> รายการ — กรุณาตรวจสอบก่อนนำเข้า
+            </div>
+            <div className="max-h-64 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/20 sticky top-0">
+                  <tr>
+                    <th className="text-center px-3 py-2 font-semibold text-muted-foreground w-10">#</th>
+                    <th className="text-left px-3 py-2 font-semibold text-muted-foreground">วันที่</th>
+                    <th className="text-left px-3 py-2 font-semibold text-muted-foreground">ชื่อวันหยุด</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {csvPreview.map((h, i) => (
+                    <tr key={h.date + i}>
+                      <td className="text-center px-3 py-2 text-muted-foreground/60">{i + 1}</td>
+                      <td className="px-3 py-2 font-medium tabular-nums">{formatThaiDateShortFromISO(h.date)}</td>
+                      <td className="px-3 py-2">{h.name}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
