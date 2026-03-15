@@ -33,9 +33,9 @@ export async function getUsedLeaveDaysThisYear(
       userId,
       leaveTypeId,
       status: 'APPROVED',
-      startDate: { gte: yearStart, lte: yearEnd },
+      leaveStartDateTime: { gte: yearStart, lte: yearEnd },
     },
   })
 
-  return result._sum.totalDays ?? 0
+  return result._sum?.totalDays ?? 0
 }

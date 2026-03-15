@@ -16,7 +16,7 @@ export async function updateLeaveType(
   formData: FormData,
 ): Promise<LeaveTypeFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
@@ -26,6 +26,9 @@ export async function updateLeaveType(
   const requiresAttachment = formData.get('requiresAttachment') === 'true'
   const deductFromBalance = formData.get('deductFromBalance') === 'true'
   const allowDuringProbation = formData.get('allowDuringProbation') === 'true'
+  const leaveCategoryId = (formData.get('leaveCategoryId') as string | null) || null
+  const leaveLimitType = (formData.get('leaveLimitType') as string | null) ?? 'PER_YEAR'
+  const dayCountType = (formData.get('dayCountType') as string | null) ?? 'WORKING_DAY'
 
   if (!name) {
     return { success: false, message: 'กรุณากรอกชื่อประเภทการลา', errors: { name: 'ชื่อจำเป็น' } }
@@ -47,6 +50,9 @@ export async function updateLeaveType(
       requiresAttachment,
       deductFromBalance,
       allowDuringProbation,
+      leaveCategoryId: leaveCategoryId || undefined,
+      leaveLimitType: leaveLimitType as 'PER_YEAR' | 'PER_EVENT' | 'MEDICAL_BASED',
+      dayCountType: dayCountType as 'WORKING_DAY' | 'CALENDAR_DAY',
     },
   })
 
@@ -56,7 +62,7 @@ export async function updateLeaveType(
 
 export async function deleteLeaveType(id: string): Promise<LeaveTypeFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
@@ -69,10 +75,8 @@ export async function deleteLeaveType(id: string): Promise<LeaveTypeFormState> {
   }
 
   // Delete related leave balances first, then delete the leave type
-  await prisma.$transaction(async (tx) => {
-    await tx.leaveBalance.deleteMany({ where: { leaveTypeId: id } })
-    await tx.leaveType.delete({ where: { id } })
-  })
+  await prisma.leaveBalance.deleteMany({ where: { leaveTypeId: id } })
+  await prisma.leaveType.delete({ where: { id } })
 
   revalidatePath('/admin/settings')
   return { success: true, message: 'ลบประเภทการลาเรียบร้อยแล้ว' }

@@ -1,8 +1,10 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import Link from 'next/link'
+import { redirect } from '@/i18n/navigation'
+import { Link } from '@/i18n/navigation'
 import { notFound } from 'next/navigation'
 import EditEmployeeForm from './EditEmployeeForm'
+import AdminLayout from '@/components/admin-layout'
 
 export default async function EditEmployeePage({
   params,
@@ -10,21 +12,12 @@ export default async function EditEmployeePage({
   params: Promise<{ id: string }>
 }) {
   const session = await auth()
-
-  if (!session || session.user.role !== 'ADMIN') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-500 text-xl font-semibold">Unauthorized</p>
-          <p className="text-gray-500 text-sm mt-1">เฉพาะผู้ดูแลระบบเท่านั้น</p>
-        </div>
-      </div>
-    )
-  }
+  if (!session?.user?.id) redirect('/login')
+  if (!session.user.isAdmin) redirect('/dashboard')
 
   const { id } = await params
 
-  const [employee, departments, managers, positions] = await Promise.all([
+  const [employee, departments, managers, positions, dbUser] = await Promise.all([
     prisma.employee.findUnique({
       where: { id },
       select: {
@@ -32,103 +25,82 @@ export default async function EditEmployeePage({
         employeeCode: true,
         firstName:    true,
         lastName:     true,
-        email:        true,
         phone:        true,
-        avatarUrl:    true,
-        position:     true,
+        user:         { select: { email: true, avatarUrl: true, role: { select: { name: true } } } },
         positionId:   true,
-        role:         true,
         isProbation:  true,
         isActive:     true,
         departmentId: true,
         managerId:    true,
         createdAt:    true,
         department:   { select: { name: true } },
+        approvers:    { select: { id: true } },
       },
     }),
     prisma.department.findMany({
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
     }),
-    prisma.user.findMany({
-      where: { role: 'MANAGER' },
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true, role: true, email: true },
+    prisma.employee.findMany({
+      where: { isActive: true, user: { role: { name: { in: ['MANAGER', 'ADMIN'] } } } },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+      select: { id: true, firstName: true, lastName: true, positionRef: { select: { name: true } }, department: { select: { name: true } } },
     }),
     prisma.position.findMany({
       orderBy: { name: 'asc' },
-      select: { id: true, name: true },
+      select: { id: true, name: true, departmentId: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { avatarUrl: true },
     }),
   ])
 
   if (!employee) notFound()
 
-  const createdDate = employee.createdAt.toLocaleDateString('th-TH', {
-    year:  'numeric',
-    month: 'long',
-    day:   'numeric',
-  })
+  const user = {
+    name:      session.user.name ?? '',
+    email:     session.user.email ?? '',
+    avatarUrl: dbUser?.avatarUrl ?? null,
+    isAdmin:   true,
+  }
 
   return (
-    <div className="p-6 md:p-8 max-w-3xl mx-auto">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-        <Link href="/admin/employees" className="hover:text-gray-600 transition">
-          จัดการพนักงาน
-        </Link>
-        <span>/</span>
-        <span className="text-gray-600 font-medium">
-          {employee.firstName} {employee.lastName}
-        </span>
-      </nav>
-
-      {/* Header */}
-      <div className="mb-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
+    <AdminLayout title="แก้ไขพนักงาน" user={user}>
+      <div className="max-w-5xl mx-auto space-y-5">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Link href="/admin/employees" className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300 transition">
+            จัดการพนักงาน
+          </Link>
+          <span>/</span>
+          <span className="text-foreground font-medium">
             {employee.firstName} {employee.lastName}
-          </h1>
-          <p className="text-sm text-gray-400 mt-0.5">
-            {employee.employeeCode} · เพิ่มเมื่อ {createdDate}
-          </p>
-        </div>
-        <span
-          className={`self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
-            employee.isActive
-              ? 'bg-green-50 text-green-700'
-              : 'bg-red-50 text-red-500'
-          }`}
-        >
-          <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              employee.isActive ? 'bg-green-500' : 'bg-red-400'
-            }`}
-          />
-          {employee.isActive ? 'Active' : 'Inactive'}
-        </span>
-      </div>
+          </span>
+        </nav>
 
-      <EditEmployeeForm
-        employee={{
-          id:           employee.id,
-          employeeCode: employee.employeeCode,
-          firstName:    employee.firstName,
-          lastName:     employee.lastName,
-          email:        employee.email,
-          phone:        employee.phone,
-          avatarUrl:    employee.avatarUrl,
-          position:     employee.position,
-          positionId:   employee.positionId,
-          role:         employee.role,
-          isProbation:  employee.isProbation,
-          isActive:     employee.isActive,
-          departmentId: employee.departmentId,
-          managerId:    employee.managerId,
-        }}
-        departments={departments}
-        managers={managers}
-        positions={positions}
-      />
-    </div>
+        <EditEmployeeForm
+          employee={{
+            id:           employee.id,
+            employeeCode: employee.employeeCode,
+            firstName:    employee.firstName,
+            lastName:     employee.lastName,
+            email:        employee.user?.email ?? '',
+            phone:        employee.phone,
+            avatarUrl:    employee.user?.avatarUrl ?? null,
+            positionId:   employee.positionId,
+            role:         employee.user?.role?.name ?? null,
+            isProbation:  employee.isProbation,
+            isActive:     employee.isActive,
+            departmentId: employee.departmentId,
+            managerId:    employee.managerId,
+            approverIds:  employee.approvers.map(a => a.id),
+          }}
+          departments={departments}
+          managers={managers}
+          positions={positions}
+        />
+      </div>
+    </AdminLayout>
   )
 }

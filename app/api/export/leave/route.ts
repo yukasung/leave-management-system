@@ -2,36 +2,32 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { LeaveStatus } from '@prisma/client'
-import { durationLabel, type LeaveDurationType } from '@/lib/leave-calc'
+import { formatLeaveDuration } from '@/lib/leave-calc'
+import { formatThaiDateShort } from '@/lib/date-utils'
 
 function escapeCSV(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return ''
   const str = String(value)
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-    return `"${str.replace(/"/g, '""')}"`
+    return `"${str.replace(/"/g, '""')}`
   }
   return str
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
-}
-
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'รอ Manager',
-  IN_REVIEW: 'รอ HR',
-  APPROVED: 'อนุมัติแล้ว',
-  REJECTED: 'ปฏิเสธ',
+  DRAFT:            'ร่าง',
+  PENDING:          'รออนุมัติ',
+  IN_REVIEW:        'รอ HR',
+  APPROVED:         'อนุมัติแล้ว',
+  REJECTED:         'ปฏิเสธ',
+  CANCELLED:        'ยกเลิกแล้ว',
+  CANCEL_REQUESTED: 'ขอยกเลิก (รอ HR)',
 }
 
 export async function GET(req: NextRequest) {
   const session = await auth()
 
-  if (!session || (session.user.role !== 'HR' && session.user.role !== 'ADMIN')) {
+  if (!session || !session.user.isAdmin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -51,7 +47,7 @@ export async function GET(req: NextRequest) {
       ...(statusFilter ? { status: statusFilter } : {}),
       ...(yearFilter
         ? {
-            startDate: {
+            leaveStartDateTime: {
               gte: new Date(`${yearFilter}-01-01`),
               lte: new Date(`${yearFilter}-12-31`),
             },
@@ -64,7 +60,7 @@ export async function GET(req: NextRequest) {
         select: {
           name: true,
           email: true,
-          department: { select: { name: true } },
+          employee: { select: { department: { select: { name: true } } } },
         },
       },
       leaveType: { select: { name: true } },
@@ -79,8 +75,7 @@ export async function GET(req: NextRequest) {
     'ประเภทการลา',
     'วันที่เริ่ม',
     'วันที่สิ้นสุด',
-    'จำนวนวัน',
-    'ช่วงเวลา',
+    'จำนวน',
     'สถานะ',
     'เหตุผล',
     'วันที่ส่งคำขอ',
@@ -90,15 +85,14 @@ export async function GET(req: NextRequest) {
     index + 1,
     req.user.name,
     req.user.email,
-    req.user.department?.name ?? '',
+    req.user.employee?.department?.name ?? '',
     req.leaveType.name,
-    formatDate(req.startDate),
-    formatDate(req.endDate),
-    req.totalDays,
-    durationLabel(req.durationType as LeaveDurationType),
+    formatThaiDateShort(req.leaveStartDateTime),
+    formatThaiDateShort(req.leaveEndDateTime),
+    formatLeaveDuration(req.totalDays),
     STATUS_LABELS[req.status] ?? req.status,
     req.reason ?? '',
-    formatDate(req.createdAt),
+    formatThaiDateShort(req.createdAt),
   ])
 
   const csvLines = [

@@ -1,18 +1,19 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useActionState, useEffect, useState } from 'react'
+import { useRouter } from '@/i18n/navigation'
 import { createLeaveType, type LeaveTypeFormState } from './actions'
 
 const initial: LeaveTypeFormState = { success: false, message: '' }
 
-export default function NewLeaveTypeForm() {
+export default function NewLeaveTypeForm({ categories }: { categories: { id: string; name: string }[] }) {
   const router = useRouter()
   const [state, action, pending] = useActionState(createLeaveType, initial)
+  const [limitType, setLimitType] = useState<'PER_YEAR' | 'PER_EVENT' | 'MEDICAL_BASED'>('PER_YEAR')
 
   useEffect(() => {
     if (state.success) {
-      const t = setTimeout(() => router.push('/admin/settings'), 1200)
+      const t = setTimeout(() => router.push('/admin/settings/leave-types'), 1200)
       return () => clearTimeout(t)
     }
   }, [state.success, router])
@@ -28,13 +29,13 @@ export default function NewLeaveTypeForm() {
           }`}
         >
           {state.message}
-          {state.success && <span className="ml-2 text-green-500">กำลังกลับไปหน้าตั้งค่า…</span>}
+          {state.success && <span className="ml-2 text-green-500">กำลังกลับไปหน้าประเภทการลา…</span>}
         </div>
       )}
 
       {/* Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           ชื่อประเภทการลา <span className="text-red-500">*</span>
         </label>
         <input
@@ -42,44 +43,95 @@ export default function NewLeaveTypeForm() {
           type="text"
           required
           placeholder="เช่น ลาป่วย, ลากิจ, ลาพักร้อน"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         />
         {state.errors?.name && <p className="text-xs text-red-500 mt-1">{state.errors.name}</p>}
       </div>
 
-      {/* Max days */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Classification */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            วันสูงสุดต่อปี
-          </label>
-          <input
-            name="maxDaysPerYear"
-            type="number"
-            min="0"
-            step="0.5"
-            placeholder="ไม่จำกัด"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+          <label className="block text-sm font-medium text-foreground mb-1">หมวดหมู่การลา</label>
+          <select
+            name="leaveCategoryId"
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">— ไม่ระบุ —</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            วันสูงสุดต่อครั้ง
-          </label>
-          <input
-            name="maxDaysPerRequest"
-            type="number"
-            min="0"
-            step="0.5"
-            placeholder="ไม่จำกัด"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+          <label className="block text-sm font-medium text-foreground mb-1">ประเภทขีดจำกัด</label>
+          <select
+            name="leaveLimitType"
+            defaultValue="PER_YEAR"
+            value={limitType}
+            onChange={e => setLimitType(e.target.value as typeof limitType)}
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="PER_YEAR">ต่อปี</option>
+            <option value="PER_EVENT">ต่อครั้ง</option>
+            <option value="MEDICAL_BASED">ตามใบรับรองแพทย์</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">การนับวัน</label>
+          <select
+            name="dayCountType"
+            defaultValue="WORKING_DAY"
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="WORKING_DAY">วันทำการ</option>
+            <option value="CALENDAR_DAY">วันปฏิทิน</option>
+          </select>
         </div>
       </div>
 
+      {/* Max days */}
+      {limitType === 'MEDICAL_BASED' ? (
+        <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg px-4 py-3">
+          จำนวนวันลากำหนดตามใบรับรองแพทย์ ไม่มีขีดจำกัดคงที่
+        </p>
+      ) : (
+        <div className="max-w-xs">
+          {limitType === 'PER_YEAR' && (
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                วันสูงสุดต่อปี
+              </label>
+              <input
+                name="maxDaysPerYear"
+                type="number"
+                min="0"
+                step="0.5"
+                placeholder="ไม่จำกัด"
+                className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          )}
+          {limitType === 'PER_EVENT' && (
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                วันสูงสุดต่อครั้ง
+              </label>
+              <input
+                name="maxDaysPerRequest"
+                type="number"
+                min="0"
+                step="0.5"
+                placeholder="ไม่จำกัด"
+                className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Toggles */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-medium text-gray-700 mb-2">การตั้งค่าเพิ่มเติม</legend>
+        <legend className="text-sm font-medium text-foreground mb-2">การตั้งค่าเพิ่มเติม</legend>
 
         <ToggleField
           name="requiresAttachment"
@@ -102,13 +154,17 @@ export default function NewLeaveTypeForm() {
         <button
           type="submit"
           disabled={pending || state.success}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+          className="bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium px-5 py-2 rounded-lg transition-colors"
         >
           {pending ? 'กำลังบันทึก…' : 'บันทึก'}
         </button>
-        <a href="/admin/settings" className="text-sm text-gray-500 hover:text-gray-700 underline">
+        <button
+          type="button"
+          onClick={() => router.push('/admin/settings/leave-types')}
+          className="border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+        >
           ยกเลิก
-        </a>
+        </button>
       </div>
     </form>
   )
@@ -128,12 +184,12 @@ function ToggleField({
       <select
         name={name}
         defaultValue={defaultValue ? 'true' : 'false'}
-        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="border border-input bg-background text-foreground rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
       >
         <option value="true">ใช่</option>
         <option value="false">ไม่</option>
       </select>
-      <span className="text-sm text-gray-700">{label}</span>
+      <span className="text-sm text-foreground">{label}</span>
     </label>
   )
 }

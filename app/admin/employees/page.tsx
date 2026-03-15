@@ -1,48 +1,40 @@
-import { prisma } from '@/lib/prisma'
+﻿import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import Link from 'next/link'
+import { redirect } from '@/i18n/navigation'
+import { Link } from '@/i18n/navigation'
 import { Suspense } from 'react'
 import EmployeeFilters from './EmployeeFilters'
+import AdminLayout from '@/components/admin-layout'
+import EmployeeRow from './EmployeeRow'
 
 const PAGE_SIZE = 15
-
-const ROLE_LABELS: Record<string, string> = {
-  ADMIN: 'Admin',
-  HR: 'HR',
-  MANAGER: 'Manager',
-  EMPLOYEE: 'พนักงาน',
-  EXECUTIVE: 'ผู้บริหาร',
-}
-
-const ROLE_BADGE: Record<string, string> = {
-  ADMIN: 'bg-purple-100 text-purple-700',
-  HR: 'bg-blue-100 text-blue-700',
-  MANAGER: 'bg-indigo-100 text-indigo-700',
-  EMPLOYEE: 'bg-gray-100 text-gray-600',
-  EXECUTIVE: 'bg-amber-100 text-amber-700',
-}
 
 export default async function EmployeesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; department?: string; page?: string }>
+  searchParams: Promise<{ search?: string; department?: string; page?: string; sort?: string; order?: string }>
 }) {
   const session = await auth()
+  if (!session?.user?.id) redirect('/login')
+  if (!session.user.isAdmin) redirect('/dashboard')
 
-  if (!session || session.user.role !== 'ADMIN') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-500 text-xl font-semibold">Unauthorized</p>
-          <p className="text-gray-500 text-sm mt-1">เฉพาะผู้ดูแลระบบเท่านั้น</p>
-        </div>
-      </div>
-    )
-  }
-
-  const { search, department, page: pageParam } = await searchParams
+  const { search, department, page: pageParam, sort: sortParam, order: orderParam } = await searchParams
   const currentPage = Math.max(1, parseInt(pageParam ?? '1', 10))
   const skip = (currentPage - 1) * PAGE_SIZE
+
+  const VALID_SORTS = ['employeeCode', 'firstName', 'department', 'position', 'isActive'] as const
+  type SortKey = typeof VALID_SORTS[number]
+  const sort: SortKey = VALID_SORTS.includes(sortParam as SortKey) ? (sortParam as SortKey) : 'department'
+  const order = orderParam === 'asc' ? 'asc' : 'desc'
+  const nextOrder = (col: SortKey) => (sort === col && order === 'asc' ? 'desc' : 'asc')
+
+  const ORDER_BY: Record<SortKey, object | object[]> = {
+    employeeCode: { employeeCode: order },
+    firstName:    [{ firstName: order }, { lastName: order }],
+    department:   [{ department: { name: order } }, { firstName: 'asc' as const }],
+    position:     [{ positionRef: { name: order } }, { firstName: 'asc' as const }],
+    isActive:     [{ isActive: order === 'asc' ? 'desc' as const : 'asc' as const }, { firstName: 'asc' as const }],
+  }
 
   const where = {
     ...(search
@@ -51,28 +43,25 @@ export default async function EmployeesPage({
             { firstName: { contains: search, mode: 'insensitive' as const } },
             { lastName: { contains: search, mode: 'insensitive' as const } },
             { employeeCode: { contains: search, mode: 'insensitive' as const } },
-            { email: { contains: search, mode: 'insensitive' as const } },
           ],
         }
       : {}),
     ...(department ? { departmentId: department } : {}),
   }
 
-  const [employees, total, departments] = await Promise.all([
+  const [employees, total, departments, dbUser] = await Promise.all([
     prisma.employee.findMany({
       where,
       skip,
       take: PAGE_SIZE,
-      orderBy: [{ department: { name: 'asc' } }, { firstName: 'asc' }],
+      orderBy: ORDER_BY[sort] as Parameters<typeof prisma.employee.findMany>[0]['orderBy'],
       select: {
         id: true,
         employeeCode: true,
         firstName: true,
         lastName: true,
-        email: true,
-        avatarUrl: true,
-        position: true,
-        role: true,
+        positionRef: { select: { name: true } },
+        user: { select: { email: true, avatarUrl: true, role: { select: { name: true } } } },
         isActive: true,
         isProbation: true,
         department: { select: { id: true, name: true } },
@@ -83,201 +72,190 @@ export default async function EmployeesPage({
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
     }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { avatarUrl: true },
+    }),
   ])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
-  function pageUrl(p: number) {
+  function pageUrl(p: number, s = sort, o = order) {
     const params = new URLSearchParams()
     if (search) params.set('search', search)
     if (department) params.set('department', department)
+    params.set('sort', s)
+    params.set('order', o)
     params.set('page', String(p))
     return `/admin/employees?${params.toString()}`
   }
 
-  return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">จัดการพนักงาน</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            พนักงานทั้งหมด {total.toLocaleString()} คน
-            {search || department ? ` · กรองแล้ว` : ''}
-          </p>
-        </div>
-        <Link
-          href="/admin/employees/new"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition"
-        >
-          + เพิ่มพนักงานใหม่
-        </Link>
-      </div>
+  function sortUrl(col: SortKey) {
+    return pageUrl(1, col, nextOrder(col))
+  }
 
-      {/* Filters */}
-      <div className="mb-5">
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sort !== col) return <span className="ml-1 opacity-30">↕</span>
+    return <span className="ml-1">{order === 'asc' ? '↑' : '↓'}</span>
+  }
+
+  const user = {
+    name:      session.user.name ?? '',
+    email:     session.user.email ?? '',
+    avatarUrl: dbUser?.avatarUrl ?? null,
+    isAdmin:   true,
+  }
+
+  return (
+    <AdminLayout title="จัดการพนักงาน" user={user}>
+      <div className="space-y-4 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">จัดการพนักงาน</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              พนักงานทั้งหมด {total.toLocaleString()} คน
+              {search || department ? ' · กรองอยู่' : ''}
+            </p>
+          </div>
+          <Link
+            href="/admin/employees/new"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition"
+          >
+            + เพิ่มพนักงานใหม่
+          </Link>
+        </div>
+
+        {/* Filters */}
         <Suspense>
           <EmployeeFilters departments={departments} />
         </Suspense>
-      </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {employees.length === 0 ? (
-          <div className="py-20 text-center text-gray-400">
-            <p className="text-lg">ไม่พบพนักงาน</p>
-            {(search || department) && (
-              <p className="text-sm mt-1">ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p>
-            )}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  <th className="px-5 py-3.5">รหัสพนักงาน</th>
-                  <th className="px-5 py-3.5">ชื่อ-นามสกุล</th>
-                  <th className="px-5 py-3.5">แผนก</th>
-                  <th className="px-5 py-3.5">ตำแหน่ง</th>
-                  <th className="px-5 py-3.5">บทบาท</th>
-                  <th className="px-5 py-3.5">สถานะ</th>
-                  <th className="px-5 py-3.5 text-right">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {employees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="px-5 py-3.5 font-mono text-gray-600 text-xs">
-                      {emp.employeeCode}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 ring-1 ring-gray-200">
-                          {emp.avatarUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={emp.avatarUrl} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            <span className="flex h-full w-full items-center justify-center bg-linear-to-br from-blue-500 to-indigo-600 text-white text-[10px] font-bold select-none">
-                              {`${emp.firstName}${emp.lastName}`.slice(0, 2).toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800">
-                            {emp.firstName} {emp.lastName}
-                          </p>
-                          <p className="text-xs text-gray-400">{emp.email}</p>
-                          {emp.isProbation && (
-                            <span className="inline-block mt-0.5 text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">
-                              ทดลองงาน
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-gray-600">
-                      {emp.department?.name ?? (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5 text-gray-600">{emp.position}</td>
-                    <td className="px-5 py-3.5">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          ROLE_BADGE[emp.role] ?? 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {ROLE_LABELS[emp.role] ?? emp.role}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          emp.isActive
-                            ? 'bg-green-50 text-green-700'
-                            : 'bg-red-50 text-red-600'
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            emp.isActive ? 'bg-green-500' : 'bg-red-400'
-                          }`}
-                        />
-                        {emp.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <Link
-                        href={`/admin/employees/${emp.id}`}
-                        className="text-blue-600 hover:text-blue-800 text-xs font-medium hover:underline"
-                      >
-                        ดูรายละเอียด
+        {/* Table */}
+        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          {employees.length === 0 ? (
+            <div className="py-20 text-center text-muted-foreground">
+              <p className="text-lg">ไม่พบพนักงาน</p>
+              {(search || department) && (
+                <p className="text-sm mt-1">ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 border-b border-border">
+                  <tr className="text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <th className="px-5 py-3.5 whitespace-nowrap">
+                      <Link href={sortUrl('employeeCode')} className="inline-flex items-center hover:text-foreground transition-colors">
+                        รหัสพนักงาน<SortIcon col="employeeCode" />
                       </Link>
-                    </td>
+                    </th>
+                    <th className="px-5 py-3.5 whitespace-nowrap">
+                      <Link href={sortUrl('firstName')} className="inline-flex items-center hover:text-foreground transition-colors">
+                        ชื่อ-นามสกุล<SortIcon col="firstName" />
+                      </Link>
+                    </th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">
+                      <Link href={sortUrl('department')} className="inline-flex items-center justify-center w-full hover:text-foreground transition-colors">
+                        แผนก<SortIcon col="department" />
+                      </Link>
+                    </th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">
+                      <Link href={sortUrl('position')} className="inline-flex items-center justify-center w-full hover:text-foreground transition-colors">
+                        ตำแหน่ง<SortIcon col="position" />
+                      </Link>
+                    </th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">บทบาท</th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">
+                      <Link href={sortUrl('isActive')} className="inline-flex items-center justify-center w-full hover:text-foreground transition-colors">
+                        สถานะ<SortIcon col="isActive" />
+                      </Link>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {employees.map((emp) => {
+                    const roleName = emp.user?.role?.name ?? 'EMPLOYEE'
+                    return (
+                    <EmployeeRow
+                      key={emp.id}
+                      id={emp.id}
+                      employeeCode={emp.employeeCode}
+                      firstName={emp.firstName}
+                      lastName={emp.lastName}
+                      email={emp.user?.email ?? ''}
+                      avatarUrl={emp.user?.avatarUrl ?? null}
+                      position={emp.positionRef?.name ?? null}
+                      isAdmin={roleName === 'ADMIN' || roleName === 'HR'}
+                      isManager={roleName === 'MANAGER'}
+                      isActive={emp.isActive}
+                      isProbation={emp.isProbation}
+                      departmentName={emp.department?.name ?? null}
+                    />
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              แสดง {skip + 1}{Math.min(skip + PAGE_SIZE, total)} จาก {total} รายการ
+            </p>
+            <div className="flex items-center gap-1.5">
+              <Link
+                href={pageUrl(currentPage - 1)}
+                className={`px-3 py-1.5 text-sm rounded-lg border transition ${
+                  currentPage <= 1
+                    ? 'pointer-events-none border-border text-muted-foreground/30'
+                    : 'border-border text-muted-foreground hover:bg-muted'
+                }`}
+                aria-disabled={currentPage <= 1}
+              >
+                 ก่อนหน้า
+              </Link>
+
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                const half = 3
+                let start = Math.max(1, currentPage - half)
+                const end = Math.min(totalPages, start + 6)
+                start = Math.max(1, end - 6)
+                const p = start + i
+                if (p > totalPages) return null
+                return (
+                  <Link
+                    key={p}
+                    href={pageUrl(p)}
+                    className={`px-3 py-1.5 text-sm rounded-lg border transition ${
+                      p === currentPage
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {p}
+                  </Link>
+                )
+              })}
+
+              <Link
+                href={pageUrl(currentPage + 1)}
+                className={`px-3 py-1.5 text-sm rounded-lg border transition ${
+                  currentPage >= totalPages
+                    ? 'pointer-events-none border-border text-muted-foreground/30'
+                    : 'border-border text-muted-foreground hover:bg-muted'
+                }`}
+                aria-disabled={currentPage >= totalPages}
+              >
+                ถัดไป 
+              </Link>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-5 flex items-center justify-between">
-          <p className="text-sm text-gray-500">
-            แสดง {skip + 1}–{Math.min(skip + PAGE_SIZE, total)} จาก {total} รายการ
-          </p>
-          <div className="flex items-center gap-1.5">
-            <Link
-              href={pageUrl(currentPage - 1)}
-              className={`px-3 py-1.5 text-sm rounded-lg border transition ${
-                currentPage <= 1
-                  ? 'pointer-events-none border-gray-200 text-gray-300'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-              }`}
-              aria-disabled={currentPage <= 1}
-            >
-              ← ก่อนหน้า
-            </Link>
-
-            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-              // Show pages around current page
-              const half = 3
-              let start = Math.max(1, currentPage - half)
-              const end = Math.min(totalPages, start + 6)
-              start = Math.max(1, end - 6)
-              const p = start + i
-              if (p > totalPages) return null
-              return (
-                <Link
-                  key={p}
-                  href={pageUrl(p)}
-                  className={`px-3 py-1.5 text-sm rounded-lg border transition ${
-                    p === currentPage
-                      ? 'border-blue-600 bg-blue-600 text-white'
-                      : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {p}
-                </Link>
-              )
-            })}
-
-            <Link
-              href={pageUrl(currentPage + 1)}
-              className={`px-3 py-1.5 text-sm rounded-lg border transition ${
-                currentPage >= totalPages
-                  ? 'pointer-events-none border-gray-200 text-gray-300'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-              }`}
-              aria-disabled={currentPage >= totalPages}
-            >
-              ถัดไป →
-            </Link>
-          </div>
-        </div>
-      )}
-    </div>
+    </AdminLayout>
   )
 }

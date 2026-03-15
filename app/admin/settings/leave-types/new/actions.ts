@@ -15,7 +15,7 @@ export async function createLeaveType(
   formData: FormData,
 ): Promise<LeaveTypeFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
@@ -25,6 +25,9 @@ export async function createLeaveType(
   const requiresAttachment = formData.get('requiresAttachment') === 'true'
   const deductFromBalance = formData.get('deductFromBalance') === 'true'
   const allowDuringProbation = formData.get('allowDuringProbation') === 'true'
+  const leaveCategoryId = (formData.get('leaveCategoryId') as string | null) || null
+  const leaveLimitType = (formData.get('leaveLimitType') as string | null) ?? 'PER_YEAR'
+  const dayCountType = (formData.get('dayCountType') as string | null) ?? 'WORKING_DAY'
 
   if (!name) {
     return { success: false, message: 'กรุณากรอกชื่อประเภทการลา', errors: { name: 'ชื่อจำเป็น' } }
@@ -35,7 +38,7 @@ export async function createLeaveType(
     return { success: false, message: 'ชื่อประเภทการลานี้มีอยู่แล้ว', errors: { name: 'ชื่อซ้ำ' } }
   }
 
-  await prisma.leaveType.create({
+  const leaveType = await prisma.leaveType.create({
     data: {
       name,
       maxDaysPerYear: maxDaysPerYear ? parseFloat(maxDaysPerYear as string) : null,
@@ -43,9 +46,32 @@ export async function createLeaveType(
       requiresAttachment,
       deductFromBalance,
       allowDuringProbation,
+      leaveCategoryId: leaveCategoryId || undefined,
+      leaveLimitType: leaveLimitType as 'PER_YEAR' | 'PER_EVENT' | 'MEDICAL_BASED',
+      dayCountType: dayCountType as 'WORKING_DAY' | 'CALENDAR_DAY',
     },
   })
 
+  // Auto-create LeaveBalance for all users for the current year if this type has a quota
+  if (leaveType.maxDaysPerYear != null) {
+    const currentYear = new Date().getFullYear()
+    const users = await prisma.user.findMany({
+      where: { employee: { isNot: null } },
+      select: { id: true },
+    })
+    await prisma.leaveBalance.createMany({
+      data: users.map((u) => ({
+        userId: u.id,
+        leaveTypeId: leaveType.id,
+        year: currentYear,
+        totalDays: leaveType.maxDaysPerYear!,
+        usedDays: 0,
+      })),
+      skipDuplicates: true,
+    })
+  }
+
   revalidatePath('/admin/settings')
+  revalidatePath('/hr/leave-balance-report')
   return { success: true, message: `เพิ่มประเภทการลา "${name}" เรียบร้อยแล้ว` }
 }

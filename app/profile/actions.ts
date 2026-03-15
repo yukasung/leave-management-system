@@ -20,8 +20,14 @@ export async function updateProfile(
 
   if (!name) return { success: false, message: 'กรุณากรอกชื่อ' }
 
-  // Update User (name + phone + avatarUrl)
-  await prisma.user.update({ where: { id: userId }, data: { name, phone, avatarUrl } })
+  // Update User (name + avatarUrl)
+  await prisma.user.update({ where: { id: userId }, data: { name, avatarUrl } })
+
+  // Update Employee phone (phone lives in Employee only)
+  await prisma.employee.updateMany({
+    where: { userId },
+    data: { phone: phone ?? null },
+  })
 
   revalidatePath('/profile')
   revalidatePath('/dashboard')

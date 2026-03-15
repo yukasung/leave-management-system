@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import ProfileForm, { type ProfileData } from './ProfileForm'
+import AdminLayout from '@/components/admin-layout'
 
 export default async function ProfilePage() {
   const session = await auth()
@@ -15,15 +16,15 @@ export default async function ProfilePage() {
       id:        true,
       name:      true,
       email:     true,
-      role:      true,
       avatarUrl: true,
-      phone:     true,
-      department: { select: { name: true } },
       employee: {
         select: {
+          employeeCode: true,
           firstName: true,
           lastName:  true,
-          position:  true,
+          phone:     true,
+          positionRef: { select: { name: true } },
+          department:  { select: { name: true } },
         },
       },
     },
@@ -32,25 +33,36 @@ export default async function ProfilePage() {
   if (!user) redirect('/login')
 
   const data: ProfileData = {
-    userId:     user.id,
-    name:       user.name,
-    email:      user.email,
-    role:       user.role,
-    avatarUrl:  user.avatarUrl ?? null,
-    phone:      user.phone      ?? null,
-    department: user.department?.name ?? null,
-    firstName:  user.employee?.firstName ?? null,
-    lastName:   user.employee?.lastName  ?? null,
-    position:   user.employee?.position  ?? null,
+    userId:       user.id,
+    name:         user.name,
+    email:        user.email,
+    isAdmin:      session.user.isAdmin ?? false,
+    avatarUrl:    user.avatarUrl ?? null,
+    phone:        user.employee?.phone ?? null,
+    department:   user.employee?.department?.name ?? null,
+    employeeCode: user.employee?.employeeCode ?? null,
+    firstName:    user.employee?.firstName ?? null,
+    lastName:     user.employee?.lastName  ?? null,
+    position:     user.employee?.positionRef?.name ?? null,
+  }
+
+  const layoutUser = {
+    name:      user.name ?? '',
+    email:     user.email ?? '',
+    avatarUrl: user.avatarUrl ?? null,
+    isAdmin:   session.user.isAdmin,
+    isManager: session.user.isManager,
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">โปรไฟล์ของฉัน</h1>
-        <p className="text-sm text-gray-500 mt-1">จัดการข้อมูลส่วนตัวและรหัสผ่าน</p>
+    <AdminLayout title="โปรไฟล์" user={layoutUser}>
+      <div className="max-w-3xl mx-auto space-y-5">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">โปรไฟล์ของฉัน</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">จัดการข้อมูลส่วนตัวและรหัสผ่าน</p>
+        </div>
+        <ProfileForm data={data} />
       </div>
-      <ProfileForm data={data} />
-    </div>
+    </AdminLayout>
   )
 }

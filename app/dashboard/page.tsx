@@ -2,173 +2,177 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-
-const roleLabel: Record<string, string> = {
-  ADMIN:    'ผู้ดูแลระบบ',
-  HR:       'ฝ่ายบุคคล',
-  MANAGER:  'ผู้จัดการ',
-  EMPLOYEE: 'พนักงาน',
-  EXECUTIVE: 'ผู้บริหาร',
-}
+import AdminLayout from '@/components/admin-layout'
+import { DashboardCards } from '@/components/dashboard-cards'
+import { LeaveTable, type LeaveRow } from '@/components/leave-table'
+import { buttonVariants } from '@/lib/button-variants'
+import { formatThaiDateShort } from '@/lib/date-utils'
+import { ChevronRight } from 'lucide-react'
 
 export default async function DashboardPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
+  if (!session.user.isAdmin) redirect('/dashboard-user')
 
-  const userId = session.user.id
-  const role = session.user.role
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const endOfToday   = new Date(startOfToday.getTime() + 86_400_000)
 
-  const [pending, approved, rejected, total, pendingAll] = await Promise.all([
-    prisma.leaveRequest.count({ where: { userId, status: 'PENDING' } }),
-    prisma.leaveRequest.count({ where: { userId, status: 'APPROVED' } }),
-    prisma.leaveRequest.count({ where: { userId, status: 'REJECTED' } }),
-    prisma.leaveRequest.count({ where: { userId } }),
-    // สำหรับ manager/hr/admin — คำขอที่รออนุมัติทั้งหมด
-    (role === 'EMPLOYEE')
-      ? Promise.resolve(0)
-      : prisma.leaveRequest.count({ where: { status: 'PENDING' } }),
+  const [
+    totalEmployees,
+    pendingApprovals,
+    todayRequests,
+    approvedThisMonth,
+    recentRequests,
+    leavesByStatus,
+    dbUser,
+  ] = await Promise.all([
+    prisma.employee.count({ where: { isActive: true } }),
+    prisma.leaveRequest.count({ where: { status: 'PENDING' } }),
+    prisma.leaveRequest.count({
+      where: { createdAt: { gte: startOfToday, lt: endOfToday } },
+    }),
+    prisma.leaveRequest.count({
+      where: { status: 'APPROVED', createdAt: { gte: startOfMonth } },
+    }),
+    prisma.leaveRequest.findMany({
+      take: 8,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { name: true, avatarUrl: true } },
+        leaveType: { select: { name: true } },
+      },
+    }),
+    prisma.leaveRequest.groupBy({
+      by: ['status'],
+      _count: { status: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { avatarUrl: true },
+    }),
   ])
 
-  const recentRequests = await prisma.leaveRequest.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    include: { leaveType: { select: { name: true } } },
-  })
+  const rows: LeaveRow[] = recentRequests.map((r) => ({
+    id:         r.id,
+    employee:   { name: r.user.name, avatarUrl: r.user.avatarUrl },
+    leaveType:  r.leaveType.name,
+    leaveStartDateTime: r.leaveStartDateTime,
+    leaveEndDateTime:   r.leaveEndDateTime,
+    totalDays:  r.totalDays,
+    status:     r.status,
+    createdAt:  r.createdAt,
+  }))
 
-  const statusStyle: Record<string, string> = {
-    PENDING:   'bg-yellow-100 text-yellow-700',
-    IN_REVIEW: 'bg-blue-100 text-blue-700',
-    APPROVED:  'bg-green-100 text-green-700',
-    REJECTED:  'bg-red-100 text-red-600',
-  }
-  const statusLabel: Record<string, string> = {
-    PENDING:   'รออนุมัติ',
-    IN_REVIEW: 'กำลังพิจารณา',
-    APPROVED:  'อนุมัติแล้ว',
-    REJECTED:  'ไม่อนุมัติ',
+  const statusMap = Object.fromEntries(
+    leavesByStatus.map((s) => [s.status, s._count.status]),
+  )
+
+  const user = {
+    name:     session.user.name ?? '',
+    email:    session.user.email ?? '',
+    avatarUrl: dbUser?.avatarUrl ?? null,
+    isAdmin:  true,
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">
-          สวัสดี, {session.user.name} 👋
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {roleLabel[role] ?? role} · ระบบจัดการวันลา
-        </p>
-      </div>
+    <AdminLayout title="แดชบอร์ด" user={user}>
+      <div className="space-y-6 max-w-7xl mx-auto">
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-4">
-        <StatCard label="คำขอทั้งหมด" value={total} color="text-gray-700" bg="bg-white" />
-        <StatCard label="รออนุมัติ" value={pending} color="text-yellow-600" bg="bg-yellow-50" />
-        <StatCard label="อนุมัติแล้ว" value={approved} color="text-green-600" bg="bg-green-50" />
-        <StatCard label="ไม่อนุมัติ" value={rejected} color="text-red-500" bg="bg-red-50" />
-      </div>
+        {/* Welcome */}
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">
+            ยินดีต้อนรับ, {session.user.name} 👋
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {new Date().toLocaleDateString('th-TH', {
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+            })}
+          </p>
+        </div>
 
-      {/* Manager/HR/Admin extra card */}
-      {role !== 'EMPLOYEE' && (
-        <div className="mb-8 p-5 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-between">
-          <div>
-            <p className="text-sm text-blue-600 font-medium">คำขอลาที่รอการอนุมัติ (ทั้งหมด)</p>
-            <p className="text-3xl font-bold text-blue-700 mt-1">{pendingAll} รายการ</p>
+        {/* Stat cards */}
+        <DashboardCards
+          totalEmployees={totalEmployees}
+          pendingApprovals={pendingApprovals}
+          todayRequests={todayRequests}
+          approvedThisMonth={approvedThisMonth}
+        />
+
+        {/* Charts + Leave breakdown */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* Leave status breakdown */}
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <h3 className="text-sm font-semibold text-foreground mb-4">
+              คำขอลาตามสถานะ
+            </h3>
+            <div className="space-y-3">
+              {[
+                { key: 'PENDING',   label: 'รออนุมัติ',       color: 'bg-amber-400'  },
+                { key: 'APPROVED',  label: 'อนุมัติแล้ว',     color: 'bg-emerald-400'},
+                { key: 'REJECTED',  label: 'ไม่อนุมัติ',      color: 'bg-red-400'    },
+                { key: 'IN_REVIEW', label: 'กำลังพิจารณา',    color: 'bg-blue-400'   },
+                { key: 'CANCELLED', label: 'ยกเลิกแล้ว',      color: 'bg-gray-300'   },
+              ].map(({ key, label, color }) => {
+                const count = statusMap[key] ?? 0
+                const total = Object.values(statusMap).reduce((a, b) => a + b, 0) || 1
+                const pct = Math.round((count / total) * 100)
+                return (
+                  <div key={key}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted-foreground">{label}</span>
+                      <span className="text-xs font-medium text-foreground">{count}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${color} transition-all`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-          <Link
-            href={role === 'MANAGER' ? '/manager/leave-requests' : '/hr/leave-requests'}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition"
-          >
-            จัดการคำขอ →
-          </Link>
-        </div>
-      )}
 
-      {/* Quick Links */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-8">
-        <QuickLink href="/leave-request" title="ยื่นคำขอลา" desc="สร้างคำขอลาใหม่" icon="📝" />
-        <QuickLink href="/my-leaves" title="ประวัติการลา" desc="ดูคำขอลาของฉันทั้งหมด" icon="📋" />
-      </div>
-
-      {/* Recent Requests */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
-          <h2 className="font-semibold text-gray-700">คำขอลาล่าสุด</h2>
-          <Link href="/my-leaves" className="text-xs text-blue-600 hover:underline">
-            ดูทั้งหมด
-          </Link>
-        </div>
-
-        {recentRequests.length === 0 ? (
-          <p className="text-center text-gray-400 py-10 text-sm">ยังไม่มีคำขอลา</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-left text-gray-500 text-xs font-medium uppercase tracking-wide">
-                <th className="px-5 py-3">ประเภท</th>
-                <th className="px-5 py-3">วันที่</th>
-                <th className="px-5 py-3 text-center">จำนวน</th>
-                <th className="px-5 py-3 text-center">สถานะ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {recentRequests.map((req) => (
-                <tr key={req.id} className="hover:bg-gray-50 transition">
-                  <td className="px-5 py-3 font-medium text-gray-900">{req.leaveType.name}</td>
-                  <td className="px-5 py-3 text-gray-600 whitespace-nowrap">
-                    {req.startDate.toLocaleDateString('th-TH')} — {req.endDate.toLocaleDateString('th-TH')}
-                  </td>
-                  <td className="px-5 py-3 text-center text-gray-700">{req.totalDays} วัน</td>
-                  <td className="px-5 py-3 text-center">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle[req.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {statusLabel[req.status] ?? req.status}
-                    </span>
-                  </td>
-                </tr>
+          {/* Quick actions */}
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm lg:col-span-2">
+            <h3 className="text-sm font-semibold text-foreground mb-4">การดำเนินการด่วน</h3>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {[
+                { href: '/hr/leave-requests',    label: 'คำขอลาทั้งหมด',        icon: '📋' },
+                { href: '/admin/employees',   label: 'จัดการพนักงาน',        icon: '👥' },
+                { href: '/admin/employees/new', label: 'เพิ่มพนักงาน',       icon: '➕' },
+                { href: '/admin/settings',    label: 'ตั้งค่าระบบ',          icon: '⚙️' },
+              ].map(({ href, label, icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="flex flex-col items-center gap-2 rounded-lg border border-border p-4 text-center text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  <span className="text-xl">{icon}</span>
+                  <span className="text-xs text-muted-foreground leading-snug">{label}</span>
+                </Link>
               ))}
-            </tbody>
-          </table>
-        )}
+            </div>
+          </div>
+        </div>
+
+        {/* Recent leave requests */}
+        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+            <h3 className="text-sm font-semibold text-foreground">คำขอลาล่าสุด</h3>
+            <Link href="/hr/leave-requests" className="inline-flex items-center gap-0.5 text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300">
+              ดูทั้งหมด <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <LeaveTable rows={rows} />
+        </div>
+
       </div>
-    </div>
+    </AdminLayout>
   )
 }
 
-function StatCard({
-  label, value, color, bg,
-}: {
-  label: string
-  value: number
-  color: string
-  bg: string
-}) {
-  return (
-    <div className={`${bg} rounded-2xl shadow-sm p-5`}>
-      <p className="text-xs text-gray-500 font-medium">{label}</p>
-      <p className={`text-3xl font-bold mt-1 ${color}`}>{value}</p>
-    </div>
-  )
-}
 
-function QuickLink({
-  href, title, desc, icon,
-}: {
-  href: string
-  title: string
-  desc: string
-  icon: string
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-4 p-5 bg-white rounded-2xl shadow-sm hover:shadow-md transition"
-    >
-      <span className="text-2xl">{icon}</span>
-      <div>
-        <p className="font-semibold text-gray-800">{title}</p>
-        <p className="text-xs text-gray-500">{desc}</p>
-      </div>
-    </Link>
-  )
-}

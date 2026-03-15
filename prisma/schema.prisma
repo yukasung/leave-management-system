@@ -6,52 +6,75 @@ datasource db {
   provider = "postgresql"
 }
 
+model Role {
+  id          String   @id @default(uuid())
+  name        RoleName @unique
+  description String?
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
   name          String
   password      String?
   avatarUrl     String?
-  phone         String?
-  role          Role     @default(EMPLOYEE)
-  isProbation   Boolean  @default(false)
-  departmentId  String?
-  department    Department? @relation("DepartmentMembers", fields: [departmentId], references: [id])
-  managedDepartments Department[] @relation("DepartmentManager")
+  roleId        String?
+  role          Role?    @relation(fields: [roleId], references: [id])
+  isActive      Boolean  @default(true)
+  lastLogin     DateTime?
   leaveRequests LeaveRequest[]
   leaveBalances LeaveBalance[]
   approvals     Approval[]
-  auditLogs     AuditLog[]
-  notifications Notification[]
+  auditLogs         AuditLog[]
+  leaveAuditChanges LeaveAuditLog[] @relation("LeaveAuditChangedBy")
   employee      Employee?
-  managedEmployees Employee[] @relation("EmployeeManager")
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([roleId])
 }
 
 model Department {
   id        String     @id @default(uuid())
   name      String     @unique
-  managerId String?
-  manager   User?      @relation("DepartmentManager", fields: [managerId], references: [id])
-  users     User[]     @relation("DepartmentMembers")
   employees Employee[]
+  positions Position[]
   createdAt DateTime   @default(now())
 
   @@index([name])
 }
 
 model Position {
-  id        String     @id @default(uuid())
-  name      String     @unique
-  employees Employee[]
-  createdAt DateTime   @default(now())
+  id           String      @id @default(uuid())
+  name         String      @unique
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  employees    Employee[]
+  createdAt    DateTime    @default(now())
 
   @@index([name])
 }
 
+model LeaveCategoryConfig {
+  id        String      @id @default(uuid())
+  key       String      @unique
+  name      String      @unique
+  color     String      @default("blue")
+  sortOrder Int         @default(0)
+  createdAt DateTime    @default(now())
+  leaveTypes LeaveType[]
+}
+
 model LeaveType {
-  id                   String  @id @default(uuid())
-  name                 String  @unique
+  id                   String               @id @default(uuid())
+  name                 String               @unique
+  leaveCategoryId      String?
+  leaveCategory        LeaveCategoryConfig? @relation(fields: [leaveCategoryId], references: [id])
+  leaveLimitType       LeaveLimitType       @default(PER_YEAR)
+  dayCountType         DayCountType         @default(WORKING_DAY)
   maxDaysPerYear       Float?
   maxDaysPerRequest    Float?
   requiresAttachment   Boolean @default(false)
@@ -79,15 +102,15 @@ model LeaveRequest {
   id          String     @id @default(uuid())
   userId      String
   leaveTypeId String
-  startDate    DateTime
-  endDate      DateTime
-  durationType LeaveDurationType @default(FULL_DAY)
-  totalDays    Float
+  leaveStartDateTime DateTime
+  leaveEndDateTime   DateTime
+  totalDays          Float
   reason      String?
   documentUrl String?
-  status      LeaveStatus @default(PENDING)
-  approvals   Approval[]
-  createdAt   DateTime @default(now())
+  status      LeaveStatus @default(DRAFT)
+  approvals      Approval[]
+  leaveAuditLogs LeaveAuditLog[]
+  createdAt      DateTime @default(now())
 
   user        User       @relation(fields: [userId], references: [id])
   leaveType   LeaveType  @relation(fields: [leaveTypeId], references: [id])
@@ -103,39 +126,19 @@ model Approval {
   approverId    String
   level         Int
   status        ApprovalStatus @default(PENDING)
-  approvedAt    DateTime?
 
   leaveRequest  LeaveRequest @relation(fields: [leaveRequestId], references: [id])
   approver      User @relation(fields: [approverId], references: [id])
 }
 
-enum LeaveDurationType {
-  FULL_DAY
-  HALF_DAY_MORNING
-  HALF_DAY_AFTERNOON
-}
-
-enum Role {
-  ADMIN
-  HR
-  MANAGER
-  EMPLOYEE
-  EXECUTIVE
-}
-
-enum UserRole {
-  ADMIN
-  HR
-  MANAGER
-  EMPLOYEE
-  EXECUTIVE
-}
-
 enum LeaveStatus {
+  DRAFT
   PENDING
   IN_REVIEW
   APPROVED
   REJECTED
+  CANCELLED
+  CANCEL_REQUESTED
 }
 
 enum ApprovalStatus {
@@ -144,14 +147,23 @@ enum ApprovalStatus {
   REJECTED
 }
 
-model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
 
-  user      User @relation(fields: [userId], references: [id])
+enum LeaveLimitType {
+  PER_YEAR
+  PER_EVENT
+  MEDICAL_BASED
+}
+
+enum RoleName {
+  ADMIN
+  HR
+  MANAGER
+  EMPLOYEE
+}
+
+enum DayCountType {
+  WORKING_DAY
+  CALENDAR_DAY
 }
 
 model AuditLog {
@@ -171,9 +183,7 @@ model Employee {
   employeeCode String      @unique
   firstName    String
   lastName     String
-  email        String      @unique
   phone        String?
-  avatarUrl    String?
 
   // 1:1 link to User account (optional — employee may not have a login yet)
   userId       String?     @unique
@@ -182,22 +192,62 @@ model Employee {
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
 
-  position     String
   positionId   String?
   positionRef  Position?   @relation(fields: [positionId], references: [id])
 
-  role         UserRole    @default(EMPLOYEE)
+  hireDate     DateTime?
 
-  // Manager is a User account (so leave approvals work)
+  // Many-to-many: approvers assigned to this employee
+  approvers    Employee[]  @relation("EmployeeApprovers")
+  approvedFor  Employee[]  @relation("EmployeeApprovers")
+
+  // Direct supervisor — references another Employee (self-relation)
   managerId    String?
-  manager      User?       @relation("EmployeeManager", fields: [managerId], references: [id])
+  manager      Employee?   @relation("EmployeeReportsTo", fields: [managerId], references: [id])
+  subordinates Employee[]  @relation("EmployeeReportsTo")
 
   isActive     Boolean  @default(true)
   isProbation  Boolean  @default(true)
 
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([departmentId])
   @@index([managerId])
   @@index([userId])
+}
+
+model LeaveAuditLog {
+  id           String   @id @default(uuid())
+  leaveId      String
+  changedBy    String
+  fieldChanged String
+  oldValue     String?
+  newValue     String?
+  timestamp    DateTime @default(now())
+
+  leave         LeaveRequest @relation(fields: [leaveId], references: [id])
+  changedByUser User         @relation("LeaveAuditChangedBy", fields: [changedBy], references: [id])
+
+  @@index([leaveId])
+  @@index([changedBy])
+  @@map("leave_audit_logs")
+}
+
+enum HolidaySource {
+  BOT
+  MANUAL
+}
+
+model CompanyHoliday {
+  id        String        @id @default(uuid())
+  date      DateTime      @db.Date
+  name      String
+  year      Int
+  source    HolidaySource @default(MANUAL)
+  createdAt DateTime      @default(now())
+
+  @@unique([date])
+  @@index([year])
+  @@map("company_holidays")
 }

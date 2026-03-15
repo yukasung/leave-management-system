@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache'
 export type DepartmentFormState = {
   success: boolean
   message: string
-  errors?: { name?: string; managerId?: string }
+  errors?: { name?: string }
 }
 
 export async function createDepartment(
@@ -15,12 +15,11 @@ export async function createDepartment(
   formData: FormData,
 ): Promise<DepartmentFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
   const name = (formData.get('name') as string | null)?.trim() ?? ''
-  const managerId = (formData.get('managerId') as string | null)?.trim() || null
 
   if (!name) {
     return { success: false, message: 'กรุณากรอกชื่อแผนก', errors: { name: 'ชื่อแผนกจำเป็น' } }
@@ -31,21 +30,19 @@ export async function createDepartment(
     return { success: false, message: 'ชื่อแผนกนี้มีอยู่แล้ว', errors: { name: 'ชื่อแผนกซ้ำ' } }
   }
 
-  await prisma.$transaction(async (tx) => {
-    const dept = await tx.department.create({
-      data: { name, managerId },
-    })
-
-    await tx.auditLog.create({
-      data: {
-        userId: session.user.id,
-        action: 'CREATE_DEPARTMENT',
-        entityType: 'Department',
-        entityId: dept.id,
-        description: `Created department: ${name}`,
-      },
-    })
+  const dept = await prisma.department.create({
+    data: { name },
   })
+
+  await prisma.auditLog.create({
+    data: {
+      userId: session.user.id,
+      action: 'CREATE_DEPARTMENT',
+      entityType: 'Department',
+      entityId: dept.id,
+      description: `Created department: ${name}`,
+    },
+  }).catch(() => { /* non-critical */ })
 
   revalidatePath('/admin/departments')
   return { success: true, message: `เพิ่มแผนก "${name}" เรียบร้อยแล้ว` }

@@ -16,11 +16,16 @@ export async function updatePosition(
   formData: FormData,
 ): Promise<PositionFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
-  const name = (formData.get('name') as string | null)?.trim() ?? ''
+  const name         = (formData.get('name')         as string | null)?.trim() ?? ''
+  const departmentId = (formData.get('departmentId') as string | null)?.trim() || null
+
+  if (!departmentId) {
+    return { success: false, message: 'กรุณาเลือกแผนก' }
+  }
   if (!name) {
     return { success: false, message: 'กรุณากรอกชื่อตำแหน่ง', errors: { name: 'ชื่อตำแหน่งจำเป็น' } }
   }
@@ -31,13 +36,18 @@ export async function updatePosition(
   }
 
   await prisma.position.update({ where: { id }, data: { name } })
-  revalidatePath('/admin/settings')
+  if (departmentId) {
+    await prisma.$executeRaw`UPDATE "Position" SET "departmentId" = ${departmentId}::uuid WHERE id = ${id}`
+  } else {
+    await prisma.$executeRaw`UPDATE "Position" SET "departmentId" = NULL WHERE id = ${id}`
+  }
+  revalidatePath('/admin/settings/positions')
   return { success: true, message: 'บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว' }
 }
 
 export async function deletePosition(id: string): Promise<PositionFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
@@ -47,6 +57,6 @@ export async function deletePosition(id: string): Promise<PositionFormState> {
   }
 
   await prisma.position.delete({ where: { id } })
-  revalidatePath('/admin/settings')
+  revalidatePath('/admin/settings/positions')
   return { success: true, message: 'ลบตำแหน่งเรียบร้อยแล้ว' }
 }

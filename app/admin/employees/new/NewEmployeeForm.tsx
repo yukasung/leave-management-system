@@ -1,24 +1,14 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { createEmployee, type CreateEmployeeState } from './actions'
 import AvatarUploader from '../AvatarUploader'
+import { User, Mail, Phone, Hash } from 'lucide-react'
 
 type Department = { id: string; name: string }
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: 'Admin', HR: 'HR', MANAGER: 'Manager', EMPLOYEE: 'พนักงาน', EXECUTIVE: 'ผู้บริหาร',
-}
-type ManagerOption  = { id: string; name: string; role: string; email: string }
-type PositionOption = { id: string; name: string }
-
-const ROLE_OPTIONS = [
-  { value: 'EMPLOYEE',  label: 'พนักงาน (Employee)' },
-  { value: 'MANAGER',   label: 'ผู้จัดการ (Manager)' },
-  { value: 'HR',        label: 'HR' },
-  { value: 'EXECUTIVE', label: 'ผู้บริหาร (Executive)' },
-  { value: 'ADMIN',     label: 'ผู้ดูแลระบบ (Admin)' },
-]
+type ManagerOption  = { id: string; firstName: string; lastName: string; positionRef: { name: string } | null; department: { name: string } | null }
+type PositionOption = { id: string; name: string; departmentId?: string | null }
 
 const initialState: CreateEmployeeState = {}
 
@@ -32,9 +22,14 @@ export default function NewEmployeeForm({
   positions:   PositionOption[]
 }) {
   const router = useRouter()
-  const [firstName, setFirstName] = useState('')
-  const [lastName,  setLastName]  = useState('')
+  const [firstName,         setFirstName]        = useState('')
+  const [lastName,          setLastName]          = useState('')
+  const [selectedDeptId,    setSelectedDeptId]    = useState('')
   const [state, formAction, pending] = useActionState(createEmployee, initialState)
+
+  function handleDeptChange(deptId: string) {
+    setSelectedDeptId(deptId)
+  }
 
   useEffect(() => {
     if (state.success) {
@@ -44,6 +39,10 @@ export default function NewEmployeeForm({
   }, [state.success, router])
 
   const e = state.errors ?? {}
+
+  const filteredPositions = selectedDeptId
+    ? positions.filter((p) => p.departmentId === selectedDeptId || !p.departmentId)
+    : positions
 
   return (
     <form action={formAction} className="space-y-6">
@@ -62,8 +61,8 @@ export default function NewEmployeeForm({
       )}
 
       {/* ── Section: Basic Info ── */}
-      <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
-        <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5">
+      <fieldset className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-5">
+        <legend className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
           ข้อมูลพื้นฐาน
         </legend>
 
@@ -72,189 +71,257 @@ export default function NewEmployeeForm({
 
         {/* Row: Employee Code */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-foreground mb-1.5">
             รหัสพนักงาน <Required />
           </label>
-          <input
-            type="text"
-            name="employeeCode"
-            placeholder="เช่น EMP-001"
-            autoComplete="off"
-            className={inputCls(!!e.employeeCode)}
-          />
+          <div className="relative">
+            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
+            <input
+              type="text"
+              name="employeeCode"
+              placeholder="เช่น EMP-001"
+              autoComplete="off"
+              required
+              className={`${inputCls(!!e.employeeCode)} pl-9`}
+            />
+          </div>
           <FieldError msg={e.employeeCode} />
         </div>
 
         {/* Row: First / Last name */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-foreground mb-1.5">
               ชื่อ <Required />
             </label>
-            <input
-              type="text"
-              name="firstName"
-              value={firstName}
-              onChange={e => setFirstName(e.target.value)}
-              placeholder="ชื่อ"
-              className={inputCls(!!e.firstName)}
-            />
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
+              <input
+                type="text"
+                name="firstName"
+                value={firstName}
+                onChange={e => setFirstName(e.target.value)}
+                placeholder="ชื่อ"
+                required
+                className={`${inputCls(!!e.firstName)} pl-9`}
+              />
+            </div>
             <FieldError msg={e.firstName} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-foreground mb-1.5">
               นามสกุล <Required />
             </label>
-            <input
-              type="text"
-              name="lastName"
-              value={lastName}
-              onChange={e => setLastName(e.target.value)}
-              placeholder="นามสกุล"
-              className={inputCls(!!e.lastName)}
-            />
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
+              <input
+                type="text"
+                name="lastName"
+                value={lastName}
+                onChange={e => setLastName(e.target.value)}
+                placeholder="นามสกุล"
+                required
+                className={`${inputCls(!!e.lastName)} pl-9`}
+              />
+            </div>
             <FieldError msg={e.lastName} />
           </div>
         </div>
 
-        {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            อีเมล <Required />
-          </label>
-          <input
-            type="email"
-            name="email"
-            placeholder="employee@company.com"
-            autoComplete="off"
-            className={inputCls(!!e.email)}
-          />
-          <FieldError msg={e.email} />
-        </div>
-
-        {/* Phone */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            เบอร์โทรศัพท์
-          </label>
-          <input
-            type="tel"
-            name="phone"
-            placeholder="เช่น 081-234-5678"
-            className={inputCls(false)}
-          />
+        {/* Row: Email + Phone */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              อีเมล <Required />
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
+              <input
+                type="email"
+                name="email"
+                placeholder="employee@company.com"
+                autoComplete="off"
+                required
+                className={`${inputCls(!!e.email)} pl-9`}
+              />
+            </div>
+            <FieldError msg={e.email} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              เบอร์โทรศัพท์
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
+              <input
+                type="tel"
+                name="phone"
+                placeholder="เช่น 081-234-5678"
+                className={`${inputCls(false)} pl-9`}
+              />
+            </div>
+          </div>
         </div>
       </fieldset>
 
       {/* ── Section: Position & Role ── */}
-      <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
-        <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5">
+      <fieldset className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-5">
+        <legend className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
           ตำแหน่งและบทบาท
         </legend>
 
+        {/* Department + Position row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Department */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              แผนก <Required />
+            </label>
+            <select
+              name="departmentId"
+              value={selectedDeptId}
+              onChange={(ev) => handleDeptChange(ev.target.value)}
+              className={selectCls(!!e.departmentId)}
+              required
+            >
+              <option value="" disabled>— เลือกแผนก —</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+            <FieldError msg={e.departmentId} />
+          </div>
+
           {/* Position */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-foreground mb-1.5">
               ตำแหน่งงาน <Required />
             </label>
             <select
               name="positionId"
               className={selectCls(!!e.positionId)}
               defaultValue=""
+              required
             >
-              <option value="">— เลือกตำแหน่งงาน —</option>
-              {positions.map((p) => (
+              <option value="" disabled>— เลือกตำแหน่งงาน —</option>
+              {filteredPositions.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
             <FieldError msg={e.positionId} />
           </div>
-
-          {/* Role */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              บทบาทในระบบ <Required />
-            </label>
-            <select name="role" defaultValue="EMPLOYEE" className={selectCls(!!e.role)}>
-              {ROLE_OPTIONS.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-            <FieldError msg={e.role} />
-          </div>
-        </div>
-
-        {/* Department */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            แผนก
-          </label>
-          <select name="departmentId" defaultValue="" className={selectCls(!!e.departmentId)}>
-            <option value="">— ไม่ระบุแผนก —</option>
-            {departments.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-          <FieldError msg={e.departmentId} />
         </div>
 
         {/* Manager */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            ผู้จัดการสายงาน
+          <label className="block text-sm font-medium text-foreground mb-1.5">
+            ผู้อนุมัติการลา
           </label>
-          <select name="managerId" defaultValue="" className={selectCls(!!e.managerId)}>
-            <option value="">— ไม่มีผู้จัดการ —</option>
-            {managers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name} — {ROLE_LABEL[m.role] ?? m.role}
-              </option>
-            ))}
-          </select>
-          <FieldError msg={e.managerId} />
+          <div className="rounded-lg border border-input overflow-hidden overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="w-10 px-3 py-2"></th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">ชื่อ-นามสกุล</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">ตำแหน่งงาน</th>
+                    <th className="px-3 py-2 text-center text-xs font-semibold text-muted-foreground">แผนก</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {managers.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-4 text-center text-sm text-muted-foreground italic">
+                        ไม่มีข้อมูลผู้อนุมัติการลา
+                      </td>
+                    </tr>
+                  ) : (
+                    managers.map((m) => (
+                      <tr key={m.id} className="hover:bg-muted/40 transition-colors">
+                        <td className="px-3 py-2.5 text-center">
+                          <input
+                            type="checkbox"
+                            name="approverIds"
+                            value={m.id}
+                            className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                          />
+                        </td>
+                        <td className="px-3 py-2.5 font-medium text-foreground">{m.firstName} {m.lastName}</td>
+                        <td className="px-3 py-2.5 text-muted-foreground">{m.positionRef?.name || <span className="italic opacity-50">ไม่ระบุ</span>}</td>
+                        <td className="px-3 py-2.5 text-center text-muted-foreground">{m.department?.name ?? <span className="italic opacity-50">ไม่ระบุ</span>}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+        </div>
+
+        <div className="pt-1">
+          <label className="flex items-start gap-3 cursor-pointer select-none group">
+            <input
+              type="checkbox"
+              name="isProbation"
+              className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-primary"
+            />
+            <span>
+              <span className="text-sm font-medium text-foreground group-hover:text-foreground">
+                อยู่ระหว่างทดลองงาน
+              </span>
+              <br />
+              <span className="text-xs text-muted-foreground/60">
+                พนักงานทดลองงานอาจไม่สามารถลาบางประเภทได้ตามนโยบาย เช่น วันลาพักร้อน
+              </span>
+            </span>
+          </label>
         </div>
       </fieldset>
 
-      {/* ── Section: Status ── */}
-      <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5 mb-4">
-          สถานะ
+      {/* ── Section: System Permissions ── */}
+      <fieldset className="bg-card rounded-2xl border border-border shadow-sm p-6">
+        <legend className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-0.5 mb-4">
+          สิทธิ์ระบบ
         </legend>
-        <label className="flex items-start gap-3 cursor-pointer select-none group">
-          <input
-            type="checkbox"
-            name="isProbation"
-            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-              อยู่ระหว่างทดลองงาน
-            </span>
-            <br />
-            <span className="text-xs text-gray-400">
-              พนักงานทดลองงานอาจไม่สามารถลาบางประเภทได้ตามนโยบาย
-            </span>
-          </span>
-        </label>
+        <div className="space-y-4">
+          {([
+            { value: 'none',    label: 'พนักงานทั่วไป',    hint: 'ไม่มีสิทธิ์พิเศษเพิ่มเติม' },
+            { value: 'manager', label: 'ผู้อนุมัติการลา', hint: 'สามารถอนุมัติหรือปฏิเสธคำขอลาของพนักงานในสายงาน' },
+            { value: 'admin',   label: 'ผู้ดูแลระบบ',     hint: 'สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้อนุมัติการลา' },
+          ] as const).map(({ value, label, hint }) => (
+            <label key={value} className="flex items-start gap-3 cursor-pointer select-none group">
+              <input
+                type="radio"
+                name="role"
+                value={value}
+                defaultChecked={value === 'none'}
+                className="mt-0.5 h-4 w-4 border-input text-primary focus:ring-primary"
+              />
+              <span>
+                <span className="text-sm font-medium text-foreground group-hover:text-foreground">
+                  {label}
+                </span>
+                <br />
+                <span className="text-xs text-muted-foreground/60">{hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
       </fieldset>
 
       {/* ── Actions ── */}
       <div className="flex items-center justify-end gap-3 pt-1 pb-4">
-        <a
-          href="/admin/employees"
-          className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+        <button
+          type="button"
+          onClick={() => router.push('/admin/employees')}
+          className="px-5 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg hover:bg-muted/40 transition"
         >
           ยกเลิก
-        </a>
+        </button>
         <button
           type="submit"
           disabled={pending || state.success}
-          className="px-6 py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg transition"
+          className="px-6 py-2.5 text-sm font-semibold bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-primary-foreground rounded-lg transition"
         >
           {pending ? 'กำลังบันทึก…' : 'บันทึกข้อมูล'}
         </button>
@@ -272,15 +339,15 @@ function inputCls(hasError: boolean) {
   return `${baseInput} ${
     hasError
       ? 'border-red-400 focus:ring-red-400 bg-red-50'
-      : 'border-gray-300 focus:ring-blue-500'
+      : 'border-input bg-background text-foreground focus:ring-primary'
   }`
 }
 
 function selectCls(hasError: boolean) {
-  return `${baseInput} bg-white ${
+  return `${baseInput} bg-background text-foreground ${
     hasError
-      ? 'border-red-400 focus:ring-red-400 bg-red-50'
-      : 'border-gray-300 focus:ring-blue-500'
+      ? 'border-red-400 focus:ring-red-400'
+      : 'border-input focus:ring-primary'
   }`
 }
 

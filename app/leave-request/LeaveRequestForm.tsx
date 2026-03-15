@@ -1,9 +1,10 @@
-'use client'
+﻿'use client'
 
-import { useActionState, useState, useEffect, useRef } from 'react'
+import { useActionState, useState, useEffect, useRef, useCallback } from 'react'
 import { createLeaveRequest, type FormState } from './actions'
-import { calculateLeaveDays, type LeaveDurationType } from '@/lib/leave-calc'
+import { calculateLeaveDuration, calculateCalendarDays, WORK_START_HOUR, WORK_START_MIN, WORK_END_HOUR, WORK_END_MIN } from '@/lib/leave-calc'
 import { buildPolicySummary, type LeaveTypePolicy } from '@/lib/leave-policy-utils'
+import HolidayDatePicker from '@/app/components/HolidayDatePicker'
 
 type BalanceInfo = { totalDays: number; usedDays: number }
 
@@ -15,44 +16,108 @@ type Props = {
 
 const initialState: FormState = {}
 
-const DURATION_OPTIONS: { value: LeaveDurationType; label: string }[] = [
-  { value: 'FULL_DAY', label: 'เต็มวัน' },
-  { value: 'HALF_DAY_MORNING', label: 'ครึ่งวันเช้า (08:00 – 12:00)' },
-  { value: 'HALF_DAY_AFTERNOON', label: 'ครึ่งวันบ่าย (13:00 – 17:00)' },
-]
+/** Format a Date as "YYYY-MM-DDTHH:mm" for datetime-local input value */
+function toDateTimeLocal(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/** Default time strings for a fresh day */
+const DEFAULT_START_TIME = `${String(WORK_START_HOUR).padStart(2, '0')}:${String(WORK_START_MIN).padStart(2, '0')}`
+const DEFAULT_END_TIME   = `${String(WORK_END_HOUR).padStart(2, '0')}:${String(WORK_END_MIN).padStart(2, '0')}`
 
 export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByType }: Props) {
   const [state, formAction, pending] = useActionState(createLeaveRequest, initialState)
+  // ── Two-step flow state ────────────────────────────────────────────────────
+  type Phase = 'form' | 'done'
+  const [phase, setPhase] = useState<Phase>('form')
+
+  // Move to done phase when leave request is submitted successfully
+  useEffect(() => {
+    if (state.success) {
+      setPhase('done')
+    }
+  }, [state.success])
 
   const today = new Date().toISOString().split('T')[0]
 
+  const [selectedCategory, setSelectedCategory] = useState('')
   const [leaveTypeId, setLeaveTypeId] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [durationType, setDurationType] = useState<LeaveDurationType>('FULL_DAY')
-  const [documentUrl, setDocumentUrl] = useState('')
+  const [startDate, setStartDate]     = useState(today)
+  const [endDate, setEndDate]         = useState(today)
+  const [startTime, setStartTime]     = useState(DEFAULT_START_TIME)
+  const [endTime, setEndTime]         = useState(DEFAULT_END_TIME)
+  const [documentUrl, setDocumentUrl]   = useState('')
   const [documentName, setDocumentName] = useState('')
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState('')
+  const [uploading, setUploading]       = useState(false)
+  const [uploadError, setUploadError]   = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const selectedType = leaveTypes.find((lt) => lt.id === leaveTypeId) ?? null
-  const isMultiDay = startDate !== '' && endDate !== '' && startDate !== endDate
+  // ── Holiday set for accurate client-side preview ──────────────────────────
+  const [holidaySet, setHolidaySet] = useState<Set<string>>(new Set())
+  const fetchedHolidayYears = useRef<Set<number>>(new Set())
 
-  // Force FULL_DAY when multi-day
+  const fetchHolidaysForYear = useCallback(async (year: number) => {
+    if (fetchedHolidayYears.current.has(year)) return
+    fetchedHolidayYears.current.add(year)
+    try {
+      const res = await fetch(`/api/holidays?year=${year}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const list: { date: string }[] = data.holidays ?? []
+      setHolidaySet((prev) => {
+        const next = new Set(prev)
+        for (const h of list) next.add(h.date)
+        return next
+      })
+    } catch { /* ignore — preview degrades gracefully */ }
+  }, [])
+
   useEffect(() => {
-    if (isMultiDay) setDurationType('FULL_DAY')
-  }, [isMultiDay])
+    const years = new Set<number>()
+    if (startDate) years.add(new Date(startDate + 'T00:00:00').getFullYear())
+    if (endDate)   years.add(new Date(endDate   + 'T00:00:00').getFullYear())
+    years.forEach(fetchHolidaysForYear)
+  }, [startDate, endDate, fetchHolidaysForYear])
+
+  const selectedType = leaveTypes.find((lt) => lt.id === leaveTypeId) ?? null
 
   // Auto-sync end date if it goes before start
   useEffect(() => {
     if (startDate && endDate && endDate < startDate) setEndDate(startDate)
   }, [startDate, endDate])
 
+  // Prevent midnight (00:00) — browser 12-hour pickers can produce midnight
+  // when the user types "12" and leaves AM selected instead of switching to PM.
+  useEffect(() => {
+    if (startTime === '00:00') setStartTime(DEFAULT_START_TIME)
+  }, [startTime])
+  useEffect(() => {
+    if (endTime === '00:00') setEndTime(DEFAULT_END_TIME)
+  }, [endTime])
+
+  // Auto-correct endTime when same-day and end ≤ start
+  useEffect(() => {
+    if (startDate === endDate && endTime && startTime && endTime <= startTime) {
+      setEndTime(DEFAULT_END_TIME)
+    }
+  }, [startTime, startDate, endDate])
+
+  // Combined datetime strings used for calc + form submission
+  const leaveStartDateTime = startDate && startTime ? `${startDate}T${startTime}` : ''
+  const leaveEndDateTime   = endDate   && endTime   ? `${endDate}T${endTime}`     : ''
+
   // Live preview
   const preview = (() => {
-    if (!startDate || !endDate) return null
-    return calculateLeaveDays(new Date(startDate), new Date(endDate), durationType)
+    if (!leaveStartDateTime || !leaveEndDateTime) return null
+    if (selectedType?.dayCountType === 'CALENDAR_DAY') {
+      return calculateCalendarDays(new Date(leaveStartDateTime), new Date(leaveEndDateTime))
+    }
+    return calculateLeaveDuration(
+      new Date(leaveStartDateTime),
+      new Date(leaveEndDateTime),
+      holidaySet
+    )
   })()
 
   // Remaining quota for selected type
@@ -100,25 +165,65 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
     setDocumentName('')
     if (fileRef.current) fileRef.current.value = ''
   }
+
+  // Capture snapshot then dispatch form action
+  function handleFormAction(formData: FormData) {
+    formAction(formData)
+  }
+
   const canSubmit =
     !pending &&
     !uploading &&
-    !!startDate &&
-    !!endDate &&
+    !!leaveStartDateTime &&
+    !!leaveEndDateTime &&
     !!leaveTypeId &&
     !preview?.error &&
     !(needsAttachment && !documentUrl)
 
-  return (
-    <div className="max-w-xl mx-auto mt-10 bg-white rounded-2xl shadow-md p-8">
-      <h1 className="text-2xl font-bold text-gray-800 mb-1">แบบฟอร์มขอลา</h1>
-      <p className="text-sm text-gray-500 mb-6">กรอกข้อมูลการลาและส่งคำขอ</p>
+  // ── Handle final submit (DRAFT → PENDING) ─────────────────────────────────
+  function handleStartOver() {
+    setPhase('form')
+    setSelectedCategory('')
+    setLeaveTypeId('')
+    setStartDate(today)
+    setEndDate(today)
+    setStartTime(DEFAULT_START_TIME)
+    setEndTime(DEFAULT_END_TIME)
+    setDocumentUrl('')
+    setDocumentName('')
+  }
 
-      {state.success && (
-        <div className="mb-5 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
-          ✅ {state.message}
+  // ════════════════════════════════════════════════════════════════════════════
+  // Phase: Done
+  // ════════════════════════════════════════════════════════════════════════════
+  if (phase === 'done') {
+    return (
+      <div className="max-w-xl mx-auto mt-10 bg-card rounded-2xl shadow-md p-8 text-center">
+        <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+          <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
         </div>
-      )}
+        <h2 className="text-xl font-bold text-foreground mb-2">ส่งคำขอลาเรียบร้อยแล้ว</h2>
+        <p className="text-sm text-muted-foreground mb-6">{state.message ?? 'ส่งคำขอลาเรียบร้อยแล้ว รอการอนุมัติ'}</p>
+        <button
+          type="button"
+          onClick={handleStartOver}
+          className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition"
+        >
+          ยื่นคำขอลาใหม่
+        </button>
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // Phase: Form
+  // ════════════════════════════════════════════════════════════════════════════
+  return (
+    <div className="max-w-xl mx-auto mt-10 bg-card rounded-2xl shadow-md p-8">
+      <h1 className="text-2xl font-bold text-foreground mb-1">แบบฟอร์มขอลา</h1>
+      <p className="text-sm text-muted-foreground mb-6">กรอกข้อมูลและกดส่งคำขอลา</p>
 
       {state.errors?.general && (
         <div className="mb-5 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
@@ -126,10 +231,46 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
         </div>
       )}
 
-      <form action={formAction} className="space-y-5">
+      <form action={handleFormAction} className="space-y-5">
+        {/* Hidden datetime fields submitted to server */}
+        <input type="hidden" name="leaveStartDateTime" value={leaveStartDateTime} />
+        <input type="hidden" name="leaveEndDateTime"   value={leaveEndDateTime} />
+
+        {/* Leave Category */}
+        <div>
+          <label htmlFor="leaveCategory" className="block text-sm font-medium text-foreground mb-1">
+            หมวดหมู่การลา <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="leaveCategory"
+            value={selectedCategory}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value)
+              setLeaveTypeId('')
+            }}
+            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="" disabled>-- เลือกหมวดหมู่ --</option>
+            {Array.from(
+              leaveTypes
+                .filter((lt) => lt.leaveCategory !== null)
+                .reduce((map, lt) => {
+                  const cat = lt.leaveCategory!
+                  if (!map.has(cat.name)) map.set(cat.name, (cat as { name: string; sortOrder?: number }).sortOrder ?? 99)
+                  return map
+                }, new Map<string, number>())
+                .entries()
+            )
+              .sort((a, b) => a[1] - b[1])
+              .map(([catName]) => (
+                <option key={catName} value={catName}>{catName}</option>
+              ))}
+          </select>
+        </div>
+
         {/* Leave Type */}
         <div>
-          <label htmlFor="leaveTypeId" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="leaveTypeId" className="block text-sm font-medium text-foreground mb-1">
             ประเภทการลา <span className="text-red-500">*</span>
           </label>
           <select
@@ -137,14 +278,18 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             name="leaveTypeId"
             value={leaveTypeId}
             onChange={(e) => setLeaveTypeId(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            required
+            disabled={!selectedCategory}
+            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="" disabled>-- เลือกประเภทการลา --</option>
-            {leaveTypes.map((lt) => (
-              <option key={lt.id} value={lt.id}>
-                {lt.name}
-              </option>
-            ))}
+            {leaveTypes
+              .filter((lt) => !selectedCategory || lt.leaveCategory?.name === selectedCategory)
+              .map((lt) => (
+                <option key={lt.id} value={lt.id}>
+                  {lt.name}
+                </option>
+              ))}
           </select>
           {state.errors?.leaveTypeId && (
             <p className="mt-1 text-xs text-red-500">{state.errors.leaveTypeId}</p>
@@ -167,102 +312,108 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
           )}
         </div>
 
-        {/* Date row */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
-              วันที่เริ่มต้น <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              id="startDate"
-              name="startDate"
-              min={today}
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {state.errors?.startDate && (
-              <p className="mt-1 text-xs text-red-500">{state.errors.startDate}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
-              วันที่สิ้นสุด <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              id="endDate"
-              name="endDate"
-              min={startDate || today}
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {state.errors?.endDate && (
-              <p className="mt-1 text-xs text-red-500">{state.errors.endDate}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Single duration type dropdown */}
+        {/* Start date + time */}
         <div>
-          <label htmlFor="durationType" className="block text-sm font-medium text-gray-700 mb-1">
-            ประเภทช่วงเวลา
-          </label>
-          <select
-            id="durationType"
-            name="durationType"
-            value={durationType}
-            disabled={isMultiDay}
-            onChange={(e) => setDurationType(e.target.value as LeaveDurationType)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-          >
-            {DURATION_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          {isMultiDay && (
-            <p className="mt-1 text-xs text-gray-400">
-              การลาหลายวันจะนับเป็นเต็มวันเท่านั้น
-            </p>
+          <p className="text-sm font-medium text-foreground mb-2">
+            วันและเวลาเริ่มต้น <span className="text-red-500">*</span>
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="startDate" className="block text-xs text-muted-foreground mb-1">วันที่</label>
+              <HolidayDatePicker
+                id="startDate"
+                name="startDate"
+                value={startDate}
+                min={today}
+                onChange={setStartDate}
+              />
+            </div>
+            <div>
+              <label htmlFor="startTime" className="block text-xs text-muted-foreground mb-1">เวลา</label>
+              <input
+                id="startTime"
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                min="09:30"
+                max="17:30"
+                step="900"
+                className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              />
+            </div>
+          </div>
+          {state.errors?.leaveStartDateTime && (
+            <p className="mt-1 text-xs text-red-500">{state.errors.leaveStartDateTime}</p>
           )}
         </div>
 
-        {/* Live Total Days Preview */}
-        {preview && (
-          <div
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg border text-sm ${
-              preview.error
-                ? 'bg-red-50 border-red-200 text-red-600'
-                : 'bg-blue-50 border-blue-200 text-blue-700'
-            }`}
-          >
-            {preview.error ? (
-              <>
-                <span>⚠</span>
-                <span>{preview.error}</span>
-              </>
-            ) : (
-              <>
-                <span>📅</span>
-                <span>
-                  รวม <strong className="text-lg">{preview.totalDays}</strong> วันทำการ
-                </span>
-              </>
-            )}
+        {/* End date + time */}
+        <div>
+          <p className="text-sm font-medium text-foreground mb-2">
+            วันและเวลาสิ้นสุด <span className="text-red-500">*</span>
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="endDate" className="block text-xs text-muted-foreground mb-1">วันที่</label>
+              <HolidayDatePicker
+                id="endDate"
+                name="endDate"
+                value={endDate}
+                min={startDate || today}
+                onChange={setEndDate}
+              />
+            </div>
+            <div>
+              <label htmlFor="endTime" className="block text-xs text-muted-foreground mb-1">เวลา</label>
+              <input
+                id="endTime"
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                min="09:30"
+                max="17:30"
+                step="900"
+                className="w-full px-3 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              />
+            </div>
           </div>
-        )}
+          {state.errors?.leaveEndDateTime && (
+            <p className="mt-1 text-xs text-red-500">{state.errors.leaveEndDateTime}</p>
+          )}
+        </div>
+
+        {/* Total Leave Duration — read-only display */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            จำนวนวันลาทั้งหมด
+          </label>
+          {preview?.error ? (
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+              <span>⚠</span>
+              <span>{preview.error}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-muted border border-border rounded-lg text-sm text-foreground cursor-not-allowed select-none">
+              <svg className="h-4 w-4 text-muted-foreground/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {preview ? (
+                <span className="font-semibold text-base text-foreground">{preview.displayLabel}</span>
+              ) : (
+                <span className="text-muted-foreground/60">— เลือกวันที่และเวลาเพื่อคำนวณ —</span>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Attachment */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             เอกสารแนบ {needsAttachment && <span className="text-red-500">*</span>}
           </label>
 
           {documentUrl ? (
-            /* Uploaded — show file name + remove */
             <div className="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-sm">
               <svg className="h-5 w-5 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -279,12 +430,11 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
               <input type="hidden" name="documentUrl" value={documentUrl} />
             </div>
           ) : (
-            /* Picker */
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="w-full flex flex-col items-center gap-2 px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex flex-col items-center gap-2 px-4 py-6 border-2 border-dashed border-input rounded-lg hover:border-primary hover:bg-primary/5 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? (
                 <svg className="h-6 w-6 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -292,15 +442,15 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                 </svg>
               ) : (
-                <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-6 w-6 text-muted-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
               )}
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 {uploading ? 'กำลังอัปโหลด…' : 'คลิกเพื่อแนบไฟล์'}
               </span>
-              <span className="text-xs text-gray-400">PDF, JPG, PNG, DOCX · ไม่เกิน 10 MB</span>
+              <span className="text-xs text-muted-foreground/60">PDF, JPG, PNG, DOCX · ไม่เกิน 10 MB</span>
             </button>
           )}
 
@@ -323,7 +473,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
 
         {/* Reason */}
         <div>
-          <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="reason" className="block text-sm font-medium text-foreground mb-1">
             เหตุผล
           </label>
           <textarea
@@ -331,7 +481,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
             name="reason"
             rows={3}
             placeholder="ระบุเหตุผลในการลา (ถ้ามี)"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full px-4 py-2.5 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
           />
           {state.errors?.reason && (
             <p className="mt-1 text-xs text-red-500">{state.errors.reason}</p>
@@ -341,7 +491,7 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {pending ? (
             <span className="flex items-center justify-center gap-2">
@@ -359,3 +509,4 @@ export default function LeaveRequestForm({ leaveTypes, balanceByType, usageByTyp
     </div>
   )
 }
+

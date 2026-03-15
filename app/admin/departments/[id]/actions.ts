@@ -16,12 +16,11 @@ export async function updateDepartment(
   formData: FormData,
 ): Promise<DepartmentFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
   const name = (formData.get('name') as string | null)?.trim() ?? ''
-  const managerId = (formData.get('managerId') as string | null)?.trim() || null
 
   if (!name) {
     return { success: false, message: 'กรุณากรอกชื่อแผนก', errors: { name: 'ชื่อแผนกจำเป็น' } }
@@ -34,22 +33,20 @@ export async function updateDepartment(
     return { success: false, message: 'ชื่อแผนกนี้มีอยู่แล้ว', errors: { name: 'ชื่อแผนกซ้ำ' } }
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.department.update({
-      where: { id },
-      data: { name, managerId },
-    })
-
-    await tx.auditLog.create({
-      data: {
-        userId: session.user.id,
-        action: 'UPDATE_DEPARTMENT',
-        entityType: 'Department',
-        entityId: id,
-        description: `Updated department: ${name}`,
-      },
-    })
+  await prisma.department.update({
+    where: { id },
+    data: { name },
   })
+
+  await prisma.auditLog.create({
+    data: {
+      userId: session.user.id,
+      action: 'UPDATE_DEPARTMENT',
+      entityType: 'Department',
+      entityId: id,
+      description: `Updated department: ${name}`,
+    },
+  }).catch(() => { /* non-critical */ })
 
   revalidatePath('/admin/departments')
   return { success: true, message: 'บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว' }
@@ -57,7 +54,7 @@ export async function updateDepartment(
 
 export async function deleteDepartment(id: string): Promise<DepartmentFormState> {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !session.user.isAdmin) {
     return { success: false, message: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
@@ -71,19 +68,17 @@ export async function deleteDepartment(id: string): Promise<DepartmentFormState>
 
   const dept = await prisma.department.findUnique({ where: { id }, select: { name: true } })
 
-  await prisma.$transaction(async (tx) => {
-    await tx.department.delete({ where: { id } })
+  await prisma.department.delete({ where: { id } })
 
-    await tx.auditLog.create({
-      data: {
-        userId: session.user.id,
-        action: 'DELETE_DEPARTMENT',
-        entityType: 'Department',
-        entityId: id,
-        description: `Deleted department: ${dept?.name ?? id}`,
-      },
-    })
-  })
+  await prisma.auditLog.create({
+    data: {
+      userId: session.user.id,
+      action: 'DELETE_DEPARTMENT',
+      entityType: 'Department',
+      entityId: id,
+      description: `Deleted department: ${dept?.name ?? id}`,
+    },
+  }).catch(() => { /* non-critical */ })
 
   revalidatePath('/admin/departments')
   return { success: true, message: 'ลบแผนกเรียบร้อยแล้ว' }

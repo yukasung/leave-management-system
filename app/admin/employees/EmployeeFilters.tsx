@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
@@ -35,14 +35,14 @@ export default function EmployeeFilters({
         defaultValue={searchParams.get('search') ?? ''}
         placeholder="ค้นหาชื่อ / รหัสพนักงาน..."
         onChange={(e) => update('search', e.target.value)}
-        className="w-full sm:w-72 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full sm:w-72 px-4 py-2 border border-input bg-background text-foreground rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
       />
 
       {/* Department filter */}
       <select
         defaultValue={searchParams.get('department') ?? ''}
         onChange={(e) => update('department', e.target.value)}
-        className="w-full sm:w-56 px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full sm:w-56 px-4 py-2 border border-input bg-background text-foreground rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
       >
         <option value="">ทุกแผนก</option>
         {departments.map((d) => (

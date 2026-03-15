@@ -2,166 +2,264 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { LeaveStatus } from '@prisma/client'
 import { auth } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 import { HRActionButtons } from './HRActionButtons'
+import HRLeaveRow from './HRLeaveRow'
+import AdminLayout from '@/components/admin-layout'
+import { STATUS_LABEL } from '@/lib/leave-status'
 
-const STATUS_LABELS: Record<string, string> = {
-  ALL: 'ทั้งหมด',
-  PENDING: 'รอ Manager',
-  IN_REVIEW: 'รอ HR',
-  APPROVED: 'อนุมัติแล้ว',
-  REJECTED: 'ปฏิเสธ',
-}
+const STATUS_LABELS: Record<string, string> = { ALL: 'ทั้งหมด', ...STATUS_LABEL }
 
-const STATUS_BADGE: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-700',
-  IN_REVIEW: 'bg-blue-100 text-blue-700',
-  APPROVED: 'bg-green-100 text-green-700',
-  REJECTED: 'bg-red-100 text-red-700',
-}
+import { formatDate } from '@/lib/format-date'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Search, Paperclip } from 'lucide-react'
+import Pagination from '@/components/Pagination'
 
-function formatDate(date: Date) {
-  return date.toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
+const PAGE_SIZE = 12
 
 export default async function HRLeaveRequestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>
+  searchParams: Promise<{ status?: string; search?: string; page?: string; year?: string; sort?: string; dir?: string }>
 }) {
-  const { status } = await searchParams
+  const { status, search, page: pageParam, year: yearParam, sort: sortParam, dir: dirParam } = await searchParams
   const session = await auth()
 
-  if (!session || (session.user.role !== 'HR' && session.user.role !== 'ADMIN')) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-red-500 text-lg font-semibold">Unauthorized</p>
-      </div>
-    )
+  if (!session || !session.user.isAdmin) redirect('/login')
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { avatarUrl: true },
+  })
+  const user = {
+    name:      session.user.name ?? '',
+    email:     session.user.email ?? '',
+    avatarUrl: dbUser?.avatarUrl ?? null,
+    isAdmin:   true,
   }
 
-  const activeStatus = (status ?? 'IN_REVIEW').toUpperCase()
+  const activeStatus = (status ?? 'ALL').toUpperCase()
+  const currentPage  = Math.max(1, parseInt(pageParam ?? '1', 10))
+  const skip         = (currentPage - 1) * PAGE_SIZE
+  const currentYear  = new Date().getFullYear()
+  const selectedYear = parseInt(yearParam ?? String(currentYear), 10)
+  const yearStart    = new Date(selectedYear, 0, 1)
+  const yearEnd      = new Date(selectedYear + 1, 0, 1)
 
+  const VALID_STATUSES = ['DRAFT', 'PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED', 'CANCELLED', 'CANCEL_REQUESTED']
   const whereStatus =
-    activeStatus !== 'ALL' && Object.keys(LeaveStatus).includes(activeStatus)
+    activeStatus !== 'ALL' && VALID_STATUSES.includes(activeStatus)
       ? (activeStatus as LeaveStatus)
       : undefined
 
-  const requests = await prisma.leaveRequest.findMany({
-    where: whereStatus ? { status: whereStatus } : undefined,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      user: {
-        select: {
-          name: true,
-          department: { select: { name: true } },
-        },
-      },
-      leaveType: { select: { name: true } },
-    },
-  })
+  const where = {
+    ...(whereStatus ? { status: whereStatus } : {}),
+    ...(search ? { user: { name: { contains: search, mode: 'insensitive' as const } } } : {}),
+    leaveStartDateTime: { gte: yearStart, lt: yearEnd },
+  }
 
-  const tabs = ['ALL', 'PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED'] as const
+  const allDates = await prisma.leaveRequest.findMany({
+    select: { leaveStartDateTime: true },
+    distinct: ['leaveStartDateTime'],
+  })
+  const yearSet = new Set(allDates.map((r) => r.leaveStartDateTime.getFullYear()))
+  if (!yearSet.has(currentYear)) yearSet.add(currentYear)
+  const yearOptions = Array.from(yearSet).sort((a, b) => b - a)
+
+  const VALID_SORTS = ['name', 'department', 'leaveType', 'startDate', 'endDate', 'totalDays', 'status', 'createdAt'] as const
+  type SortKey = typeof VALID_SORTS[number]
+  const sortKey: SortKey = (VALID_SORTS as readonly string[]).includes(sortParam ?? '') ? (sortParam as SortKey) : 'createdAt'
+  const sortDir: 'asc' | 'desc' = dirParam === 'asc' ? 'asc' : 'desc'
+
+  const ORDER_BY: Record<SortKey, object> = {
+    name:       { user: { name: sortDir } },
+    department: { user: { employee: { department: { name: sortDir } } } },
+    leaveType:  { leaveType: { name: sortDir } },
+    startDate:  { leaveStartDateTime: sortDir },
+    endDate:    { leaveEndDateTime: sortDir },
+    totalDays:  { totalDays: sortDir },
+    status:     { status: sortDir },
+    createdAt:  { createdAt: sortDir },
+  }
+
+  const [requests, total] = await Promise.all([
+    prisma.leaveRequest.findMany({
+      where,
+      skip,
+      take: PAGE_SIZE,
+      orderBy: ORDER_BY[sortKey],
+      select: {
+        id: true,
+        createdAt: true,
+        leaveStartDateTime: true,
+        leaveEndDateTime: true,
+        totalDays: true,
+        status: true,
+        documentUrl: true,
+        reason: true,
+        user: {
+          select: {
+            name: true,
+            employee: { select: { department: { select: { name: true } } } },
+          },
+        },
+        leaveType: { select: { name: true, leaveCategory: { select: { name: true, color: true } } } },
+      },
+    }),
+    prisma.leaveRequest.count({ where }),
+  ])
+
+  const totalPages = Math.ceil(total / PAGE_SIZE)
+
+  function buildQuery(overrides: Record<string, string | undefined> = {}) {
+    const q = new URLSearchParams()
+    const merged = { status: activeStatus !== 'ALL' ? activeStatus : undefined, search: search || undefined, year: selectedYear !== currentYear ? String(selectedYear) : undefined, sort: sortKey !== 'createdAt' ? sortKey : undefined, dir: sortDir !== 'desc' ? sortDir : undefined, ...overrides }
+    for (const [k, v] of Object.entries(merged)) if (v) q.set(k, v)
+    const qs = q.toString()
+    return `/hr/leave-requests${qs ? `?${qs}` : ''}`
+  }
+
+  function pageUrl(p: number) { return buildQuery({ page: p > 1 ? String(p) : undefined }) }
+  function tabUrl(tab: string) { return buildQuery({ status: tab !== 'ALL' ? tab : undefined, page: undefined }) }
+  function sortUrl(col: string) {
+    const newDir = sortKey === col && sortDir === 'desc' ? 'asc' : 'desc'
+    return buildQuery({ sort: col !== 'createdAt' ? col : undefined, dir: newDir !== 'desc' ? newDir : undefined, page: undefined })
+  }
+
+  const tabs = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCEL_REQUESTED'] as const
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">HR — ประวัติคำขอลาทั้งหมด</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            แสดง {requests.length} รายการ
-            {activeStatus !== 'ALL' ? ` · กรอง: ${STATUS_LABELS[activeStatus]}` : ''}
-          </p>
-        </div>
-        <a
-          href="/api/export/leave"
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-        >
-          Export CSV
-        </a>
-      </div>
+    <AdminLayout title="คำขอลาทั้งหมด" user={user}>
+      <div className="space-y-6 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-foreground">ประวัติคำขอลาทั้งหมด</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {total} รายการ
+              {activeStatus !== 'ALL' ? ` · กรอง: ${STATUS_LABELS[activeStatus] ?? activeStatus}` : ''}
+            </p>
+          </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-6 border-b border-gray-200">
-        {tabs.map((tab) => {
-          const isActive = activeStatus === tab
-          return (
-            <Link
-              key={tab}
-              href={tab === 'IN_REVIEW' ? '/hr/leave-requests' : `/hr/leave-requests?status=${tab}`}
-              className={`px-4 py-2 text-sm font-medium rounded-t-md border-b-2 transition-colors ${
-                isActive
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {STATUS_LABELS[tab]}
-            </Link>
-          )
-        })}
-      </div>
-
-      {/* Table */}
-      {requests.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">ไม่พบรายการ</div>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">#</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">ชื่อพนักงาน</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">แผนก</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">ประเภทการลา</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">วันที่เริ่ม</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">วันที่สิ้นสุด</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">จำนวนวัน</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">ช่วงเวลา</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">สถานะ</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">การดำเนินการ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
-              {requests.map((req, index) => (
-                <tr key={req.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-gray-400">{index + 1}</td>
-                  <td className="px-4 py-3 font-medium text-gray-800">{req.user.name}</td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {req.user.department?.name ?? (
-                      <span className="text-gray-300 italic">ไม่ระบุ</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{req.leaveType.name}</td>
-                  <td className="px-4 py-3 text-gray-600">{formatDate(req.startDate)}</td>
-                  <td className="px-4 py-3 text-gray-600">{formatDate(req.endDate)}</td>
-                  <td className="px-4 py-3 text-gray-600 font-semibold">{req.totalDays}</td>
-                  <td className="px-4 py-3 text-xs text-gray-600">
-                    {req.durationType === 'FULL_DAY' ? 'เต็มวัน' : req.durationType === 'HALF_DAY_MORNING' ? 'ครึ่งวันเช้า' : 'ครึ่งวันบ่าย'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE[req.status] ?? 'bg-gray-100 text-gray-600'}`}
-                    >
-                      {STATUS_LABELS[req.status] ?? req.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {req.status === 'IN_REVIEW' ? (
-                      <HRActionButtons id={req.id} />
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
-      )}
-    </div>
+
+        {/* Filter tabs */}
+        <div className="flex gap-1 border-b border-border">
+          {tabs.map((tab) => {
+            const isActive = activeStatus === tab
+            return (
+              <Link
+                key={tab}
+                href={tabUrl(tab)}
+                className={`px-4 py-2 text-sm font-medium rounded-t-md border-b-2 -mb-px transition-colors ${
+                  isActive
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                }`}
+              >
+                {STATUS_LABELS[tab]}
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* Search */}
+        <form method="get" action="/hr/leave-requests" className="rounded-xl border border-border bg-card p-4 shadow-sm flex items-center gap-2">
+          {activeStatus !== 'ALL' && <input type="hidden" name="status" value={activeStatus} />}
+          <div className="relative min-w-56">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <input
+              type="search"
+              name="search"
+              defaultValue={search ?? ''}
+              placeholder="ค้นหาพนักงาน…"
+              className="pl-8 h-8 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+          <select
+            name="year"
+            defaultValue={String(selectedYear)}
+            className="h-8 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {yearOptions.map((y) => (
+              <option key={y} value={String(y)}>{y + 543}</option>
+            ))}
+          </select>
+        </form>
+
+        {/* Table */}
+        {requests.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16 text-center">
+            <p className="text-muted-foreground">ไม่พบรายการ</p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-border text-sm">
+                <thead className="bg-muted/40">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
+                    {([
+                      { col: 'name',      label: 'ชื่อพนักงาน', center: false },
+                    ] as const).map(({ col, label, center }) => (
+                      <th key={col} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap ${center ? 'text-center' : 'text-left'}`}>
+                        <Link href={sortUrl(col)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                          {label}
+                          {sortKey === col
+                            ? sortDir === 'asc'
+                              ? <ChevronUp className="h-3 w-3" />
+                              : <ChevronDown className="h-3 w-3" />
+                            : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                        </Link>
+                      </th>
+                    ))}
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">หมวดหมู่</th>
+                    {([
+                      { col: 'leaveType', label: 'ประเภทการลา', center: true },
+                      { col: 'startDate', label: 'วันที่เริ่ม',  center: true },
+                      { col: 'endDate',   label: 'วันที่สิ้นสุด', center: true },
+                      { col: 'totalDays', label: 'จำนวน (วัน)',    center: true },
+                      { col: 'createdAt', label: 'วันที่ขอ',      center: true },
+                      { col: 'status',    label: 'สถานะ',        center: true },
+                    ] as const).map(({ col, label, center }) => (
+                      <th key={col} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap ${center ? 'text-center' : 'text-left'}`}>
+                        <Link href={sortUrl(col)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                          {label}
+                          {sortKey === col
+                            ? sortDir === 'asc'
+                              ? <ChevronUp className="h-3 w-3" />
+                              : <ChevronDown className="h-3 w-3" />
+                            : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                        </Link>
+                      </th>
+                    ))}
+
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {requests.map((req, index) => (
+                    <HRLeaveRow
+                      key={req.id}
+                      id={req.id}
+                      rowNumber={skip + index + 1}
+                      userName={req.user.name}
+                      departmentName={req.user.employee?.department?.name ?? null}
+                      leaveCategory={req.leaveType.leaveCategory}
+                      leaveTypeName={req.leaveType.name}
+                      startDate={formatDate(req.leaveStartDateTime)}
+                      endDate={formatDate(req.leaveEndDateTime)}
+                      totalDays={String(parseFloat(Number(req.totalDays).toFixed(2)))}
+                      createdAt={formatDate(req.createdAt)}
+                      status={req.status}
+                      documentUrl={req.documentUrl ?? null}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination page={currentPage} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} />
+          </div>
+        )}
+      </div>
+    </AdminLayout>
   )
 }

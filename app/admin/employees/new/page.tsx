@@ -1,56 +1,62 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import Link from 'next/link'
+import { redirect } from '@/i18n/navigation'
+import { Link } from '@/i18n/navigation'
 import NewEmployeeForm from './NewEmployeeForm'
+import AdminLayout from '@/components/admin-layout'
 
 export default async function NewEmployeePage() {
   const session = await auth()
+  if (!session?.user?.id) redirect('/login')
+  if (!session.user.isAdmin) redirect('/dashboard')
 
-  if (!session || session.user.role !== 'ADMIN') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-500 text-xl font-semibold">Unauthorized</p>
-          <p className="text-gray-500 text-sm mt-1">เฉพาะผู้ดูแลระบบเท่านั้น</p>
-        </div>
-      </div>
-    )
-  }
-
-  const [departments, managers, positions] = await Promise.all([
+  const [departments, managers, positions, dbUser] = await Promise.all([
     prisma.department.findMany({
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
     }),
-    prisma.user.findMany({
-      where: { role: 'MANAGER' },
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true, role: true, email: true },
+    prisma.employee.findMany({
+      where: { isActive: true, user: { role: { name: { in: ['MANAGER', 'ADMIN'] } } } },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+      select: { id: true, firstName: true, lastName: true, positionRef: { select: { name: true } }, department: { select: { name: true } } },
     }),
     prisma.position.findMany({
       orderBy: { name: 'asc' },
-      select: { id: true, name: true },
+      select: { id: true, name: true, departmentId: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { avatarUrl: true },
     }),
   ])
 
+  const user = {
+    name:      session.user.name ?? '',
+    email:     session.user.email ?? '',
+    avatarUrl: dbUser?.avatarUrl ?? null,
+    isAdmin:   true,
+  }
+
   return (
-    <div className="p-6 md:p-8 max-w-3xl mx-auto">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-        <Link href="/admin/employees" className="hover:text-gray-600 transition">
-          จัดการพนักงาน
-        </Link>
-        <span>/</span>
-        <span className="text-gray-600 font-medium">เพิ่มพนักงานใหม่</span>
-      </nav>
+    <AdminLayout title="เพิ่มพนักงาน" user={user}>
+      <div className="max-w-3xl mx-auto space-y-5">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Link href="/admin/employees" className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300 transition">
+            จัดการพนักงาน
+          </Link>
+          <span>/</span>
+          <span className="text-foreground font-medium">เพิ่มพนักงานใหม่</span>
+        </nav>
 
-      {/* Header */}
-      <div className="mb-7">
-        <h1 className="text-2xl font-bold text-gray-800">เพิ่มพนักงานใหม่</h1>
-        <p className="text-sm text-gray-500 mt-1">กรอกข้อมูลพนักงานให้ครบถ้วน ฟิลด์ที่มี * จำเป็นต้องกรอก</p>
+        {/* Header */}
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">เพิ่มพนักงานใหม่</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">กรอกข้อมูลพนักงานให้ครบถ้วน ฟิลด์ที่มี * จำเป็นต้องกรอก</p>
+        </div>
+
+        <NewEmployeeForm departments={departments} managers={managers} positions={positions} />
       </div>
-
-      <NewEmployeeForm departments={departments} managers={managers} positions={positions} />
-    </div>
+    </AdminLayout>
   )
 }

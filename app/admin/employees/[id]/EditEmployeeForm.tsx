@@ -1,41 +1,30 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { updateEmployee, deactivateEmployee, type UpdateEmployeeState } from './actions'
+import { useRouter } from '@/i18n/navigation'
+import { updateEmployee, deactivateEmployee, reactivateEmployee, type UpdateEmployeeState } from './actions'
 import AvatarUploader from '../AvatarUploader'
 
 type Department   = { id: string; name: string }
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: 'Admin', HR: 'HR', MANAGER: 'Manager', EMPLOYEE: 'พนักงาน', EXECUTIVE: 'ผู้บริหาร',
-}
-type ManagerOption  = { id: string; name: string; role: string; email: string }
-type PositionOption = { id: string; name: string }
+type ManagerOption  = { id: string; firstName: string; lastName: string; positionRef: { name: string } | null; department: { name: string } | null }
+type PositionOption = { id: string; name: string; departmentId?: string | null }
 
 export type EmployeeData = {
   id:           string
   employeeCode: string
   firstName:    string
   lastName:     string
-  email:        string
+  email:        string   // from User.email (read-only)
   phone:        string | null
   avatarUrl:    string | null
-  position:     string
   positionId:   string | null
-  role:         string
+  role:         string | null
   isProbation:  boolean
   isActive:     boolean
   departmentId: string | null
   managerId:    string | null
+  approverIds:  string[]
 }
-
-const ROLE_OPTIONS = [
-  { value: 'EMPLOYEE',  label: 'พนักงาน (Employee)' },
-  { value: 'MANAGER',   label: 'ผู้จัดการ (Manager)' },
-  { value: 'HR',        label: 'HR' },
-  { value: 'EXECUTIVE', label: 'ผู้บริหาร (Executive)' },
-  { value: 'ADMIN',     label: 'ผู้ดูแลระบบ (Admin)' },
-]
 
 const initialState: UpdateEmployeeState = {}
 
@@ -52,14 +41,31 @@ export default function EditEmployeeForm({
 }) {
   const router = useRouter()
 
-  // Bind the employee id into the action
   const boundAction = updateEmployee.bind(null, employee.id)
   const [state, formAction, pending] = useActionState(boundAction, initialState)
 
-  // Deactivate confirmation state
+  const [selectedDeptId,    setSelectedDeptId]    = useState(employee.departmentId ?? '')
   const [confirmDeactivate, setConfirmDeactivate] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
+  const [reactivating, setReactivating] = useState(false)
   const [deactivateMsg, setDeactivateMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+
+  function handleDeptChange(deptId: string) {
+    setSelectedDeptId(deptId)
+  }
+
+  function handlePasswordConfirm(e: React.FormEvent<HTMLFormElement>) {
+    const form = e.currentTarget
+    const np = (form.elements.namedItem('newPassword') as HTMLInputElement)?.value ?? ''
+    const cp = (form.elements.namedItem('confirmPassword') as HTMLInputElement)?.value ?? ''
+    if (np && np !== cp) {
+      e.preventDefault()
+      setPasswordError('รหัสผ่านไม่ตรงกัน')
+      return
+    }
+    setPasswordError(null)
+  }
 
   useEffect(() => {
     if (state.success) {
@@ -74,234 +80,368 @@ export default function EditEmployeeForm({
     setDeactivating(false)
     setConfirmDeactivate(false)
     setDeactivateMsg({ ok: result.success ?? false, text: result.message ?? '' })
-    if (result.success) {
-      setTimeout(() => router.push('/admin/employees'), 1500)
-    }
+    if (result.success) setTimeout(() => router.push('/admin/employees'), 1500)
+  }
+
+  async function handleReactivate() {
+    setReactivating(true)
+    const result = await reactivateEmployee(employee.id)
+    setReactivating(false)
+    setDeactivateMsg({ ok: result.success ?? false, text: result.message ?? '' })
+    if (result.success) setTimeout(() => router.push('/admin/employees'), 1500)
   }
 
   const e = state.errors ?? {}
 
+  const filteredPositions = selectedDeptId
+    ? positions.filter((p) => p.departmentId === selectedDeptId || !p.departmentId)
+    : positions
+
   return (
     <div className="space-y-6">
-      {/* Deactivate banner */}
+      {/* Status banner */}
       {deactivateMsg && (
-        <div
-          className={`rounded-lg border px-4 py-3 text-sm ${
-            deactivateMsg.ok
-              ? 'bg-green-50 border-green-200 text-green-700'
-              : 'bg-red-50 border-red-200 text-red-700'
-          }`}
-        >
+        <div className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+          deactivateMsg.ok
+            ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-950/30 dark:border-green-800/50 dark:text-green-400'
+            : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950/30 dark:border-red-800/50 dark:text-red-400'
+        }`}>
           {deactivateMsg.text}
         </div>
       )}
 
-      {/* Edit form wraps header + all fields */}
-      <form action={formAction} className="space-y-6">
+      <form action={formAction} onSubmit={handlePasswordConfirm}>
 
-        {/* Employee identity header — avatar editable at top */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-6 pt-5 pb-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-5">ข้อมูลพนักงาน</p>
-            <div className="flex items-center gap-6">
-              {/* Avatar — compact circle only */}
-              <div className="shrink-0 flex flex-col items-center gap-2">
-                <AvatarUploader
-                  compact
-                  name="avatarUrl"
-                  defaultUrl={employee.avatarUrl}
-                  initials={`${employee.firstName}${employee.lastName}`}
-                />
-                <span className="text-[10px] text-gray-400">คลิกเพื่อเปลี่ยนรูป</span>
-              </div>
-
-              {/* Info grid */}
-              <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                <div>
-                  <p className="text-xs text-gray-400 mb-0.5">รหัสพนักงาน</p>
-                  <p className="font-mono font-semibold text-gray-700">{employee.employeeCode}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-0.5">ชื่อ-นามสกุล</p>
-                  <p className="font-semibold text-gray-800">{employee.firstName} {employee.lastName}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-0.5">อีเมล</p>
-                  <p className="text-gray-600 truncate">{employee.email}</p>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-0.5" htmlFor="emp-phone">เบอร์โทรศัพท์</label>
-                  <input
-                    id="emp-phone"
-                    type="tel"
-                    name="phone"
-                    defaultValue={employee.phone ?? ''}
-                    placeholder="081-234-5678"
-                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
+        {/* Alerts */}
         {e.general && (
-          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div className="mb-5 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 dark:bg-red-950/30 dark:border-red-800/50 dark:text-red-400">
             {e.general}
           </div>
         )}
         {state.success && (
-          <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+          <div className="mb-5 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 dark:bg-green-950/30 dark:border-green-800/50 dark:text-green-400">
             {state.message} — กำลังพาคุณกลับ…
           </div>
         )}
 
-        {/* Position & Role */}
-        <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
-          <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5">
-            ตำแหน่งและบทบาท
-          </legend>
+        {/* Two-column grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                ตำแหน่งงาน <Required />
-              </label>
-              <select
-                name="positionId"
-                defaultValue={employee.positionId ?? ''}
-                className={selectCls(!!e.positionId)}
-              >
-                <option value="">— เลือกตำแหน่งงาน —</option>
-                {positions.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              <FieldError msg={e.positionId} />
+          {/* ── LEFT: Profile card ──────────────────────────────────────── */}
+          <div className="lg:col-span-1 bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            {/* Avatar area */}
+            <div className="bg-linear-to-b from-primary/8 to-transparent px-6 pt-8 pb-6 flex flex-col items-center gap-3">
+              <AvatarUploader
+                compact
+                name="avatarUrl"
+                defaultUrl={employee.avatarUrl}
+                initials={`${employee.firstName}${employee.lastName}`}
+              />
+              <div className="text-center">
+                <p className="font-semibold text-foreground text-base leading-tight">
+                  {employee.firstName} {employee.lastName}
+                </p>
+                <p className="text-xs font-mono text-muted-foreground mt-0.5">
+                  {employee.employeeCode}
+                </p>
+              </div>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
+                employee.isActive
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50'
+                  : 'bg-red-50 text-red-500 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/50'
+              }`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${employee.isActive ? 'bg-emerald-500' : 'bg-red-400'}`} />
+                {employee.isActive ? 'ทำงานอยู่' : 'ไม่ทำงาน'}
+              </span>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                บทบาทในระบบ <Required />
-              </label>
-              <select name="role" defaultValue={employee.role} className={selectCls(!!e.role)}>
-                {ROLE_OPTIONS.map((r) => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
-                ))}
-              </select>
-              <FieldError msg={e.role} />
+
+              <div className="px-6 pb-6 space-y-4 border-t border-border pt-5">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">อีเมล</p>
+                <p className="text-sm text-foreground truncate">{employee.email}</p>
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1.5" htmlFor="emp-code">
+                  รหัสพนักงาน <Required />
+                </label>
+                <input
+                  id="emp-code"
+                  type="text"
+                  name="employeeCode"
+                  defaultValue={employee.employeeCode}
+                  required
+                  className={inputCls(!!e.employeeCode)}
+                />
+                <FieldError msg={e.employeeCode} />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1.5" htmlFor="emp-phone">
+                  เบอร์โทรศัพท์
+                </label>
+                <input
+                  id="emp-phone"
+                  type="tel"
+                  name="phone"
+                  defaultValue={employee.phone ?? ''}
+                  placeholder="081-234-5678"
+                  className={inputCls(false)}
+                />
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">แผนก</label>
-            <select
-              name="departmentId"
-              defaultValue={employee.departmentId ?? ''}
-              className={selectCls(!!e.departmentId)}
-            >
-              <option value="">— ไม่ระบุแผนก —</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
+          {/* ── RIGHT: Form sections ────────────────────────────────────── */}
+          <div className="lg:col-span-2 space-y-5">
+
+            {/* Position & Organisation */}
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-5">
+              <div className="flex items-center gap-2 pb-1 border-b border-border">
+                <span className="w-1 h-4 rounded-full bg-primary inline-block" />
+                <h3 className="text-sm font-semibold text-foreground">ตำแหน่งและองค์กร</h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">แผนก <Required /></label>
+                  <select
+                    name="departmentId"
+                    value={selectedDeptId}
+                    onChange={(ev) => handleDeptChange(ev.target.value)}
+                    className={selectCls(!!e.departmentId)}
+                    required
+                  >
+                    <option value="" disabled>— เลือกแผนก —</option>
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                  <FieldError msg={e.departmentId} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                    ตำแหน่งงาน <Required />
+                  </label>
+                  <select
+                    name="positionId"
+                    defaultValue={employee.positionId ?? ''}
+                    className={selectCls(!!e.positionId)}
+                    required
+                  >
+                    <option value="" disabled>— เลือกตำแหน่งงาน —</option>
+                    {filteredPositions.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                  <FieldError msg={e.positionId} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">ผู้อนุมัติการลา</label>
+                  <div className="rounded-lg border border-input overflow-hidden overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="w-10 px-3 py-2"></th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">ชื่อ-นามสกุล</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">ตำแหน่งงาน</th>
+                          <th className="px-3 py-2 text-center text-xs font-semibold text-muted-foreground">แผนก</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {managers.filter((m) => m.id !== employee.id).length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="px-3 py-4 text-center text-sm text-muted-foreground italic">
+                              ไม่มีข้อมูลผู้อนุมัติการลา
+                            </td>
+                          </tr>
+                        ) : (
+                          managers
+                            .filter((m) => m.id !== employee.id)
+                            .map((m) => (
+                              <tr key={m.id} className="hover:bg-muted/40 transition-colors">
+                                <td className="px-3 py-2.5 text-center">
+                                  <input
+                                    type="checkbox"
+                                    name="approverIds"
+                                    value={m.id}
+                                    defaultChecked={employee.approverIds.includes(m.id)}
+                                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                                  />
+                                </td>
+                                <td className="px-3 py-2.5 font-medium text-foreground">{m.firstName} {m.lastName}</td>
+                                <td className="px-3 py-2.5 text-muted-foreground">{m.positionRef?.name || <span className="italic opacity-50">ไม่ระบุ</span>}</td>
+                                <td className="px-3 py-2.5 text-center text-muted-foreground">{m.department?.name ?? <span className="italic opacity-50">ไม่ระบุ</span>}</td>
+                              </tr>
+                            ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                <FieldError msg={e.managerId} />
+              </div>
+
+              <div className="pt-1">
+                <CheckboxField
+                  name="isProbation"
+                  defaultChecked={employee.isProbation}
+                  label="อยู่ระหว่างทดลองงาน"
+                  hint="พนักงานทดลองงานอาจไม่สามารถลาบางประเภทได้ตามนโยบาย เช่น วันลาพักร้อน"
+                />
+              </div>
+            </div>
+
+            {/* System Permissions */}
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-4">
+              <div className="flex items-center gap-2 pb-1 border-b border-border">
+                <span className="w-1 h-4 rounded-full bg-primary inline-block" />
+                <h3 className="text-sm font-semibold text-foreground">สิทธิ์ระบบ</h3>
+              </div>
+              {([
+                { value: 'none',    label: 'พนักงานทั่วไป',     hint: 'ไม่มีสิทธิ์พิเศษเพิ่มเติม' },
+                { value: 'manager', label: 'ผู้อนุมัติการลา',  hint: 'สามารถอนุมัติหรือปฏิเสธคำขอลาของพนักงานในสายงาน' },
+                { value: 'admin',   label: 'ผู้ดูแลระบบ',      hint: 'สามารถจัดการพนักงาน ดูคำขอลาทั้งหมด และอนุมัติการลาเมื่อไม่มีผู้อนุมัติการลา' },
+              ] as const).map(({ value, label, hint }) => (
+                <label key={value} className="flex items-start gap-3 cursor-pointer select-none group">
+                  <input
+                    type="radio"
+                    name="role"
+                    value={value}
+                    defaultChecked={
+                      value === 'admin'   ? employee.role === 'ADMIN' :
+                      value === 'manager' ? employee.role === 'MANAGER' :
+                      (employee.role !== 'ADMIN' && employee.role !== 'MANAGER')
+                    }
+                    className="mt-0.5 h-4 w-4 border-input text-primary focus:ring-primary"
+                  />
+                  <span>
+                    <span className="text-sm font-medium text-foreground">{label}</span>
+                    <br />
+                    <span className="text-xs text-muted-foreground/60">{hint}</span>
+                  </span>
+                </label>
               ))}
-            </select>
-            <FieldError msg={e.departmentId} />
-          </div>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              ผู้จัดการสายงาน
-            </label>
-            <select
-              name="managerId"
-              defaultValue={employee.managerId ?? ''}
-              className={selectCls(!!e.managerId)}
-            >
-              <option value="">— ไม่มีผู้จัดการ —</option>
-              {managers.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name} — {ROLE_LABEL[m.role] ?? m.role}
-                </option>
-              ))}
-            </select>
-            <FieldError msg={e.managerId} />
-          </div>
-        </fieldset>
+            {/* Change Password */}
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-4">
+              <div className="flex items-center gap-2 pb-1 border-b border-border">
+                <span className="w-1 h-4 rounded-full bg-primary inline-block" />
+                <h3 className="text-sm font-semibold text-foreground">เปลี่ยนรหัสผ่าน</h3>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-1">เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยนรหัสผ่าน</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5" htmlFor="new-password">
+                    รหัสผ่านใหม่
+                  </label>
+                  <input
+                    id="new-password"
+                    type="password"
+                    name="newPassword"
+                    autoComplete="new-password"
+                    placeholder="อย่างน้อย 6 ตัวอักษร"
+                    className={inputCls(!!(e.password || passwordError))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5" htmlFor="confirm-password">
+                    ยืนยันรหัสผ่านใหม่
+                  </label>
+                  <input
+                    id="confirm-password"
+                    type="password"
+                    name="confirmPassword"
+                    autoComplete="new-password"
+                    placeholder="กรอกรหัสผ่านอีกครั้ง"
+                    className={inputCls(!!(e.password || passwordError))}
+                    onChange={() => setPasswordError(null)}
+                  />
+                </div>
+              </div>
+              {(e.password || passwordError) && (
+                <FieldError msg={e.password ?? passwordError ?? undefined} />
+              )}
+            </div>
 
-        {/* Status */}
-        <fieldset className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-          <legend className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-0.5">
-            สถานะ
-          </legend>
-
-          <CheckboxField
-            name="isProbation"
-            defaultChecked={employee.isProbation}
-            label="อยู่ระหว่างทดลองงาน"
-            hint="พนักงานทดลองงานอาจไม่สามารถลาบางประเภทได้ตามนโยบาย"
-          />
-
-          <CheckboxField
-            name="isActive"
-            defaultChecked={employee.isActive}
-            label="ใช้งานอยู่ (Active)"
-            hint="ยกเลิกเพื่อระงับการเข้าใช้งานระบบโดยไม่ลบข้อมูล"
-          />
-        </fieldset>
-
-        {/* Submit */}
-        <div className="flex items-center justify-end gap-3 pt-1 pb-2">
-          <a
-            href="/admin/employees"
-            className="px-5 py-2.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-          >
-            ยกเลิก
-          </a>
-          <button
-            type="submit"
-            disabled={pending || state.success}
-            className="px-6 py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg transition"
-          >
-            {pending ? 'กำลังบันทึก…' : 'บันทึกการเปลี่ยนแปลง'}
-          </button>
-        </div>
-      </form>
-
-      {/* Danger zone — soft delete */}
-      {employee.isActive && (
-        <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-6">
-          <p className="text-sm font-semibold text-red-600 mb-1">Danger Zone</p>
-          <p className="text-sm text-gray-500 mb-4">
-            การระงับบัญชีจะซ่อนพนักงานออกจากระบบ แต่ไม่ลบข้อมูล สามารถเปิดใช้งานใหม่ได้ในภายหลัง
-          </p>
-          {!confirmDeactivate ? (
-            <button
-              onClick={() => setConfirmDeactivate(true)}
-              className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition"
-            >
-              ระงับการใช้งาน
-            </button>
-          ) : (
-            <div className="flex items-center gap-3 flex-wrap">
-              <p className="text-sm text-red-700 font-medium">
-                ยืนยันการระงับ {employee.firstName} {employee.lastName}?
-              </p>
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-1">
               <button
-                onClick={handleDeactivate}
-                disabled={deactivating}
-                className="px-4 py-2 text-sm font-semibold bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white rounded-lg transition"
-              >
-                {deactivating ? 'กำลังดำเนินการ…' : 'ยืนยัน ระงับบัญชี'}
-              </button>
-              <button
-                onClick={() => setConfirmDeactivate(false)}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                type="button"
+                onClick={() => router.push('/admin/employees')}
+                className="px-5 py-2.5 text-sm font-medium text-muted-foreground border border-border rounded-lg hover:bg-muted/40 transition"
               >
                 ยกเลิก
               </button>
+              <button
+                type="submit"
+                disabled={pending || state.success}
+                className="px-6 py-2.5 text-sm font-semibold bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-primary-foreground rounded-lg transition"
+              >
+                {pending ? 'กำลังบันทึก…' : 'บันทึกการเปลี่ยนแปลง'}
+              </button>
             </div>
+          </div>
+        </div>
+      </form>
+
+      {/* ── Danger zone ─────────────────────────────────────────────────── */}
+      <div className="bg-card rounded-2xl border border-red-200 dark:border-red-900/50 shadow-sm p-6">
+        <div className="flex items-start gap-3">
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-red-600 dark:text-red-400">โซนอันตราย</p>
+            {employee.isActive ? (
+              <p className="text-sm text-muted-foreground mt-1">
+                การระงับบัญชีจะซ่อนพนักงานออกจากระบบ แต่ไม่ลบข้อมูล สามารถเปิดใช้งานใหม่ได้ในภายหลัง
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground mt-1">
+                บัญชีนี้ถูกระงับการใช้งานอยู่ กดปุ่มด้านล่างเพื่อเปิดใช้งานใหม่
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4">
+          {employee.isActive ? (
+            !confirmDeactivate ? (
+              <button
+                onClick={() => setConfirmDeactivate(true)}
+                className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition"
+              >
+                ระงับการใช้งาน
+              </button>
+            ) : (
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-sm text-red-700 dark:text-red-400 font-medium">
+                  ยืนยันการระงับ {employee.firstName} {employee.lastName}?
+                </p>
+                <button
+                  onClick={handleDeactivate}
+                  disabled={deactivating}
+                  className="px-4 py-2 text-sm font-semibold bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white rounded-lg transition"
+                >
+                  {deactivating ? 'กำลังดำเนินการ…' : 'ยืนยัน ระงับบัญชี'}
+                </button>
+                <button
+                  onClick={() => setConfirmDeactivate(false)}
+                  className="px-4 py-2 text-sm text-muted-foreground border border-border rounded-lg hover:bg-muted/40 transition"
+                >
+                  ยกเลิก
+                </button>
+              </div>
+            )
+          ) : (
+            <button
+              onClick={handleReactivate}
+              disabled={reactivating}
+              className="px-4 py-2 text-sm font-medium text-green-700 border border-green-300 rounded-lg hover:bg-green-50 dark:hover:bg-green-950/30 disabled:opacity-60 transition"
+            >
+              {reactivating ? 'กำลังดำเนินการ…' : 'เปิดใช้งานอีกครั้ง'}
+            </button>
           )}
         </div>
-      )}
+      </div>
     </div>
   )
 }
@@ -315,15 +455,15 @@ function inputCls(hasError: boolean) {
   return `${baseInput} ${
     hasError
       ? 'border-red-400 focus:ring-red-400 bg-red-50'
-      : 'border-gray-300 focus:ring-blue-500'
+      : 'border-input bg-background text-foreground focus:ring-primary'
   }`
 }
 
 function selectCls(hasError: boolean) {
-  return `${baseInput} bg-white ${
+  return `${baseInput} bg-background text-foreground ${
     hasError
-      ? 'border-red-400 focus:ring-red-400 bg-red-50'
-      : 'border-gray-300 focus:ring-blue-500'
+      ? 'border-red-400 focus:ring-red-400'
+      : 'border-input focus:ring-primary'
   }`
 }
 
@@ -353,15 +493,17 @@ function CheckboxField({
         type="checkbox"
         name={name}
         defaultChecked={defaultChecked}
-        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-primary"
       />
       <span>
-        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+        <span className="text-sm font-medium text-foreground">
           {label}
         </span>
         <br />
-        <span className="text-xs text-gray-400">{hint}</span>
+        <span className="text-xs text-muted-foreground/60">{hint}</span>
       </span>
     </label>
   )
 }
+
+

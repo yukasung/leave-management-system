@@ -1,13 +1,14 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { updatePosition, deletePosition, type PositionFormState } from './actions'
 
-type PositionData = { id: string; name: string; _count: { employees: number } }
+type Department  = { id: string; name: string }
+type PositionData = { id: string; name: string; departmentId?: string | null; _count: { employees: number } }
 const initial: PositionFormState = { success: false, message: '' }
 
-export default function EditPositionForm({ position }: { position: PositionData }) {
+export default function EditPositionForm({ position, departments }: { position: PositionData; departments: Department[] }) {
   const router = useRouter()
   const [state, action, pending] = useActionState(updatePosition.bind(null, position.id), initial)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -15,17 +16,22 @@ export default function EditPositionForm({ position }: { position: PositionData 
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
-    if (state.success) { const t = setTimeout(() => router.push('/admin/settings'), 1200); return () => clearTimeout(t) }
+    if (state.success) { const t = setTimeout(() => router.push('/admin/settings/positions'), 1200); return () => clearTimeout(t) }
   }, [state.success, router])
 
   useEffect(() => {
-    if (deleteState?.success) { const t = setTimeout(() => router.push('/admin/settings'), 1200); return () => clearTimeout(t) }
+    if (deleteState?.success) { const t = setTimeout(() => router.push('/admin/settings/positions'), 1200); return () => clearTimeout(t) }
   }, [deleteState?.success, router])
 
   async function handleDelete() {
     setDeleting(true)
-    setDeleteState(await deletePosition(position.id))
-    setDeleting(false)
+    const result = await deletePosition(position.id)
+    if (result.success) {
+      router.push('/admin/settings/positions')
+    } else {
+      setDeleteState(result)
+      setDeleting(false)
+    }
   }
 
   return (
@@ -34,12 +40,27 @@ export default function EditPositionForm({ position }: { position: PositionData 
         {state.message && (
           <div className={`rounded-lg px-4 py-3 text-sm font-medium ${state.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
             {state.message}
-            {state.success && <span className="ml-2 text-green-500">กำลังกลับไปหน้าตั้งค่า…</span>}
+            {state.success && <span className="ml-2 text-green-500">กำลังกลับ…</span>}
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">แผนก <span className="text-red-500">*</span></label>
+          <select
+            name="departmentId"
+            required
+            defaultValue={position.departmentId ?? ''}
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="" disabled>— เลือกแผนก —</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
             ชื่อตำแหน่ง <span className="text-red-500">*</span>
           </label>
           <input
@@ -47,23 +68,29 @@ export default function EditPositionForm({ position }: { position: PositionData 
             type="text"
             required
             defaultValue={position.name}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
           {state.errors?.name && <p className="text-xs text-red-500 mt-1">{state.errors.name}</p>}
         </div>
 
         <div className="flex items-center gap-3 pt-2">
           <button type="submit" disabled={pending || state.success}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+            className="bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium px-5 py-2 rounded-lg transition-colors">
             {pending ? 'กำลังบันทึก…' : 'บันทึก'}
           </button>
-          <a href="/admin/settings" className="text-sm text-gray-500 hover:text-gray-700 underline">ยกเลิก</a>
+          <button
+            type="button"
+            onClick={() => router.push('/admin/settings/positions')}
+            className="border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+          >
+            ยกเลิก
+          </button>
         </div>
       </form>
 
       {/* Danger Zone */}
-      <div className="border border-red-200 rounded-xl p-5 bg-red-50">
-        <h3 className="text-sm font-semibold text-red-700 mb-1">Danger Zone</h3>
+      <div className="border border-red-200 rounded-xl p-5 bg-red-950/10 dark:bg-red-950/20">
+        <h3 className="text-sm font-semibold text-red-700 mb-1">โซนอันตราย</h3>
         <p className="text-xs text-red-600 mb-4">ลบตำแหน่งนี้ออกจากระบบ — ไม่สามารถลบได้ถ้ายังมีพนักงานใช้ตำแหน่งนี้</p>
 
         {deleteState?.message && (
@@ -83,10 +110,10 @@ export default function EditPositionForm({ position }: { position: PositionData 
           <div className="flex items-center gap-3">
             <span className="text-sm text-red-700 font-medium">ยืนยันการลบ?</span>
             <button type="button" onClick={handleDelete} disabled={deleting || deleteState?.success}
-              className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+              className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors">
               {deleting ? 'กำลังลบ…' : 'ยืนยัน ลบเลย'}
             </button>
-            <button type="button" onClick={() => setDeleteConfirm(false)} className="text-sm text-gray-600 hover:text-gray-800 underline">ยกเลิก</button>
+            <button type="button" onClick={() => setDeleteConfirm(false)} className="border border-input bg-background hover:bg-muted text-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors">ยกเลิก</button>
           </div>
         )}
       </div>

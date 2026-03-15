@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { hash } from 'bcryptjs'
 
 export type CreateEmployeeState = {
   success?: boolean
@@ -14,14 +15,10 @@ export type CreateEmployeeState = {
     email?: string
     departmentId?: string
     positionId?: string
-    role?: string
     managerId?: string
     general?: string
   }
 }
-
-const VALID_ROLES = ['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'EXECUTIVE'] as const
-type EmployeeRole = (typeof VALID_ROLES)[number]
 
 export async function createEmployee(
   _prevState: CreateEmployeeState,
@@ -32,7 +29,7 @@ export async function createEmployee(
     if (!session?.user?.id) {
       return { success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }
     }
-    if (session.user.role !== 'ADMIN') {
+    if (!session.user.isAdmin) {
       return { success: false, message: 'คุณไม่มีสิทธิ์ดำเนินการนี้' }
     }
 
@@ -45,21 +42,20 @@ export async function createEmployee(
     const avatarUrl    = (formData.get('avatarUrl')    as string | null)?.trim() || null
     const departmentId = (formData.get('departmentId') as string | null)?.trim() || null
     const positionId   = (formData.get('positionId')   as string | null)?.trim() || null
-    const role         = (formData.get('role')         as string | null)?.trim() ?? ''
-    const managerId    = (formData.get('managerId')    as string | null)?.trim() || null
+    const role         = formData.get('role') as string | null
+    const roleName     = role === 'admin' ? 'ADMIN' : role === 'manager' ? 'MANAGER' : 'EMPLOYEE'
+    const approverIds  = (formData.getAll('approverIds') as string[]).filter(Boolean)
     const isProbation  = formData.get('isProbation') === 'on'
 
-    // ── Validation ───────────────────────────────────────────────────────────
+    // ── Validation ───────────────────────────────────────────────────────────────────
     const errors: CreateEmployeeState['errors'] = {}
 
-    if (!employeeCode) errors.employeeCode = 'กรุณากรอกรหัสพนักงาน'
-    if (!firstName)    errors.firstName    = 'กรุณากรอกชื่อ'
-    if (!lastName)     errors.lastName     = 'กรุณากรอกนามสกุล'
-    if (!email)        errors.email        = 'กรุณากรอกอีเมล'
-    if (!positionId)   errors.positionId   = 'กรุณาเลือกตำแหน่ง'
-    if (!role || !VALID_ROLES.includes(role as EmployeeRole)) {
-      errors.role = 'กรุณาเลือกบทบาท'
-    }
+    if (!employeeCode)  errors.employeeCode  = 'กรุณากรอกรหัสพนักงาน'
+    if (!firstName)     errors.firstName     = 'กรุณากรอกชื่อ'
+    if (!lastName)      errors.lastName      = 'กรุณากรอกนามสกุล'
+    if (!email)         errors.email         = 'กรุณากรอกอีเมล'
+    if (!departmentId)  errors.departmentId  = 'กรุณาเลือกแผนก'
+    if (!positionId)    errors.positionId    = 'กรุณาเลือกตำแหน่ง'
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.email = 'รูปแบบอีเมลไม่ถูกต้อง'
@@ -69,50 +65,83 @@ export async function createEmployee(
       return { success: false, errors }
     }
 
-    // ── Resolve position name from id ─────────────────────────────────────────
-    const positionRecord = await prisma.position.findUnique({
-      where: { id: positionId! },
-      select: { name: true },
-    })
-    if (!positionRecord) {
-      return { success: false, errors: { positionId: 'ไม่พบตำแหน่งที่เลือก' } }
-    }
-    const position = positionRecord.name
-
     // ── Uniqueness checks (parallel) ─────────────────────────────────────────
     const [existingCode, existingEmail] = await Promise.all([
       prisma.employee.findUnique({ where: { employeeCode }, select: { id: true } }),
-      prisma.employee.findUnique({ where: { email },        select: { id: true } }),
+      prisma.user.findUnique({ where: { email }, select: { id: true } }),
     ])
 
-    if (existingCode) errors.employeeCode = 'รหัสพนักงานนี้ถูกใช้งานแล้ว'
-    if (existingEmail) errors.email       = 'อีเมลนี้ถูกใช้งานแล้ว'
+    if (existingCode)  errors.employeeCode = 'รหัสพนักงานนี้ถูกใช้งานแล้ว'
+    if (existingEmail) errors.email        = 'อีเมลนี้ถูกใช้งานแล้ว'
 
     if (Object.keys(errors).length > 0) {
       return { success: false, errors }
     }
 
-    // ── Create employee + audit log ─────────────────────────────────────────
+    // ── Pre-compute values that can't run inside transaction ─────────────────
+    const currentYear     = new Date().getFullYear()
+    const defaultPassword = await hash('admin1234', 10)
+
+    const [leaveTypes, existingUser, roleRecord] = await Promise.all([
+      prisma.leaveType.findMany({ where: { maxDaysPerYear: { not: null } }, select: { id: true, maxDaysPerYear: true } }),
+      prisma.user.findUnique({ where: { email }, select: { id: true } }),
+      prisma.role.findUnique({ where: { name: roleName as 'ADMIN' | 'HR' | 'MANAGER' | 'EMPLOYEE' }, select: { id: true } }),
+    ])
+
+    // ── Single atomic transaction: Employee + User + LeaveBalances + AuditLog ─
     const employee = await prisma.$transaction(async (tx) => {
+      // 1. Resolve or create User account
+      let userId: string
+      if (existingUser) {
+        userId = existingUser.id
+        // Ensure avatarUrl is synced on existing user
+        await tx.user.update({
+          where: { id: userId },
+          data: { avatarUrl: avatarUrl ?? null, ...(roleRecord ? { roleId: roleRecord.id } : {}) },
+        })
+      } else {
+        const newUser = await tx.user.create({
+          data: {
+            email,
+            name:      `${firstName} ${lastName}`,
+            password:  defaultPassword,
+            avatarUrl: avatarUrl ?? undefined,
+            ...(roleRecord ? { roleId: roleRecord.id } : {}),
+          },
+        })
+        userId = newUser.id
+      }
+
+      // 2. Create Employee linked to User
       const emp = await tx.employee.create({
         data: {
           employeeCode,
           firstName,
           lastName,
-          email,
           phone,
-          avatarUrl,
-          position,
-          role:         role as EmployeeRole,
           isProbation,
-          isActive:     true,
+          isActive: true,
+          userId,
           ...(positionId   ? { positionRef: { connect: { id: positionId   } } } : {}),
           ...(departmentId ? { department:  { connect: { id: departmentId } } } : {}),
-          ...(managerId    ? { manager:     { connect: { id: managerId    } } } : {}),
+          ...(approverIds.length > 0 ? { approvers: { connect: approverIds.map(id => ({ id })) } } : {}),
         },
         select: { id: true, employeeCode: true, firstName: true, lastName: true },
       })
 
+      // 3. Create LeaveBalances for current year
+      await tx.leaveBalance.createMany({
+        data: leaveTypes.map((lt) => ({
+          userId,
+          leaveTypeId: lt.id,
+          year:        currentYear,
+          totalDays:   lt.maxDaysPerYear ?? 0,
+          usedDays:    0,
+        })),
+        skipDuplicates: true,
+      })
+
+      // 4. Audit log
       await tx.auditLog.create({
         data: {
           userId:      session.user.id,

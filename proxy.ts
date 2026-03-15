@@ -1,22 +1,27 @@
 import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
+import createIntlMiddleware from 'next-intl/middleware'
+import { routing } from './i18n/routing'
 
-// ── Role-based route protection ───────────────────────────────────────────────
-const ROLE_ROUTES: { prefix: string; roles: string[] }[] = [
-  { prefix: '/admin',     roles: ['ADMIN']     },
-  { prefix: '/hr',        roles: ['HR']        },
-  { prefix: '/manager',   roles: ['MANAGER']   },
-  { prefix: '/executive', roles: ['EXECUTIVE'] },
-]
+// ── Admin-only route protection ───────────────────────────────────────────────
+const ADMIN_ROUTES = ['/admin', '/hr']
+
+const intlMiddleware = createIntlMiddleware(routing)
 
 export default auth((req) => {
   const { nextUrl, auth: session } = req
   const isLoggedIn = !!session
 
+  const isSetupPage = nextUrl.pathname === '/setup' || nextUrl.pathname.startsWith('/setup/')
   const isAuthPage = nextUrl.pathname.startsWith('/login')
+    || nextUrl.pathname.match(/^\/(th|en)\/login/) !== null
   const isApiAuth  = nextUrl.pathname.startsWith('/api/auth')
+  const isApiRoute = nextUrl.pathname.startsWith('/api/')
 
-  if (isApiAuth) return NextResponse.next()
+  // Setup page is accessible without authentication (first-time system init)
+  if (isSetupPage) return NextResponse.next()
+
+  if (isApiAuth || isApiRoute) return NextResponse.next()
 
   // Not logged in → redirect to login
   if (!isLoggedIn && !isAuthPage) {
@@ -30,19 +35,19 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/dashboard', nextUrl))
   }
 
-  // Role-based protection
+  // Admin-only route protection
   if (isLoggedIn) {
-    const role  = session?.user?.role as string | undefined
-    const rule  = ROLE_ROUTES.find((r) => nextUrl.pathname.startsWith(r.prefix))
-    if (rule && (!role || !rule.roles.includes(role))) {
+    const isAdminRoute = ADMIN_ROUTES.some((r) => nextUrl.pathname.startsWith(r))
+    if (isAdminRoute && !session?.user?.isAdmin) {
       return NextResponse.redirect(new URL('/dashboard', nextUrl))
     }
   }
 
-  return NextResponse.next()
+  // Apply next-intl locale routing
+  return intlMiddleware(req)
 })
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)'],
 }
 
