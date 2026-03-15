@@ -36,6 +36,7 @@
     "xlsx-js-style": "^1.2.0"
   },
   "devDependencies": {
+    "@swc/helpers": "^0.5.19",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
