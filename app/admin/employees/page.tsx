@@ -96,8 +96,8 @@ export default async function EmployeesPage({
   }
 
   function SortIcon({ col }: { col: SortKey }) {
-    if (sort !== col) return <span className="ml-1 opacity-30">?</span>
-    return <span className="ml-1">{order === 'asc' ? '?' : '?'}</span>
+    if (sort !== col) return <span className="ml-1 opacity-30">↕</span>
+    return <span className="ml-1">{order === 'asc' ? '↑' : '↓'}</span>
   }
 
   const user = {
@@ -108,22 +108,22 @@ export default async function EmployeesPage({
   }
 
   return (
-    <AdminLayout title="?????????????" user={user}>
+    <AdminLayout title="จัดการพนักงาน" user={user}>
       <div className="space-y-4 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">?????????????</h2>
+            <h2 className="text-lg font-semibold text-foreground">จัดการพนักงาน</h2>
             <p className="text-sm text-muted-foreground mt-0.5">
-              ?????????????? {total.toLocaleString()} ??
-              {search || department ? ' � ????????' : ''}
+              พนักงานทั้งหมด {total.toLocaleString()} คน
+              {search || department ? ' · กรองอยู่' : ''}
             </p>
           </div>
           <Link
             href="/admin/employees/new"
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition"
           >
-            + ????????????????
+            + เพิ่มพนักงานใหม่
           </Link>
         </div>
 
@@ -136,9 +136,9 @@ export default async function EmployeesPage({
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
           {employees.length === 0 ? (
             <div className="py-20 text-center text-muted-foreground">
-              <p className="text-lg">????????????</p>
+              <p className="text-lg">ไม่พบพนักงาน</p>
               {(search || department) && (
-                <p className="text-sm mt-1">????????????????????????????</p>
+                <p className="text-sm mt-1">ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p>
               )}
             </div>
           ) : (
@@ -148,28 +148,28 @@ export default async function EmployeesPage({
                   <tr className="text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     <th className="px-5 py-3.5 whitespace-nowrap">
                       <Link href={sortUrl('employeeCode')} className="inline-flex items-center hover:text-foreground transition-colors">
-                        ???????????<SortIcon col="employeeCode" />
+                        รหัสพนักงาน<SortIcon col="employeeCode" />
                       </Link>
                     </th>
                     <th className="px-5 py-3.5 whitespace-nowrap">
                       <Link href={sortUrl('firstName')} className="inline-flex items-center hover:text-foreground transition-colors">
-                        ????-???????<SortIcon col="firstName" />
+                        ชื่อ-นามสกุล<SortIcon col="firstName" />
                       </Link>
                     </th>
                     <th className="px-5 py-3.5 text-center whitespace-nowrap">
                       <Link href={sortUrl('department')} className="inline-flex items-center justify-center w-full hover:text-foreground transition-colors">
-                        ????<SortIcon col="department" />
+                        แผนก<SortIcon col="department" />
                       </Link>
                     </th>
                     <th className="px-5 py-3.5 text-center whitespace-nowrap">
                       <Link href={sortUrl('position')} className="inline-flex items-center justify-center w-full hover:text-foreground transition-colors">
-                        ???????<SortIcon col="position" />
+                        ตำแหน่ง<SortIcon col="position" />
                       </Link>
                     </th>
-                    <th className="px-5 py-3.5 text-center whitespace-nowrap">?????</th>
+                    <th className="px-5 py-3.5 text-center whitespace-nowrap">บทบาท</th>
                     <th className="px-5 py-3.5 text-center whitespace-nowrap">
                       <Link href={sortUrl('isActive')} className="inline-flex items-center justify-center w-full hover:text-foreground transition-colors">
-                        ?????<SortIcon col="isActive" />
+                        สถานะ<SortIcon col="isActive" />
                       </Link>
                     </th>
                   </tr>
@@ -205,7 +205,7 @@ export default async function EmployeesPage({
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              ???? {skip + 1}{Math.min(skip + PAGE_SIZE, total)} ??? {total} ??????
+              แสดง {skip + 1}–{Math.min(skip + PAGE_SIZE, total)} จาก {total} รายการ
             </p>
             <div className="flex items-center gap-1.5">
               <Link
@@ -217,7 +217,7 @@ export default async function EmployeesPage({
                 }`}
                 aria-disabled={currentPage <= 1}
               >
-                 ????????
+                ← ก่อนหน้า
               </Link>
 
               {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
@@ -251,7 +251,7 @@ export default async function EmployeesPage({
                 }`}
                 aria-disabled={currentPage >= totalPages}
               >
-                ????? 
+                ถัดไป →
               </Link>
             </div>
           </div>
