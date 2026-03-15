@@ -21,27 +21,3 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ year, total: 0, holidays: [], clientSideFetch: true });
 }
-
-    holidays = await fetchThailandPublicHolidays(year);
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Unknown error while fetching holidays";
-    return NextResponse.json(
-      { error: message },
-      { status: 502 }
-    );
-  }
-
-  // ── Response ──────────────────────────────────────────────────────────────
-  return NextResponse.json({
-    year,
-    total: holidays.length,    warning:
-      holidays.length === 0
-        ? `ธนาคารแห่งประเทศไทย API ไม่มีข้อมูลวันหยุดสำหรับปี ${year} ` +
-          `กรุณาตรวจสอบ BOT_API_KEY ใน .env.local หรือเพิ่มวันหยุดด้วยตนเอง`
-        : undefined,    holidays: holidays.map((h) => ({
-      date: h.date.toISOString().slice(0, 10), // "YYYY-MM-DD"
-      name: h.name,
-    })),
-  });
-}
