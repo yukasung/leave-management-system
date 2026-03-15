@@ -28,8 +28,6 @@
  * }
  */
 
-import https from "node:https";
-
 export interface PublicHoliday {
   date: Date;
   name: string;     // Thai name preferred, English fallback
@@ -73,47 +71,38 @@ export async function fetchThailandPublicHolidays(
   const url = `${BOT_API_URL}?year=${year}`;
   const token = process.env.BOT_API_TOKEN ?? "";
 
-  // ── Network call (Node https module — more reliable than fetch for TLS on Railway) ─
-  const text = await new Promise<string>((resolve, reject) => {
-    const req = https.request(
-      url,
-      {
-        method: "GET",
-        headers: {
-          accept: "application/json",
-          Authorization: token,
-          "User-Agent": "LeaveManagementSystem/1.0",
-        },
-        // Allow Railway's Node.js to handle BOT API's TLS certificate chain
-        rejectUnauthorized: false,
-        timeout: 30000,
+  // ── Network call via native fetch (Node.js 18+ undici — better DNS handling on Railway) ─
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  let text: string;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        accept: "application/json",
+        Authorization: token,
+        "User-Agent": "LeaveManagementSystem/1.0",
       },
-      (res) => {
-        const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => chunks.push(chunk));
-        res.on("end", () => {
-          const body = Buffer.concat(chunks).toString("utf8");
-          if (res.statusCode === 401) {
-            reject(new Error("BOT API ตอบกลับ 401 Unauthorized — กรุณาตรวจสอบ BOT_API_TOKEN"));
-          } else if (res.statusCode === 204) {
-            resolve("");
-          } else if (!res.statusCode || res.statusCode >= 400) {
-            reject(new Error(`BOT API ตอบกลับสถานะ ${res.statusCode} สำหรับปี ${year}: ${body.slice(0, 200)}`));
-          } else {
-            resolve(body);
-          }
-        });
-      }
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    if (res.status === 401)
+      throw new Error("BOT API ตอบกลับ 401 Unauthorized — กรุณาตรวจสอบ BOT_API_TOKEN");
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`BOT API ตอบกลับสถานะ ${res.status} สำหรับปี ${year}: ${body.slice(0, 200)}`);
+    }
+    text = await res.text();
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === "AbortError")
+      throw new Error("BOT API ไม่ตอบสนองภายใน 30 วินาที");
+    throw new Error(
+      `ไม่สามารถเชื่อมต่อ BOT API (${url}): ${
+        err instanceof Error ? err.message : String(err)
+      }`
     );
-    req.on("timeout", () => {
-      req.destroy();
-      reject(new Error("BOT API ไม่ตอบสนองภายใน 30 วินาที"));
-    });
-    req.on("error", (err) => {
-      reject(new Error(`ไม่สามารถเชื่อมต่อ BOT API (${url}): ${err.message}`));
-    });
-    req.end();
-  });
+  }
 
   if (!text || text.trim() === "") return [];
 

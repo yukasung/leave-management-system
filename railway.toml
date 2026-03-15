@@ -1,5 +1,5 @@
 [deploy]
-# Deploy in Singapore (ap-southeast-1) so the server can reach the Bank of Thailand API.
+# Deploy in Singapore (asia-southeast1) so the server can reach the Bank of Thailand API.
 # Thai government APIs (gateway.api.bot.or.th) are accessible from Southeast Asia
 # but are geo-restricted from US/EU regions.
-region = "ap-southeast-1"
+region = "asia-southeast1"
