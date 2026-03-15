@@ -1,53 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { fetchThailandPublicHolidays } from "@/lib/holiday-import.service";
 
 /**
  * GET /api/admin/holidays/import-preview?year=2026
  *
- * Returns Thailand financial-institution holidays from the Bank of Thailand API for the given year.
- * Does NOT write anything to the database.
+ * NOTE: This route is kept for backward compatibility but the client now
+ * calls the BOT API directly from the browser to avoid server-side network
+ * restrictions (Railway servers outside Thailand cannot reach BOT API).
  *
- * Access: ADMIN and HR only.
+ * The route now simply returns an empty scaffold so old calls don't break.
  */
 export async function GET(req: NextRequest) {
-  // ── Auth ──────────────────────────────────────────────────────────────────
   const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session.user.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const isAdmin = session.user.isAdmin;
-  if (!isAdmin) {
-    return NextResponse.json(
-      { error: "Forbidden — only Admin may access this endpoint" },
-      { status: 403 }
-    );
-  }
-
-  // ── Query param ───────────────────────────────────────────────────────────
   const yearParam = req.nextUrl.searchParams.get("year");
+  const year = parseInt(yearParam ?? "", 10);
+  if (isNaN(year)) return NextResponse.json({ error: "Missing year" }, { status: 400 });
 
-  if (!yearParam) {
-    return NextResponse.json(
-      { error: "Missing required query parameter: year" },
-      { status: 400 }
-    );
-  }
+  return NextResponse.json({ year, total: 0, holidays: [], clientSideFetch: true });
+}
 
-  const year = parseInt(yearParam, 10);
-
-  if (isNaN(year) || year < 1900 || year > 2100) {
-    return NextResponse.json(
-      { error: `Invalid year value: "${yearParam}". Must be a number between 1900 and 2100.` },
-      { status: 400 }
-    );
-  }
-
-  // ── Fetch ─────────────────────────────────────────────────────────────────
-  let holidays;
-  try {
     holidays = await fetchThailandPublicHolidays(year);
   } catch (err) {
     const message =
