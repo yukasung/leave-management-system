@@ -1,30 +1,3 @@
-import nodemailer from 'nodemailer'
-
-// ── Transporter (singleton) ───────────────────────────────────────────────────
-
-let _transporter: nodemailer.Transporter | null = null
-
-function getTransporter(): nodemailer.Transporter {
-  if (_transporter) return _transporter
-
-  const host = process.env.SMTP_HOST
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
-
-  if (!host || !user || !pass) {
-    console.warn('[mailer] SMTP not configured — missing SMTP_HOST, SMTP_USER, or SMTP_PASS env vars. Emails will not be sent.')
-  }
-
-  _transporter = nodemailer.createTransport({
-    host,
-    port:   Number(process.env.SMTP_PORT ?? 587),
-    secure: process.env.SMTP_SECURE === 'true',   // true = port 465, false = STARTTLS
-    auth: { user, pass },
-  })
-
-  return _transporter
-}
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type MailOptions = {
@@ -36,18 +9,88 @@ export type MailOptions = {
 
 // ── sendMail ──────────────────────────────────────────────────────────────────
 
+/**
+ * Send email via Brevo REST API (preferred — works on Railway where port 587 is blocked)
+ * or fall back to Nodemailer SMTP if BREVO_API_KEY is not set.
+ */
 export async function sendMail(options: MailOptions): Promise<void> {
+  const brevoApiKey = process.env.BREVO_API_KEY
+
+  if (brevoApiKey) {
+    await sendViaBrevoApi(options, brevoApiKey)
+  } else {
+    await sendViaSMTP(options)
+  }
+}
+
+// ── Brevo REST API sender ─────────────────────────────────────────────────────
+
+async function sendViaBrevoApi(options: MailOptions, apiKey: string): Promise<void> {
+  const fromRaw  = process.env.SMTP_FROM ?? 'noreply@example.com'
+  // Parse "Display Name" <email@domain.com>  OR  plain email
+  const match    = fromRaw.match(/^"?([^"<]+)"?\s*<([^>]+)>$/)
+  const sender   = match
+    ? { name: match[1].trim(), email: match[2].trim() }
+    : { email: fromRaw.trim() }
+
+  const recipients = (Array.isArray(options.to) ? options.to : [options.to])
+    .map(e => ({ email: e.trim() }))
+
+  const body = {
+    sender,
+    to:          recipients,
+    subject:     options.subject,
+    htmlContent: options.html,
+    ...(options.text ? { textContent: options.text } : {}),
+  }
+
+  console.log('[mailer] Sending email via Brevo API | To:', options.to, '| Subject:', options.subject)
+
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method:  'POST',
+    headers: {
+      'accept':       'application/json',
+      'api-key':      apiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`[mailer] Brevo API error ${res.status}: ${err}`)
+  }
+
+  console.log('[mailer] Email sent successfully via Brevo API | To:', options.to)
+}
+
+// ── SMTP fallback (nodemailer) ────────────────────────────────────────────────
+
+import nodemailer from 'nodemailer'
+
+let _transporter: nodemailer.Transporter | null = null
+
+function getTransporter(): nodemailer.Transporter {
+  if (_transporter) return _transporter
+  _transporter = nodemailer.createTransport({
+    host:   process.env.SMTP_HOST,
+    port:   Number(process.env.SMTP_PORT ?? 587),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth:   { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  })
+  return _transporter
+}
+
+async function sendViaSMTP(options: MailOptions): Promise<void> {
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('[mailer] Skipping email — SMTP not configured. To:', options.to, '| Subject:', options.subject)
+    console.warn('[mailer] Skipping email — neither BREVO_API_KEY nor SMTP is configured. To:', options.to)
     return
   }
 
-  const transporter = getTransporter()
   const from = process.env.SMTP_FROM ?? process.env.SMTP_USER
+  console.log('[mailer] Sending email via SMTP | To:', options.to, '| Subject:', options.subject, '| From:', from)
 
-  console.log('[mailer] Sending email | To:', options.to, '| Subject:', options.subject, '| From:', from)
-
-  await transporter.sendMail({
+  await getTransporter().sendMail({
     from,
     to:      Array.isArray(options.to) ? options.to.join(', ') : options.to,
     subject: options.subject,
@@ -55,7 +98,7 @@ export async function sendMail(options: MailOptions): Promise<void> {
     text:    options.text,
   })
 
-  console.log('[mailer] Email sent successfully | To:', options.to)
+  console.log('[mailer] Email sent successfully via SMTP | To:', options.to)
 }
 
 // ── Email Templates ───────────────────────────────────────────────────────────
