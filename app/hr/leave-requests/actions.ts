@@ -237,7 +237,7 @@ export async function hrRejectCancellation(id: string): Promise<ActionResult> {
       where: { leaveId: id, fieldChanged: 'status', newValue: 'CANCEL_REQUESTED' },
       orderBy: { timestamp: 'desc' },
     })
-    const revertTo = (prevAudit?.oldValue ?? 'APPROVED') as string
+    const revertTo = (prevAudit?.oldValue ?? 'APPROVED') as import('@prisma/client').LeaveStatus
 
     await prisma.leaveRequest.update({ where: { id }, data: { status: revertTo } })
 
