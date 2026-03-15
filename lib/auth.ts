@@ -61,6 +61,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = (user as { role: string }).role
         return token
       }
+
+      // ⚠️ Next.js middleware runs on the Edge runtime which does NOT support
+      // the `pg` (node-postgres) driver used by PrismaPg. Skip all DB queries
+      // here — the token already contains the necessary fields from sign-in.
+      if (process.env.NEXT_RUNTIME === 'edge') {
+        return token
+      }
+
       // Ensure token.id is always set (fall back to token.sub which NextAuth sets automatically)
       if (!token.id && token.sub) {
         token.id = token.sub
