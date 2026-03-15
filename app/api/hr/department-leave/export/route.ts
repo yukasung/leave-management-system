@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   const [allDepts, requests] = await Promise.all([
     prisma.department.findMany({
       orderBy: { name: 'asc' },
-      include: { _count: { select: { users: true } } },
+      include: { _count: { select: { employees: true } } },
     }),
     prisma.leaveRequest.findMany({
       where,
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
   type Row = { id: string; name: string; empCount: number; requests: number; days: number }
   const map = new Map<string, Row>()
   for (const d of allDepts) {
-    map.set(d.id, { id: d.id, name: d.name, empCount: d._count.users, requests: 0, days: 0 })
+    map.set(d.id, { id: d.id, name: d.name, empCount: d._count.employees, requests: 0, days: 0 })
   }
   map.set('__none__', { id: '__none__', name: 'ไม่ระบุแผนก', empCount: 0, requests: 0, days: 0 })
 
