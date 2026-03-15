@@ -1,4 +1,5 @@
 ﻿import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -28,7 +29,7 @@ export default async function EmployeesPage({
   const order = orderParam === 'asc' ? 'asc' : 'desc'
   const nextOrder = (col: SortKey) => (sort === col && order === 'asc' ? 'desc' : 'asc')
 
-  const ORDER_BY: Record<SortKey, object | object[]> = {
+  const ORDER_BY: Record<SortKey, Prisma.EmployeeOrderByWithRelationInput | Prisma.EmployeeOrderByWithRelationInput[]> = {
     employeeCode: { employeeCode: order },
     firstName:    [{ firstName: order }, { lastName: order }],
     department:   [{ department: { name: order } }, { firstName: 'asc' as const }],
@@ -54,7 +55,7 @@ export default async function EmployeesPage({
       where,
       skip,
       take: PAGE_SIZE,
-      orderBy: ORDER_BY[sort] as Parameters<typeof prisma.employee.findMany>[0]['orderBy'],
+      orderBy: ORDER_BY[sort],
       select: {
         id: true,
         employeeCode: true,
