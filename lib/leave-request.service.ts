@@ -10,7 +10,7 @@ import { getUsedLeaveDaysThisYear } from './leave-policy'
 import { Prisma, LeaveStatus, ApprovalStatus } from '@prisma/client'
 import { isPrivileged } from './role-guard'
 import { logLeaveFieldChanges, leaveFieldChange } from './leave-audit-log.service'
-import { sendMail, buildLeaveRequestEmail, buildLeaveCancelRequestEmail } from './mailer'
+import { sendMail, buildLeaveRequestEmail, buildLeaveCancelRequestEmail, buildLeaveCancelApprovedEmail } from './mailer'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -641,7 +641,7 @@ export async function cancelLeave(
         },
       },
       user: {
-        select: { name: true },
+        select: { name: true, email: true },
       },
     },
   })
@@ -699,6 +699,26 @@ export async function cancelLeave(
       leaveFieldChange.status('CANCEL_REQUESTED', 'CANCELLED'),
     ])
 
+    // Notify employee that their cancellation request was approved
+    void (async () => {
+      try {
+        const employeeEmail = leave.user.email
+        if (employeeEmail) {
+          const { subject, html, text } = buildLeaveCancelApprovedEmail({
+            employeeName:       leave.user.name ?? '',
+            leaveTypeName:      leave.leaveType.name,
+            totalDays:          leave.totalDays,
+            leaveStartDateTime: leave.leaveStartDateTime,
+            leaveEndDateTime:   leave.leaveEndDateTime,
+            leaveRequestId:     leaveId,
+          })
+          await sendMail({ to: employeeEmail, subject, html, text })
+        }
+      } catch (err) {
+        console.error('[cancelLeave] cancel-confirmed email failed:', err)
+      }
+    })()
+
     return { requestedCancellation: false }
   }
 
@@ -732,14 +752,25 @@ export async function cancelLeave(
       leaveFieldChange.status(status, 'CANCEL_REQUESTED'),
     ])
 
-    // Fire-and-forget email to all admins
+    // Fire-and-forget email to admins/HR + assigned approver
     void (async () => {
       try {
-        const adminRows = await prisma.user.findMany({
-          where:  { isActive: true, role: { name: { in: ['ADMIN', 'HR'] } } },
-          select: { email: true },
-        })
-        const recipients = adminRows.map((u) => u.email).filter((e): e is string => !!e)
+        const [approverRows, adminRows] = await Promise.all([
+          prisma.approval.findMany({
+            where:  { leaveId },
+            select: { approver: { select: { email: true } } },
+          }),
+          prisma.user.findMany({
+            where:  { isActive: true, role: { name: { in: ['ADMIN', 'HR'] } } },
+            select: { email: true },
+          }),
+        ])
+        const recipients = [
+          ...new Set([
+            ...approverRows.map((a) => a.approver.email),
+            ...adminRows.map((u) => u.email),
+          ]),
+        ].filter((e): e is string => !!e)
         if (recipients.length > 0) {
           const { subject, html, text } = buildLeaveCancelRequestEmail({
             employeeName:       leave.user.name ?? '',
@@ -793,6 +824,26 @@ export async function cancelLeave(
   await logLeaveFieldChanges(prisma, leaveId, callerId, [
     leaveFieldChange.status(status, 'CANCELLED'),
   ])
+
+  // Notify employee that HR/Admin cancelled their leave
+  void (async () => {
+    try {
+      const employeeEmail = leave.user.email
+      if (employeeEmail) {
+        const { subject, html, text } = buildLeaveCancelApprovedEmail({
+          employeeName:       leave.user.name ?? '',
+          leaveTypeName:      leave.leaveType.name,
+          totalDays:          leave.totalDays,
+          leaveStartDateTime: leave.leaveStartDateTime,
+          leaveEndDateTime:   leave.leaveEndDateTime,
+          leaveRequestId:     leaveId,
+        })
+        await sendMail({ to: employeeEmail, subject, html, text })
+      }
+    } catch (err) {
+      console.error('[cancelLeave] cancel-notify-employee email failed:', err)
+    }
+  })()
 
   return { requestedCancellation: false }
 }
