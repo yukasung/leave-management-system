@@ -2,6 +2,10 @@
 -- Bridges the gap between migrations (which only created a "Role" enum type)
 -- and the current schema (which requires a "Role" table with RoleName enum).
 -- All steps are idempotent — safe to run on both fresh and existing databases.
+--
+-- Strategy: RENAME the old "Role" enum to "_OldRoleEnum" BEFORE creating the
+-- "Role" table, to avoid the PostgreSQL error "type role already exists" that
+-- occurs when a table is created with the same name as an existing enum type.
 
 -- ============================================================
 -- 1. Create RoleName enum type (if not exists)
@@ -13,12 +17,9 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- ============================================================
--- 2. Drop the old "Role" ENUM type if it exists and
---    the "Role" TABLE does not yet exist.
---    PostgreSQL cannot have both an enum type named "Role" and
---    a table named "Role" (table creation implicitly creates a row type).
---    CASCADE automatically removes any columns that depend on the enum
---    (e.g. User.role, Employee.role).
+-- 2. Rename "Role" enum → "_OldRoleEnum" so we can then create
+--    a TABLE named "Role" without a type-name conflict.
+--    Only renames if the enum exists and Role table does not.
 -- ============================================================
 DO $$
 BEGIN
@@ -30,7 +31,7 @@ BEGIN
     SELECT 1 FROM information_schema.tables
     WHERE table_schema = 'public' AND table_name = 'Role'
   ) THEN
-    DROP TYPE "Role" CASCADE;
+    ALTER TYPE "Role" RENAME TO "_OldRoleEnum";
   END IF;
 END $$;
 
@@ -82,8 +83,7 @@ END $$;
 CREATE INDEX IF NOT EXISTS "User_roleId_idx" ON "User"("roleId");
 
 -- ============================================================
--- 6. Drop old User.role enum column if it was not already
---    removed by the CASCADE in step 2
+-- 6. Drop old User.role column (type _OldRoleEnum or original Role enum)
 -- ============================================================
 DO $$
 BEGIN
@@ -109,7 +109,21 @@ BEGIN
 END $$;
 
 -- ============================================================
--- 8. Drop UserRole enum type (if exists — no longer used)
+-- 8. Drop renamed old Role enum (now _OldRoleEnum) — no more deps
+-- ============================================================
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_type t
+    JOIN pg_namespace n ON t.typnamespace = n.oid
+    WHERE t.typname = '_OldRoleEnum' AND t.typtype = 'e' AND n.nspname = 'public'
+  ) THEN
+    DROP TYPE "_OldRoleEnum";
+  END IF;
+END $$;
+
+-- ============================================================
+-- 9. Drop UserRole enum type (if exists — no longer used)
 -- ============================================================
 DO $$
 BEGIN
