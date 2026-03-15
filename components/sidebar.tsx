@@ -191,8 +191,8 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
           )
         })}
 
-        {/* Manager: คำขอลาที่รออนุมัติ — renders before โปรไฟล์ */}
-        {isManager && (() => {
+        {/* Manager: คำขอลาที่รออนุมัติ — renders before โปรไฟล์ (skip if admin already has it) */}
+        {isManager && !isAdmin && (() => {
           const itemPath = '/manager/leave-requests'
           const active = pathname === itemPath || pathname.startsWith(itemPath + '/')
           return (
