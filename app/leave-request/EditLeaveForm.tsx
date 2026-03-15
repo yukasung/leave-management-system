@@ -305,7 +305,7 @@ export default function EditLeaveForm({
     const selectedCategoryLabel = selectedType?.leaveCategory?.name ?? '—'
 
     const formatDT = (dt: string) => {
-      if (!dt) return '—'
+      if (!dt) return { date: '—', time: '' }
       const [datePart, timePart] = dt.split('T')
       if (!datePart) return { date: '—', time: '' }
       const [y, m, d] = datePart.split('-').map(Number)
