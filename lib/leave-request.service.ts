@@ -757,7 +757,7 @@ export async function cancelLeave(
       try {
         const [approverRows, adminRows] = await Promise.all([
           prisma.approval.findMany({
-            where:  { leaveId },
+            where:  { leaveRequestId: leaveId },
             select: { approver: { select: { email: true } } },
           }),
           prisma.user.findMany({
