@@ -5,7 +5,7 @@ import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import type { ActionResult } from '@/lib/types'
 import { logLeaveFieldChanges, leaveFieldChange } from '@/lib/leave-audit-log.service'
-import { sendMail, buildLeaveApprovedEmail } from '@/lib/mailer'
+import { sendMail, buildLeaveApprovedEmail, buildLeaveRejectedEmail } from '@/lib/mailer'
 
 export async function approveLeaveRequest(id: string): Promise<ActionResult> {
   try {
@@ -142,6 +142,13 @@ export async function rejectLeaveRequest(id: string): Promise<ActionResult> {
     const request = await prisma.leaveRequest.update({
       where: { id },
       data: { status: 'REJECTED' },
+      select: {
+        totalDays:          true,
+        leaveStartDateTime: true,
+        leaveEndDateTime:   true,
+        user:      { select: { email: true, name: true } },
+        leaveType: { select: { name: true } },
+      },
     })
 
     await prisma.auditLog.create({
@@ -163,6 +170,26 @@ export async function rejectLeaveRequest(id: string): Promise<ActionResult> {
       where: { leaveRequestId: id, approverId: session.user.id, status: 'PENDING' },
       data:  { status: 'REJECTED' },
     })
+
+    // Fire-and-forget email to employee
+    void (async () => {
+      try {
+        const email = request.user?.email
+        if (email) {
+          const { subject, html, text } = buildLeaveRejectedEmail({
+            employeeName:       request.user?.name ?? '',
+            leaveTypeName:      request.leaveType?.name ?? '',
+            totalDays:          request.totalDays,
+            leaveStartDateTime: request.leaveStartDateTime,
+            leaveEndDateTime:   request.leaveEndDateTime,
+            leaveRequestId:     id,
+          })
+          await sendMail({ to: email, subject, html, text })
+        }
+      } catch (err) {
+        console.error('[rejectLeaveRequest] email failed:', err)
+      }
+    })()
 
     revalidatePath('/manager/leave-requests')
     revalidatePath('/hr/leave-requests')

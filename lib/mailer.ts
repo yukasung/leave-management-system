@@ -298,6 +298,92 @@ export function buildLeaveRequestEmail(data: LeaveRequestMailData): { subject: s
   return { subject, html, text }
 }
 
+// ── Leave Rejected Email (to Employee) ───────────────────────────────────────
+
+export type LeaveRejectedMailData = {
+  employeeName:       string
+  leaveTypeName:      string
+  totalDays:          number
+  leaveStartDateTime: Date
+  leaveEndDateTime:   Date
+  leaveRequestId:     string
+}
+
+export function buildLeaveRejectedEmail(data: LeaveRejectedMailData): { subject: string; html: string; text: string } {
+  const { employeeName, leaveTypeName, totalDays, leaveStartDateTime, leaveEndDateTime, leaveRequestId } = data
+  const daysStr  = Number.isInteger(totalDays) ? `${totalDays}` : parseFloat(totalDays.toFixed(2)).toString()
+  const startStr = thaiDate(leaveStartDateTime)
+  const endStr   = thaiDate(leaveEndDateTime)
+  const appUrl   = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? 'http://localhost:3000'
+  const detailUrl = `${appUrl}/en/leave-request/${leaveRequestId}/edit`
+
+  const subject = `[ไม่อนุมัติ] คำขอลา ${leaveTypeName} ${daysStr} วัน`
+
+  const html = `
+<!DOCTYPE html>
+<html lang="th">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 0">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+        <!-- Header -->
+        <tr>
+          <td style="background:#dc2626;padding:24px 32px">
+            <p style="margin:0;font-size:18px;font-weight:700;color:#ffffff">❌ คำขอลาไม่ได้รับการอนุมัติ</p>
+            <p style="margin:4px 0 0;font-size:13px;color:#fecaca">ระบบจัดการวันลา</p>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="padding:28px 32px">
+            <p style="margin:0 0 20px;font-size:15px;color:#374151">
+              เรียนคุณ <strong>${employeeName}</strong> คำขอลาของคุณไม่ได้รับการอนุมัติ หากมีข้อสงสัยกรุณาติดต่อผู้จัดการหรือ HR
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+              <tr style="background:#f9fafb">
+                <td style="padding:10px 16px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;width:140px">ประเภทการลา</td>
+                <td style="padding:10px 16px;font-size:14px;color:#111827">${leaveTypeName}</td>
+              </tr>
+              <tr style="background:#ffffff;border-top:1px solid #e5e7eb">
+                <td style="padding:10px 16px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">วันที่เริ่ม</td>
+                <td style="padding:10px 16px;font-size:14px;color:#111827">${startStr}</td>
+              </tr>
+              <tr style="background:#f9fafb;border-top:1px solid #e5e7eb">
+                <td style="padding:10px 16px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">วันที่สิ้นสุด</td>
+                <td style="padding:10px 16px;font-size:14px;color:#111827">${endStr}</td>
+              </tr>
+              <tr style="background:#ffffff;border-top:1px solid #e5e7eb">
+                <td style="padding:10px 16px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">จำนวนวัน</td>
+                <td style="padding:10px 16px;font-size:14px;font-weight:700;color:#dc2626">${daysStr} วัน</td>
+              </tr>
+            </table>
+            <div style="margin-top:24px;text-align:center">
+              <a href="${detailUrl}" style="display:inline-block;padding:12px 28px;background:#dc2626;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px">
+                ดูรายละเอียดคำขอลา →
+              </a>
+            </div>
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb">
+            <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center">
+              อีเมลนี้ส่งอัตโนมัติจากระบบจัดการวันลา · รหัสคำขอ: ${leaveRequestId.slice(0, 8)}
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+
+  const text = `คำขอลาไม่ได้รับการอนุมัติ\nประเภทการลา: ${leaveTypeName}\nวันที่: ${startStr} – ${endStr}\nจำนวน: ${daysStr} วัน\n\nดูรายละเอียด: ${detailUrl}`
+
+  return { subject, html, text }
+}
+
 // ── Leave Cancel Request Email (to Admin) ────────────────────────────────────
 
 export type LeaveCancelRequestMailData = {
