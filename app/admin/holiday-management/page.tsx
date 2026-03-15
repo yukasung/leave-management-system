@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth'
-import { redirect } from '@/i18n/navigation'
+import { redirect } from 'next/navigation'
 import HolidayImportClient from './HolidayImportClient'
 import AdminLayout from '@/components/admin-layout'
 import { prisma } from '@/lib/prisma'

@@ -1,7 +1,7 @@
-import { prisma } from '@/lib/prisma'
+﻿import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { redirect } from '@/i18n/navigation'
-import { Link } from '@/i18n/navigation'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import NewDepartmentForm from './NewDepartmentForm'
 import AdminLayout from '@/components/admin-layout'
 

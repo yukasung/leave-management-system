@@ -1,7 +1,7 @@
 ﻿import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { redirect } from '@/i18n/navigation'
-import { Link } from '@/i18n/navigation'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import AdminLayout from '@/components/admin-layout'
 
 import DepartmentRow from './DepartmentRow'
@@ -32,19 +32,19 @@ export default async function DepartmentsPage() {
   }
 
   return (
-    <AdminLayout title="จัดการแผนก" user={user}>
+    <AdminLayout title="??????????" user={user}>
       <div className="space-y-4 max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">จัดการแผนก</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">ทั้งหมด {departments.length} แผนก</p>
+            <h2 className="text-lg font-semibold text-foreground">??????????</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">??????? {departments.length} ????</p>
           </div>
           <Link
             href="/admin/departments/new"
             className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
-            <span className="text-lg leading-none">+</span> เพิ่มแผนก
+            <span className="text-lg leading-none">+</span> ?????????
           </Link>
         </div>
 
@@ -52,9 +52,9 @@ export default async function DepartmentsPage() {
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
           {departments.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
-              <p className="text-4xl mb-3">🏢</p>
-              <p className="font-medium">ยังไม่มีแผนก</p>
-              <p className="text-sm mt-1">เริ่มต้นโดยเพิ่มแผนกแรก</p>
+              <p className="text-4xl mb-3">??</p>
+              <p className="font-medium">????????????</p>
+              <p className="text-sm mt-1">???????????????????????</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -62,8 +62,8 @@ export default async function DepartmentsPage() {
                 <thead className="bg-muted/40 border-b border-border">
                   <tr>
                     <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">ชื่อแผนก</th>
-                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">จำนวนพนักงาน</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">????????</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">????????????</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">

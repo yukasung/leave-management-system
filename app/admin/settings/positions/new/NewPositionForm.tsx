@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect } from 'react'
-import { useRouter } from '@/i18n/navigation'
+import { useRouter } from 'next/navigation'
 import { createPosition, type PositionFormState } from './actions'
 
 type Department = { id: string; name: string }

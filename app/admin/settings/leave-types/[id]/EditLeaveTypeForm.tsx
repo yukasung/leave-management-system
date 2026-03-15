@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from '@/i18n/navigation'
+import { useRouter } from 'next/navigation'
 import { updateLeaveType, deleteLeaveType, type LeaveTypeFormState } from './actions'
 
 type LeaveTypeData = {
