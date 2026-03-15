@@ -27,14 +27,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               email: true,
               name: true,
               password: true,
+              isActive: true,
               role: { select: { name: true } },
             },
           })
 
-          if (!user || !user.password) return null
+          if (!user) {
+            console.warn('[auth.authorize] user not found:', credentials.email)
+            return null
+          }
+          if (!user.password) {
+            console.warn('[auth.authorize] user has no password:', credentials.email)
+            return null
+          }
+          if (!user.isActive) {
+            console.warn('[auth.authorize] user is inactive:', credentials.email)
+            return null
+          }
 
           const isValid = await compare(credentials.password as string, user.password)
-          if (!isValid) return null
+          if (!isValid) {
+            console.warn('[auth.authorize] wrong password for:', credentials.email)
+            return null
+          }
 
           const roleName = user.role?.name ?? 'EMPLOYEE'
 
@@ -47,7 +62,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             role: roleName,
           }
         } catch (err) {
-          console.error('[auth.authorize] error:', err)
+          console.error('[auth.authorize] DB error:', err)
           return null
         }
       },
