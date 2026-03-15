@@ -167,6 +167,12 @@ END $$;
 
 DO $$
 BEGIN
+  CREATE TYPE "DayCountType" AS ENUM ('WORKING_DAY', 'CALENDAR_DAY');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'LeaveType' AND column_name = 'leaveLimitType'
@@ -181,7 +187,6 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'LeaveType' AND column_name = 'dayCountType'
   ) THEN
-    -- DayCountType enum was created in earlier migration
     ALTER TABLE "LeaveType" ADD COLUMN "dayCountType" "DayCountType" NOT NULL DEFAULT 'WORKING_DAY';
   END IF;
 END $$;
