@@ -128,7 +128,7 @@ export function buildLeaveApprovedEmail(data: LeaveApprovedMailData): { subject:
   const daysStr  = Number.isInteger(totalDays) ? `${totalDays}` : parseFloat(totalDays.toFixed(2)).toString()
   const startStr = thaiDate(leaveStartDateTime)
   const endStr   = thaiDate(leaveEndDateTime)
-  const appUrl   = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+  const appUrl   = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? 'http://localhost:3000'
   const detailUrl = `${appUrl}/en/leave-request/${leaveRequestId}/edit`
 
   const subject = `[อนุมัติแล้ว] คำขอลา ${leaveTypeName} ${daysStr} วัน`
@@ -219,7 +219,7 @@ export function buildLeaveRequestEmail(data: LeaveRequestMailData): { subject: s
   const daysStr = Number.isInteger(totalDays) ? `${totalDays}` : parseFloat(totalDays.toFixed(2)).toString()
   const startStr = thaiDate(leaveStartDateTime)
   const endStr   = thaiDate(leaveEndDateTime)
-  const appUrl   = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+  const appUrl   = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? 'http://localhost:3000'
   const reviewUrl = `${appUrl}/en/leave-request/${leaveRequestId}/edit`
 
   const subject = `[คำขอลา] ${employeeName} — ${leaveTypeName} ${daysStr} วัน`
@@ -319,7 +319,7 @@ export function buildLeaveCancelRequestEmail(data: LeaveCancelRequestMailData): 
   const daysStr  = Number.isInteger(totalDays) ? `${totalDays}` : parseFloat(totalDays.toFixed(2)).toString()
   const startStr = thaiDate(leaveStartDateTime)
   const endStr   = thaiDate(leaveEndDateTime)
-  const appUrl   = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+  const appUrl   = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? 'http://localhost:3000'
   const reviewUrl = `${appUrl}/en/leave-request/${leaveRequestId}/edit`
 
   const subject = `[ขอยกเลิกการลา] ${employeeName} — ${leaveTypeName} ${daysStr} วัน`
@@ -414,7 +414,7 @@ export function buildLeaveCancelApprovedEmail(data: LeaveCancelApprovedMailData)
   const daysStr  = Number.isInteger(totalDays) ? `${totalDays}` : parseFloat(totalDays.toFixed(2)).toString()
   const startStr = thaiDate(leaveStartDateTime)
   const endStr   = thaiDate(leaveEndDateTime)
-  const appUrl   = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+  const appUrl   = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? 'http://localhost:3000'
   const detailUrl = `${appUrl}/en/leave-request/${leaveRequestId}/edit`
 
   const subject = `[ยกเลิกการลาแล้ว] ${leaveTypeName} ${daysStr} วัน`
