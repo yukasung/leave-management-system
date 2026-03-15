@@ -47,11 +47,11 @@ export default async function DepartmentLeaveReportPage({
   const [allDepts, requests, leaveTypes] = await Promise.all([
     prisma.department.findMany({
       orderBy: { name: 'asc' },
-      include: { _count: { select: { users: true } } },
+      include: { _count: { select: { employees: true } } },
     }),
     prisma.leaveRequest.findMany({
       where,
-      select: { totalDays: true, user: { select: { id: true, departmentId: true } } },
+      select: { totalDays: true, user: { select: { id: true, employee: { select: { departmentId: true } } } } },
     }),
     prisma.leaveType.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
   ])
@@ -61,12 +61,12 @@ export default async function DepartmentLeaveReportPage({
   const map = new Map<string, DeptRow & { _empSet: Set<string> }>()
 
   for (const d of allDepts) {
-    map.set(d.id, { id: d.id, name: d.name, empCount: d._count.users, requestCount: 0, totalDays: 0, uniqueEmployees: 0, _empSet: new Set() })
+    map.set(d.id, { id: d.id, name: d.name, empCount: d._count.employees, requestCount: 0, totalDays: 0, uniqueEmployees: 0, _empSet: new Set() })
   }
   map.set('__none__', { id: '__none__', name: 'ไม่ระบุแผนก', empCount: 0, requestCount: 0, totalDays: 0, uniqueEmployees: 0, _empSet: new Set() })
 
   for (const r of requests) {
-    const key = r.user.departmentId ?? '__none__'
+    const key = r.user.employee?.departmentId ?? '__none__'
     const row = map.get(key)
     if (row) {
       row.requestCount++
@@ -82,7 +82,7 @@ export default async function DepartmentLeaveReportPage({
 
   const totalRequests  = byDepartment.reduce((s, r) => s + r.requestCount, 0)
   const totalDays      = byDepartment.reduce((s, r) => s + r.totalDays, 0)
-  const totalEmployees = allDepts.reduce((s, d) => s + d._count.users, 0)
+  const totalEmployees = allDepts.reduce((s, d) => s + d._count.employees, 0)
 
   return (
     <AdminLayout title="รายงานการลาตามแผนก" user={user}>
