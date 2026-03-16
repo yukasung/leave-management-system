@@ -329,7 +329,7 @@ export default function HolidayImportClient() {
             setYear(Number(e.target.value))
             resetBOT()
           }}
-          className="block w-40 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+          className="block w-40 rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
         >
           {YEAR_OPTIONS.map((y) => (
             <option key={y} value={y}>{toBE(y)}</option>
@@ -437,14 +437,14 @@ export default function HolidayImportClient() {
                   <th className="text-center px-4 py-3 font-semibold text-muted-foreground w-28">วันในสัปดาห์</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {preview.holidays.map((h, i) => {
                   const [yr, mo, da] = h.date.split('-').map(Number)
                   const jsDate = new Date(Date.UTC(yr, mo - 1, da))
                   const weekday = jsDate.toLocaleDateString('th-TH', { weekday: 'long', timeZone: 'UTC' })
                   const isWeekend = jsDate.getUTCDay() === 0 || jsDate.getUTCDay() === 6
                   return (
-                    <tr key={h.date} className="hover:lg-gray-50">
+                    <tr key={h.date} className="hover:bg-muted/40">
                       <td className="text-center px-4 py-3 text-muted-foreground/60">{i + 1}</td>
                       <td className="px-4 py-3 text-foreground font-medium tabular-nums">{formatThaiDateShortFromISO(h.date)}</td>
                       <td className="px-4 py-3 text-foreground">{h.name}</td>
@@ -562,7 +562,7 @@ export default function HolidayImportClient() {
                     <th className="text-left px-3 py-2 font-semibold text-muted-foreground">ชื่อวันหยุด</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-border">
                   {csvPreview.map((h, i) => (
                     <tr key={h.date + i}>
                       <td className="text-center px-3 py-2 text-muted-foreground/60">{i + 1}</td>
@@ -623,24 +623,24 @@ export default function HolidayImportClient() {
       </div>
 
       {/* ───────── SECTION 4: Saved holidays talle ──────────────────────────── */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
             <h2 className="text-base font-semibold text-foreground">
               วันหยุดที่บันทึกแล้ว — ปี {toBE(year)}
             </h2>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {loadingSaved ? 'กำลังโหลด…' : `${saved.length} รายการ`}
             </p>
           </div>
         </div>
 
         {loadingSaved ? (
-          <div className="flex justify-center py-10 text-gray-400">
+          <div className="flex justify-center py-10 text-muted-foreground">
             <Spinner />
           </div>
         ) : saved.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
+          <div className="text-center py-12 text-muted-foreground">
             <p className="text-3xl mb-2">📅</p>
             <p className="text-sm">ยังไม่มีวันหยุดที่บันทึกสำหรับปีนี้</p>
           </div>
@@ -656,9 +656,9 @@ export default function HolidayImportClient() {
                 <th className="text-center px-4 py-3 font-semibold text-muted-foreground w-20">ลบ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {saved.map((h, i) => (
-                <tr key={h.id} className="hover:lg-gray-50 transition-colors">
+                <tr key={h.id} className="hover:bg-muted/40 transition-colors">
                   <td className="text-center px-4 py-3 text-muted-foreground/60">{i + 1}</td>
                   <td className="px-4 py-3 text-foreground font-medium tabular-nums">
                     {formatThaiDateShortFromISO(h.date)}
@@ -667,8 +667,8 @@ export default function HolidayImportClient() {
                   <td className="text-center px-4 py-3">
                     <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
                       h.source === 'BOT'
-                        ? 'lg-indigo-100 text-indigo-700'
-                        : 'lg-emerald-100 text-emerald-700'
+                        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                        : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
                     }`}>
                       {h.source === 'BOT' ? 'BOT' : 'Manual'}
                     </span>
