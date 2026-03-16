@@ -239,13 +239,13 @@ export default function EditEmployeeForm({
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">ผู้อนุมัติการลา</label>
                   <div className="rounded-lg border border-input overflow-hidden overflow-x-auto">
-                    <table className="min-w-full text-sm">
+                    <table className="w-full min-w-120 text-sm">
                       <thead className="bg-muted/50">
                         <tr>
                           <th className="w-10 px-3 py-2"></th>
-                          <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">ชื่อ-นามสกุล</th>
-                          <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">ตำแหน่งงาน</th>
-                          <th className="px-3 py-2 text-center text-xs font-semibold text-muted-foreground">แผนก</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ชื่อ-นามสกุล</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ตำแหน่งงาน</th>
+                          <th className="px-3 py-2 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">แผนก</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -269,9 +269,9 @@ export default function EditEmployeeForm({
                                     className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
                                   />
                                 </td>
-                                <td className="px-3 py-2.5 font-medium text-foreground">{m.firstName} {m.lastName}</td>
+                                <td className="px-3 py-2.5 font-medium text-foreground whitespace-nowrap">{m.firstName} {m.lastName}</td>
                                 <td className="px-3 py-2.5 text-muted-foreground">{m.positionRef?.name || <span className="italic opacity-50">ไม่ระบุ</span>}</td>
-                                <td className="px-3 py-2.5 text-center text-muted-foreground">{m.department?.name ?? <span className="italic opacity-50">ไม่ระบุ</span>}</td>
+                                <td className="px-3 py-2.5 text-center text-muted-foreground whitespace-nowrap">{m.department?.name ?? <span className="italic opacity-50">ไม่ระบุ</span>}</td>
                               </tr>
                             ))
                         )}
