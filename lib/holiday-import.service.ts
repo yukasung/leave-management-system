@@ -69,34 +69,30 @@ export async function fetchThailandPublicHolidays(
   year: number
 ): Promise<PublicHoliday[]> {
   const url = `${BOT_API_URL}?year=${year}`;
-  const clientId     = process.env.BOT_API_TOKEN  ?? "";
-  const clientSecret = process.env.BOT_API_SECRET ?? "";
+  // BOT_API_TOKEN = TOKEN value from portal.api.bot.or.th → My Apps → Access and Credentials info
+  const token = process.env.BOT_API_TOKEN ?? "";
 
   // ── Network call via native fetch (Node.js 18+ undici — better DNS handling on Railway) ─
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-  // IBM API Connect (gateway.api.bot.or.th) requires X-IBM-Client-Id.
-  // Some plans also require X-IBM-Client-Secret — set BOT_API_SECRET if needed.
-  const reqHeaders: Record<string, string> = {
-    accept: "application/json",
-    "X-IBM-Client-Id": clientId,
-    "User-Agent": "LeaveManagementSystem/1.0",
-  };
-  if (clientSecret) reqHeaders["X-IBM-Client-Secret"] = clientSecret;
-
   let text: string;
   try {
     const res = await fetch(url, {
-      headers: reqHeaders,
+      headers: {
+        accept: "application/json",
+        // ธปท. authToken method: pass TOKEN directly as Authorization header value
+        Authorization: token,
+        "User-Agent": "LeaveManagementSystem/1.0",
+      },
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
     if (res.status === 401)
       throw new Error(
         "BOT API ตอบกลับ 401 Unauthorized — " +
-        "กรุณาตรวจสอบ BOT_API_TOKEN (Consumer Key) " +
-        (clientSecret ? "" : "และลองเพิ่ม BOT_API_SECRET (Consumer Secret) ใน Railway Variables ด้วย")
+        "กรุณาตรวจสอบ BOT_API_TOKEN ใน Railway Variables " +
+        "(ต้องเป็น TOKEN จาก portal.api.bot.or.th → My Apps → Access and Credentials info)"
       );
     if (!res.ok) {
       const body = await res.text();
