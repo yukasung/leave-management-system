@@ -99,6 +99,7 @@ export default async function LeaveBalancePage() {
 
                   {/* Quota leave types — show totalDays / usedDays / remaining */}
                   {quotaTypes.length > 0 && (
+                    <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       {specialTypes.length > 0 && (
                         <caption className="px-5 py-1.5 text-left text-xs text-muted-foreground/60 bg-muted/10 border-b border-border caption-top">
@@ -142,10 +143,12 @@ export default async function LeaveBalancePage() {
                         })}
                       </tbody>
                     </table>
+                    </div>
                   )}
 
                   {/* Special leave types — show per-request limit / used days / times per year */}
                   {specialTypes.length > 0 && (
+                    <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       {quotaTypes.length > 0 && (
                         <caption className="px-5 py-1.5 text-left text-xs text-muted-foreground/60 bg-muted/10 border-b border-border border-t caption-top">
@@ -184,6 +187,7 @@ export default async function LeaveBalancePage() {
                         })}
                       </tbody>
                     </table>
+                    </div>
                   )}
                 </div>
               )

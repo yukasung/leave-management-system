@@ -55,7 +55,7 @@ export default function LeaveYearResetClient({
           </div>
         </div>
 
-        <div className="flex items-end gap-4">
+        <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-muted-foreground">ปี (พ.ศ.)</label>
             <select

@@ -427,6 +427,7 @@ export default function HolidayImportClient() {
         {/* Preview talle */}
         {botStage === 'previewed' && preview && preview.holidays.length > 0 && (
           <div className="rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 border-b border-border">
                 <tr>
@@ -453,6 +454,7 @@ export default function HolidayImportClient() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
@@ -551,7 +553,7 @@ export default function HolidayImportClient() {
             <div className="px-4 py-2 bg-muted/40 border-b border-border text-xs text-muted-foreground">
               พบ <strong>{csvPreview.length}</strong> รายการ — กรุณาตรวจสอบก่อนนำเข้า
             </div>
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-64 overflow-x-auto overflow-y-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/20 sticky top-0">
                   <tr>
@@ -643,6 +645,7 @@ export default function HolidayImportClient() {
             <p className="text-sm">ยังไม่มีวันหยุดที่บันทึกสำหรับปีนี้</p>
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 border-b border-border">
               <tr>
@@ -683,6 +686,7 @@ export default function HolidayImportClient() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
