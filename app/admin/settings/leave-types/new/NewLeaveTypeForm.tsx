@@ -10,6 +10,8 @@ export default function NewLeaveTypeForm({ categories }: { categories: { id: str
   const router = useRouter()
   const [state, action, pending] = useActionState(createLeaveType, initial)
   const [limitType, setLimitType] = useState<'PER_YEAR' | 'PER_EVENT' | 'MEDICAL_BASED'>('PER_YEAR')
+  const [selectedCategoryId, setSelectedCategoryId] = useState('')
+  const isSpecialCategory = categories.find(c => c.id === selectedCategoryId)?.name === 'ลาพิเศษ'
 
   useEffect(() => {
     if (state.success) {
@@ -54,6 +56,8 @@ export default function NewLeaveTypeForm({ categories }: { categories: { id: str
           <label className="block text-sm font-medium text-foreground mb-1">หมวดหมู่การลา</label>
           <select
             name="leaveCategoryId"
+            value={selectedCategoryId}
+            onChange={e => setSelectedCategoryId(e.target.value)}
             className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="">— ไม่ระบุ —</option>
@@ -95,9 +99,9 @@ export default function NewLeaveTypeForm({ categories }: { categories: { id: str
           จำนวนวันลากำหนดตามใบรับรองแพทย์ ไม่มีขีดจำกัดคงที่
         </p>
       ) : (
-        <div className="max-w-xs">
-          {limitType === 'PER_YEAR' && (
-            <div>
+        <div className="flex flex-wrap gap-4 max-w-lg">
+          {limitType === 'PER_YEAR' && !isSpecialCategory && (
+            <div className="flex-1 min-w-40">
               <label className="block text-sm font-medium text-foreground mb-1">
                 วันสูงสุดต่อปี
               </label>
@@ -111,8 +115,8 @@ export default function NewLeaveTypeForm({ categories }: { categories: { id: str
               />
             </div>
           )}
-          {limitType === 'PER_EVENT' && (
-            <div>
+          {(limitType === 'PER_EVENT' || isSpecialCategory) && (
+            <div className="flex-1 min-w-40">
               <label className="block text-sm font-medium text-foreground mb-1">
                 วันสูงสุดต่อครั้ง
               </label>

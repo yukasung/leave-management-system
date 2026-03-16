@@ -26,6 +26,8 @@ export default function EditLeaveTypeForm({ leaveType, categories }: { leaveType
   const [state, action, pending] = useActionState(boundUpdate, initial)
 
   const [limitType, setLimitType] = useState<'PER_YEAR' | 'PER_EVENT' | 'MEDICAL_BASED'>(leaveType.leaveLimitType)
+  const [selectedCategoryId, setSelectedCategoryId] = useState(leaveType.leaveCategory?.id ?? '')
+  const isSpecialCategory = categories.find(c => c.id === selectedCategoryId)?.name === 'ลาพิเศษ'
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleteState, setDeleteState] = useState<LeaveTypeFormState | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -92,7 +94,8 @@ export default function EditLeaveTypeForm({ leaveType, categories }: { leaveType
             <label className="block text-sm font-medium text-foreground mb-1">หมวดหมู่การลา</label>
             <select
               name="leaveCategoryId"
-              defaultValue={leaveType.leaveCategory?.id ?? ''}
+              value={selectedCategoryId}
+              onChange={e => setSelectedCategoryId(e.target.value)}
               className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="">— ไม่ระบุ —</option>
@@ -133,9 +136,9 @@ export default function EditLeaveTypeForm({ leaveType, categories }: { leaveType
             จำนวนวันลากำหนดตามใบรับรองแพทย์ ไม่มีขีดจำกัดคงที่
           </p>
         ) : (
-          <div className="max-w-xs">
-            {limitType === 'PER_YEAR' && (
-              <div>
+          <div className="flex flex-wrap gap-4 max-w-lg">
+            {limitType === 'PER_YEAR' && !isSpecialCategory && (
+              <div className="flex-1 min-w-[160px]">
                 <label className="block text-sm font-medium text-foreground mb-1">วันสูงสุดต่อปี</label>
                 <input
                   name="maxDaysPerYear"
@@ -148,8 +151,8 @@ export default function EditLeaveTypeForm({ leaveType, categories }: { leaveType
                 />
               </div>
             )}
-            {limitType === 'PER_EVENT' && (
-              <div>
+            {(limitType === 'PER_EVENT' || isSpecialCategory) && (
+              <div className="flex-1 min-w-[160px]">
                 <label className="block text-sm font-medium text-foreground mb-1">วันสูงสุดต่อครั้ง</label>
                 <input
                   name="maxDaysPerRequest"
