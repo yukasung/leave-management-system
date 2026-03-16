@@ -170,8 +170,17 @@ export default function HolidayImportClient() {
     setCsvImportResult(null)
     try {
       const XLSX = await import('xlsx')
-      const data = await file.arrayBuffer()
-      const workbook = XLSX.read(data)
+      const isCsv = file.name.toLowerCase().endsWith('.csv')
+      let workbook: ReturnType<typeof XLSX.read>
+
+      if (isCsv) {
+        // Read CSV as UTF-8 text to preserve Thai characters
+        const text = await file.text()
+        workbook = XLSX.read(text, { type: 'string' })
+      } else {
+        const data = await file.arrayBuffer()
+        workbook = XLSX.read(data, { codepage: 65001 })
+      }
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
       const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false })
 
