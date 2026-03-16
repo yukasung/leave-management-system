@@ -128,7 +128,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden" onClick={mobileClose}>
+      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden" onClick={(e) => { if ((e.target as HTMLElement).closest('a')) mobileClose() }}>
         {/* Top nav items (admin: dashboard + leave requests; users: all items) */}
         {(isAdmin ? ADMIN_TOP_ITEMS : USER_NAV_ITEMS).map(({ href: itemPath, icon: Icon, label }) => {
           const active = pathname === itemPath || pathname.startsWith(itemPath + '/')
@@ -310,7 +310,8 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
           <div>
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation()
                 if (isCollapsed) {
                   setCollapsed(false)
                   localStorage.setItem('sidebar-collapsed', 'false')
@@ -390,7 +391,8 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
         {isAdmin && <div>
           <button
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation()
               if (isCollapsed) {
                 setCollapsed(false)
                 localStorage.setItem('sidebar-collapsed', 'false')
