@@ -143,14 +143,14 @@ export default async function HRLeaveRequestsPage({
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-1 border-b border-border">
+        <div className="flex gap-1 border-b border-border overflow-x-auto scrollbar-none">
           {tabs.map((tab) => {
             const isActive = activeStatus === tab
             return (
               <Link
                 key={tab}
                 href={tabUrl(tab)}
-                className={`px-4 py-2 text-sm font-medium rounded-t-md border-b-2 -mb-px transition-colors ${
+                className={`px-3 py-2 text-sm font-medium rounded-t-md border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0 ${
                   isActive
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
