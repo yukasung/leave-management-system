@@ -41,16 +41,16 @@ export default function HRLeaveRow({
     >
       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{rowNumber}</td>
       <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{userName}</td>
-      <td className="px-4 py-3 text-center whitespace-nowrap">
+      <td className="px-4 py-3 text-center whitespace-nowrap hidden sm:table-cell">
         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${COLOR_BADGE[leaveCategory?.color ?? ''] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
           {leaveCategory?.name ?? '—'}
         </span>
       </td>
-      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{leaveTypeName}</td>
-      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{startDate}</td>
-      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{endDate}</td>
-      <td className="px-4 py-3 text-center font-semibold text-foreground whitespace-nowrap">{totalDays}</td>
-      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">{createdAt}</td>
+      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap hidden md:table-cell">{leaveTypeName}</td>
+      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap hidden md:table-cell">{startDate}</td>
+      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap hidden lg:table-cell">{endDate}</td>
+      <td className="px-4 py-3 text-center font-semibold text-foreground whitespace-nowrap hidden sm:table-cell">{totalDays}</td>
+      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap hidden lg:table-cell">{createdAt}</td>
       <td className="px-4 py-3 text-center whitespace-nowrap">
         <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
           STATUS_BADGE[status] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400 dark:border-gray-700'

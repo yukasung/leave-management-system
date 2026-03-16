@@ -163,9 +163,9 @@ export default async function HRLeaveRequestsPage({
         </div>
 
         {/* Search */}
-        <form method="get" action="/hr/leave-requests" className="rounded-xl border border-border bg-card p-4 shadow-sm flex items-center gap-2">
+        <form method="get" action="/hr/leave-requests" className="rounded-xl border border-border bg-card p-4 shadow-sm flex flex-wrap items-center gap-2">
           {activeStatus !== 'ALL' && <input type="hidden" name="status" value={activeStatus} />}
-          <div className="relative min-w-56">
+          <div className="relative flex-1 min-w-40">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <input
               type="search"
@@ -198,9 +198,9 @@ export default async function HRLeaveRequestsPage({
                 <thead className="bg-muted/40">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">#</th>
-                    {([
-                      { col: 'name',      label: 'ชื่อพนักงาน', center: false },
-                    ] as const).map(({ col, label, center }) => (
+                    {([{
+                      col: 'name', label: 'ชื่อพนักงาน', center: false,
+                    }] as const).map(({ col, label, center }) => (
                       <th key={col} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap ${center ? 'text-center' : 'text-left'}`}>
                         <Link href={sortUrl(col)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
                           {label}
@@ -212,16 +212,16 @@ export default async function HRLeaveRequestsPage({
                         </Link>
                       </th>
                     ))}
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">หมวดหมู่</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap hidden sm:table-cell">หมวดหมู่</th>
                     {([
-                      { col: 'leaveType', label: 'ประเภทการลา', center: true },
-                      { col: 'startDate', label: 'วันที่เริ่ม',  center: true },
-                      { col: 'endDate',   label: 'วันที่สิ้นสุด', center: true },
-                      { col: 'totalDays', label: 'จำนวน (วัน)',    center: true },
-                      { col: 'createdAt', label: 'วันที่ขอ',      center: true },
-                      { col: 'status',    label: 'สถานะ',        center: true },
-                    ] as const).map(({ col, label, center }) => (
-                      <th key={col} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap ${center ? 'text-center' : 'text-left'}`}>
+                      { col: 'leaveType', label: 'ประเภทการลา', center: true, cls: 'hidden md:table-cell' },
+                      { col: 'startDate', label: 'วันที่เริ่ม',  center: true, cls: 'hidden md:table-cell' },
+                      { col: 'endDate',   label: 'วันที่สิ้นสุด', center: true, cls: 'hidden lg:table-cell' },
+                      { col: 'totalDays', label: 'จำนวน (วัน)',    center: true, cls: 'hidden sm:table-cell' },
+                      { col: 'createdAt', label: 'วันที่ขอ',      center: true, cls: 'hidden lg:table-cell' },
+                      { col: 'status',    label: 'สถานะ',        center: true, cls: '' },
+                    ] as const).map(({ col, label, center, cls }) => (
+                      <th key={col} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap ${center ? 'text-center' : 'text-left'} ${cls}`}>
                         <Link href={sortUrl(col)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
                           {label}
                           {sortKey === col

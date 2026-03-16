@@ -23,6 +23,7 @@ import {
   CalendarCog,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useMobileSidebar } from '@/components/mobile-shell'
 
 const ADMIN_TOP_ITEMS = [
   { href: '/dashboard',         icon: LayoutDashboard, label: 'แดชบอร์ด' },
@@ -70,6 +71,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
   const href = (path: string) => locale ? `/${locale}${path}` : path
 
   const [collapsed, setCollapsed] = useState(true)
+  const { open: mobileOpen, close: mobileClose } = useMobileSidebar()
 
   useEffect(() => {
     const stored = localStorage.getItem('sidebar-collapsed')
@@ -92,9 +94,15 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
   return (
     <aside
       className={cn(
-        'relative flex flex-col border-r border-sidebar-border bg-sidebar shrink-0',
-        'transition-[width] duration-300 ease-in-out overflow-hidden',
-        collapsed ? 'w-15' : 'w-60',
+        'flex flex-col border-r border-sidebar-border bg-sidebar shrink-0',
+        'transition-[width,transform] duration-300 ease-in-out overflow-hidden',
+        // Desktop: always shown, collapsible
+        'relative',
+        collapsed ? 'md:w-15' : 'md:w-60',
+        // Mobile: hidden by default, slide in as overlay when open
+        mobileOpen
+          ? 'fixed inset-y-0 left-0 z-50 w-64 translate-x-0'
+          : 'hidden md:flex md:flex-col',
       )}
     >
       {/* Brand */}
@@ -118,7 +126,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
+      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden" onClick={mobileClose}>
         {/* Top nav items (admin: dashboard + leave requests; users: all items) */}
         {(isAdmin ? ADMIN_TOP_ITEMS : USER_NAV_ITEMS).map(({ href: itemPath, icon: Icon, label }) => {
           const active = pathname === itemPath || pathname.startsWith(itemPath + '/')

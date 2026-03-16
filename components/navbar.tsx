@@ -13,6 +13,8 @@ import { logout } from '@/app/actions/auth'
 import { ThemeToggle } from '@/components/theme-toggle'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import { Menu } from 'lucide-react'
+import { useMobileSidebar } from '@/components/mobile-shell'
 
 export type AdminUser = {
   name: string
@@ -33,15 +35,26 @@ export default function Navbar({
   const locale = (params?.locale as string) || 'th'
   const lp = (path: string) => `/${locale}${path}`
   const router = useRouter()
+  const { toggle: toggleMobileSidebar } = useMobileSidebar()
 
   const initials = user?.name
     ? user.name.trim().split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
     : '?'
 
   return (
-    <header className="flex h-14 shrink-0 items-center border-b border-border bg-card px-5 gap-4">
+    <header className="flex h-14 shrink-0 items-center border-b border-border bg-card px-4 gap-3">
+      {/* Hamburger — mobile only */}
+      <button
+        type="button"
+        onClick={toggleMobileSidebar}
+        className="md:hidden flex items-center justify-center h-8 w-8 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+        aria-label="Toggle menu"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
       {/* Page title */}
-      <h1 className="flex-1 text-sm font-semibold text-foreground">{title}</h1>
+      <h1 className="flex-1 text-sm font-semibold text-foreground truncate">{title}</h1>
 
       {/* Theme toggle */}
       <ThemeToggle />
