@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { writeFile } from 'fs/promises'
-import path from 'path'
-import { randomUUID } from 'crypto'
+import { v2 as cloudinary } from 'cloudinary'
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'documents')
-const MAX_SIZE   = 10 * 1024 * 1024 // 10 MB
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
+const MAX_SIZE    = 10 * 1024 * 1024 // 10 MB
 const VALID_TYPES = [
   'application/pdf',
   'image/jpeg',
@@ -14,13 +17,13 @@ const VALID_TYPES = [
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ]
-const EXT_MAP: Record<string, string> = {
-  'application/pdf':      'pdf',
-  'image/jpeg':           'jpg',
-  'image/png':            'png',
-  'image/webp':           'webp',
-  'application/msword':   'doc',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+const RESOURCE_TYPE: Record<string, 'image' | 'raw'> = {
+  'application/pdf':      'raw',
+  'image/jpeg':           'image',
+  'image/png':            'image',
+  'image/webp':           'image',
+  'application/msword':   'raw',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'raw',
 }
 
 export async function POST(req: NextRequest) {
@@ -42,12 +45,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'ไฟล์ต้องไม่เกิน 10 MB' }, { status: 400 })
   }
 
-  const ext      = EXT_MAP[file.type]
-  const filename = `${randomUUID()}.${ext}`
-  const filePath = path.join(UPLOAD_DIR, filename)
+  const buffer      = Buffer.from(await file.arrayBuffer())
+  const dataUri     = `data:${file.type};base64,${buffer.toString('base64')}`
+  const resType     = RESOURCE_TYPE[file.type] ?? 'raw'
 
-  const buffer = Buffer.from(await file.arrayBuffer())
-  await writeFile(filePath, buffer)
+  const result = await cloudinary.uploader.upload(dataUri, {
+    folder:        'leave-management/documents',
+    resource_type: resType,
+    use_filename:  true,
+    unique_filename: true,
+  })
 
-  return NextResponse.json({ url: `/uploads/documents/${filename}`, name: file.name })
+  return NextResponse.json({ url: result.secure_url, name: file.name })
 }

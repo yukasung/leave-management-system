@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { writeFile, unlink } from 'fs/promises'
-import { existsSync } from 'fs'
-import path from 'path'
-import { randomUUID } from 'crypto'
+import { v2 as cloudinary } from 'cloudinary'
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'employees')
-const MAX_SIZE   = 5 * 1024 * 1024 // 5 MB
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
+const MAX_SIZE    = 5 * 1024 * 1024 // 5 MB
 const VALID_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-const EXT_MAP: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png':  'png',
-  'image/webp': 'webp',
-  'image/gif':  'gif',
-}
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -35,21 +31,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'ไฟล์ต้องไม่เกิน 5 MB' }, { status: 400 })
   }
 
-  const ext      = EXT_MAP[file.type]
-  const filename = `${randomUUID()}.${ext}`
-  const filePath = path.join(UPLOAD_DIR, filename)
+  const buffer     = Buffer.from(await file.arrayBuffer())
+  const dataUri    = `data:${file.type};base64,${buffer.toString('base64')}`
 
-  const buffer = Buffer.from(await file.arrayBuffer())
-  await writeFile(filePath, buffer)
+  const result = await cloudinary.uploader.upload(dataUri, {
+    folder: 'leave-management/employees',
+    resource_type: 'image',
+  })
 
-  // Delete old file if it exists
-  if (oldUrl) {
-    const oldFilename = path.basename(oldUrl)
-    const oldPath     = path.join(UPLOAD_DIR, oldFilename)
-    if (existsSync(oldPath)) {
-      await unlink(oldPath).catch(() => {})
-    }
+  // Delete old Cloudinary image if it exists
+  if (oldUrl && oldUrl.includes('cloudinary.com')) {
+    const publicId = oldUrl.split('/').slice(-2).join('/').replace(/\.[^.]+$/, '')
+    await cloudinary.uploader.destroy(publicId).catch(() => {})
   }
 
-  return NextResponse.json({ url: `/uploads/employees/${filename}` })
+  return NextResponse.json({ url: result.secure_url })
 }
