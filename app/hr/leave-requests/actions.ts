@@ -303,8 +303,10 @@ export async function hrAdminCancelApproved(id: string): Promise<ActionResult> {
         userId: true,
         leaveTypeId: true,
         leaveStartDateTime: true,
+        leaveEndDateTime:   true,
         totalDays: true,
         leaveType: { select: { name: true } },
+        user:      { select: { email: true, name: true } },
       },
     })
     if (!leave) return { success: false, message: 'ไม่พบคำขอลา' }
@@ -332,6 +334,26 @@ export async function hrAdminCancelApproved(id: string): Promise<ActionResult> {
     await logLeaveFieldChanges(prisma, id, session.user.id, [
       leaveFieldChange.status('APPROVED', 'CANCELLED'),
     ])
+
+    // Fire-and-forget email to employee
+    void (async () => {
+      try {
+        const email = leave.user?.email
+        if (email) {
+          const { subject, html, text } = buildLeaveCancelApprovedEmail({
+            employeeName:       leave.user?.name ?? '',
+            leaveTypeName:      leave.leaveType.name,
+            totalDays:          leave.totalDays,
+            leaveStartDateTime: leave.leaveStartDateTime,
+            leaveEndDateTime:   leave.leaveEndDateTime,
+            leaveRequestId:     id,
+          })
+          await sendMail({ to: email, subject, html, text })
+        }
+      } catch (err) {
+        console.error('[hrAdminCancelApproved] email failed:', err)
+      }
+    })()
 
     revalidatePath('/hr/leave-requests')
     revalidatePath('/leave-balance')
