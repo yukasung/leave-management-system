@@ -72,6 +72,8 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
 
   const [collapsed, setCollapsed] = useState(true)
   const { open: mobileOpen, close: mobileClose } = useMobileSidebar()
+  // On mobile overlay, always show expanded (ignore localStorage collapsed state)
+  const isCollapsed = mobileOpen ? false : collapsed
 
   useEffect(() => {
     const stored = localStorage.getItem('sidebar-collapsed')
@@ -98,7 +100,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
         'transition-[width,transform] duration-300 ease-in-out overflow-hidden',
         // Desktop: always shown, collapsible
         'relative',
-        collapsed ? 'md:w-15' : 'md:w-60',
+        isCollapsed ? 'md:w-15' : 'md:w-60',
         // Mobile: hidden by default, slide in as overlay when open
         mobileOpen
           ? 'fixed inset-y-0 left-0 z-50 w-64 translate-x-0'
@@ -109,13 +111,13 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
       <div
         className={cn(
           'flex h-14 items-center border-b border-sidebar-border px-3 shrink-0',
-          collapsed ? 'justify-center' : 'gap-3',
+          isCollapsed ? 'justify-center' : 'gap-3',
         )}
       >
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-primary to-primary/70 shadow-sm ring-1 ring-primary/20">
           <CalendarCheck className="h-4 w-4 text-primary-foreground" />
         </div>
-        {!collapsed && (
+        {!isCollapsed && (
           <div className="flex flex-col min-w-0">
             <span className="text-[0.8rem] font-bold tracking-tight text-sidebar-foreground truncate">
               จัดการวันลา
@@ -134,17 +136,17 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
             <Link
               key={itemPath}
               href={href(itemPath)}
-              title={collapsed ? label : undefined}
+              title={isCollapsed ? label : undefined}
               className={cn(
                 'group relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
                 'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
                 active
                   ? 'bg-primary/10 text-primary'
                   : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                collapsed ? 'justify-center px-2' : 'px-2.5',
+                isCollapsed ? 'justify-center px-2' : 'px-2.5',
               )}
             >
-              {active && !collapsed && (
+              {active && !isCollapsed && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-5 rounded-r-full bg-primary" />
               )}
               <Icon
@@ -155,8 +157,8 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
                     : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground',
                 )}
               />
-              {!collapsed && <span className="truncate">{label}</span>}
-              {!collapsed && active && (
+              {!isCollapsed && <span className="truncate">{label}</span>}
+              {!isCollapsed && active && (
                 <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary/70" />
               )}
             </Link>
@@ -170,17 +172,17 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
             <Link
               key={itemPath}
               href={href(itemPath)}
-              title={collapsed ? label : undefined}
+              title={isCollapsed ? label : undefined}
               className={cn(
                 'group relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
                 'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
                 active
                   ? 'bg-primary/10 text-primary'
                   : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                collapsed ? 'justify-center px-2' : 'px-2.5',
+                isCollapsed ? 'justify-center px-2' : 'px-2.5',
               )}
             >
-              {active && !collapsed && (
+              {active && !isCollapsed && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-5 rounded-r-full bg-primary" />
               )}
               <Icon
@@ -191,8 +193,8 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
                     : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground',
                 )}
               />
-              {!collapsed && <span className="truncate">{label}</span>}
-              {!collapsed && active && (
+              {!isCollapsed && <span className="truncate">{label}</span>}
+              {!isCollapsed && active && (
                 <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary/70" />
               )}
             </Link>
@@ -206,17 +208,17 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
           return (
             <Link
               href={href(itemPath)}
-              title={collapsed ? 'คำขอลา' : undefined}
+              title={isCollapsed ? 'คำขอลา' : undefined}
               className={cn(
                 'group relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
                 'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
                 active
                   ? 'bg-primary/10 text-primary'
                   : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                collapsed ? 'justify-center px-2' : 'px-2.5',
+                isCollapsed ? 'justify-center px-2' : 'px-2.5',
               )}
             >
-              {active && !collapsed && (
+              {active && !isCollapsed && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-5 rounded-r-full bg-primary" />
               )}
               <CalendarDays
@@ -225,8 +227,8 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
                   active ? 'text-primary' : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground',
                 )}
               />
-              {!collapsed && <span className="truncate">คำขอลา</span>}
-              {!collapsed && active && (
+              {!isCollapsed && <span className="truncate">คำขอลา</span>}
+              {!isCollapsed && active && (
                 <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary/70" />
               )}
             </Link>
@@ -240,17 +242,17 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
           return (
             <Link
               href={href(itemPath)}
-              title={collapsed ? 'โปรไฟล์' : undefined}
+              title={isCollapsed ? 'โปรไฟล์' : undefined}
               className={cn(
                 'group relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
                 'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
                 active
                   ? 'bg-primary/10 text-primary'
                   : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                collapsed ? 'justify-center px-2' : 'px-2.5',
+                isCollapsed ? 'justify-center px-2' : 'px-2.5',
               )}
             >
-              {active && !collapsed && (
+              {active && !isCollapsed && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-5 rounded-r-full bg-primary" />
               )}
               <UserCircle
@@ -259,8 +261,8 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
                   active ? 'text-primary' : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground',
                 )}
               />
-              {!collapsed && <span className="truncate">โปรไฟล์</span>}
-              {!collapsed && active && (
+              {!isCollapsed && <span className="truncate">โปรไฟล์</span>}
+              {!isCollapsed && active && (
                 <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary/70" />
               )}
             </Link>
@@ -274,17 +276,17 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
             <Link
               key={itemPath}
               href={href(itemPath)}
-              title={collapsed ? label : undefined}
+              title={isCollapsed ? label : undefined}
               className={cn(
                 'group relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
                 'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
                 active
                   ? 'bg-primary/10 text-primary'
                   : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                collapsed ? 'justify-center px-2' : 'px-2.5',
+                isCollapsed ? 'justify-center px-2' : 'px-2.5',
               )}
             >
-              {active && !collapsed && (
+              {active && !isCollapsed && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-5 rounded-r-full bg-primary" />
               )}
               <Icon
@@ -295,8 +297,8 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
                     : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground',
                 )}
               />
-              {!collapsed && <span className="truncate">{label}</span>}
-              {!collapsed && active && (
+              {!isCollapsed && <span className="truncate">{label}</span>}
+              {!isCollapsed && active && (
                 <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary/70" />
               )}
             </Link>
@@ -309,7 +311,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
             <button
               type="button"
               onClick={() => {
-                if (collapsed) {
+                if (isCollapsed) {
                   setCollapsed(false)
                   localStorage.setItem('sidebar-collapsed', 'false')
                   setReportsOpen(true)
@@ -317,17 +319,17 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
                   setReportsOpen((o) => !o)
                 }
               }}
-              title={collapsed ? 'รายงาน' : undefined}
+              title={isCollapsed ? 'รายงาน' : undefined}
               className={cn(
                 'group relative w-full flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
                 'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
                 isReportsActive
                   ? 'bg-primary/10 text-primary'
                   : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                collapsed ? 'justify-center px-2' : 'px-2.5',
+                isCollapsed ? 'justify-center px-2' : 'px-2.5',
               )}
             >
-              {isReportsActive && !collapsed && (
+              {isReportsActive && !isCollapsed && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-5 rounded-r-full bg-primary" />
               )}
               <BarChart2
@@ -338,7 +340,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
                     : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground',
                 )}
               />
-              {!collapsed && (
+              {!isCollapsed && (
                 <>
                   <span className="truncate flex-1 text-left">รายงาน</span>
                   <ChevronDown
@@ -353,7 +355,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
             </button>
 
             {/* Leave Reports sub-group */}
-            {!collapsed && reportsOpen && (
+            {!isCollapsed && reportsOpen && (
               <div className="mt-0.5 ml-4 pl-3 border-l border-sidebar-border space-y-0.5">
                 {LEAVE_REPORT_ITEMS.map(({ href: itemPath, icon: Icon, label }) => {
                   const active = pathname === itemPath || pathname.startsWith(itemPath + '/')
@@ -389,7 +391,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
           <button
             type="button"
             onClick={() => {
-              if (collapsed) {
+              if (isCollapsed) {
                 setCollapsed(false)
                 localStorage.setItem('sidebar-collapsed', 'false')
                 setSettingsOpen(true)
@@ -397,17 +399,17 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
                 setSettingsOpen((o) => !o)
               }
             }}
-            title={collapsed ? 'ตั้งค่า' : undefined}
+            title={isCollapsed ? 'ตั้งค่า' : undefined}
             className={cn(
               'group relative w-full flex items-center gap-3 rounded-lg py-2 text-sm font-medium',
               'transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
               isSettingsActive
                 ? 'bg-primary/10 text-primary'
                 : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-              collapsed ? 'justify-center px-2' : 'px-2.5',
+              isCollapsed ? 'justify-center px-2' : 'px-2.5',
             )}
           >
-            {isSettingsActive && !collapsed && (
+            {isSettingsActive && !isCollapsed && (
               <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-5 rounded-r-full bg-primary" />
             )}
             <Settings
@@ -418,7 +420,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
                   : 'text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground',
               )}
             />
-            {!collapsed && (
+            {!isCollapsed && (
               <>
                 <span className="truncate flex-1 text-left">ตั้งค่า</span>
                 <ChevronDown
@@ -433,7 +435,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
           </button>
 
           {/* Sub-items */}
-          {!collapsed && settingsOpen && (
+          {!isCollapsed && settingsOpen && (
             <div className="mt-0.5 ml-4 pl-3 border-l border-sidebar-border space-y-0.5">
               {SETTINGS_SUB_ITEMS.map(({ href: itemPath, icon: Icon, label }) => {
                 const active = pathname === itemPath || pathname.startsWith(itemPath + '/')
@@ -460,7 +462,7 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
 
       {/* Footer */}
       <div className="px-2 pb-3 pt-3 border-t border-sidebar-border shrink-0">
-        {!collapsed ? (
+        {!isCollapsed ? (
           <div className="px-2.5 py-2 rounded-lg bg-linear-to-r from-primary/5 to-primary/10">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
               ระบบจัดการวันลา
@@ -481,12 +483,12 @@ export default function Sidebar({ isAdmin = false, isManager = false }: { isAdmi
         type="button"
         onClick={toggleCollapsed}
         className={cn(
-          'absolute -right-3 top-13 z-20 flex h-6 w-6 items-center justify-center',
+          'absolute -right-3 top-13 z-20 hidden md:flex h-6 w-6 items-center justify-center',
           'rounded-full border border-sidebar-border bg-sidebar shadow-md',
           'text-sidebar-foreground/40 hover:text-primary hover:bg-primary/10',
           'transition-all duration-150',
         )}
-        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {collapsed
           ? <ChevronRight className="h-3 w-3" />
