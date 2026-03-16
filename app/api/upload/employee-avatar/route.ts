@@ -56,3 +56,4 @@ export async function POST(req: NextRequest) {
     console.error('[employee-avatar upload]', message)
     return NextResponse.json({ error: `Cloudinary error: ${message}` }, { status: 500 })
   }
+}

@@ -67,3 +67,4 @@ export async function POST(req: NextRequest) {
     console.error('[leave-document upload]', message)
     return NextResponse.json({ error: `Cloudinary error: ${message}` }, { status: 500 })
   }
+}
