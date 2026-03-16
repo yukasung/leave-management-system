@@ -80,14 +80,14 @@ export async function fetchThailandPublicHolidays(
     const res = await fetch(url, {
       headers: {
         accept: "application/json",
-        Authorization: token,
+        "X-IBM-Client-Id": token,
         "User-Agent": "LeaveManagementSystem/1.0",
       },
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
     if (res.status === 401)
-      throw new Error("BOT API ตอบกลับ 401 Unauthorized — กรุณาตรวจสอบ BOT_API_TOKEN");
+      throw new Error("BOT API ตอบกลับ 401 Unauthorized — กรุณาตรวจสอบ BOT_API_TOKEN (ต้องเป็น Consumer Key จาก apiportal.bot.or.th)");
     if (!res.ok) {
       const body = await res.text();
       throw new Error(`BOT API ตอบกลับสถานะ ${res.status} สำหรับปี ${year}: ${body.slice(0, 200)}`);
