@@ -34,16 +34,25 @@ export async function POST(req: NextRequest) {
   const buffer     = Buffer.from(await file.arrayBuffer())
   const dataUri    = `data:${file.type};base64,${buffer.toString('base64')}`
 
-  const result = await cloudinary.uploader.upload(dataUri, {
-    folder: 'leave-management/employees',
-    resource_type: 'image',
-  })
-
-  // Delete old Cloudinary image if it exists
-  if (oldUrl && oldUrl.includes('cloudinary.com')) {
-    const publicId = oldUrl.split('/').slice(-2).join('/').replace(/\.[^.]+$/, '')
-    await cloudinary.uploader.destroy(publicId).catch(() => {})
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    return NextResponse.json({ error: 'ยังไม่ได้ตั้งค่า CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET ใน Railway Variables' }, { status: 500 })
   }
 
-  return NextResponse.json({ url: result.secure_url })
-}
+  try {
+    const result = await cloudinary.uploader.upload(dataUri, {
+      folder: 'leave-management/employees',
+      resource_type: 'image',
+    })
+
+    // Delete old Cloudinary image if it exists
+    if (oldUrl && oldUrl.includes('cloudinary.com')) {
+      const publicId = oldUrl.split('/').slice(-2).join('/').replace(/\.[^.]+$/, '')
+      await cloudinary.uploader.destroy(publicId).catch(() => {})
+    }
+
+    return NextResponse.json({ url: result.secure_url })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[employee-avatar upload]', message)
+    return NextResponse.json({ error: `Cloudinary error: ${message}` }, { status: 500 })
+  }

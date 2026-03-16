@@ -49,12 +49,21 @@ export async function POST(req: NextRequest) {
   const dataUri     = `data:${file.type};base64,${buffer.toString('base64')}`
   const resType     = RESOURCE_TYPE[file.type] ?? 'raw'
 
-  const result = await cloudinary.uploader.upload(dataUri, {
-    folder:        'leave-management/documents',
-    resource_type: resType,
-    use_filename:  true,
-    unique_filename: true,
-  })
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    return NextResponse.json({ error: 'ยังไม่ได้ตั้งค่า Cloudinary env vars ใน Railway Variables' }, { status: 500 })
+  }
 
-  return NextResponse.json({ url: result.secure_url, name: file.name })
-}
+  try {
+    const result = await cloudinary.uploader.upload(dataUri, {
+      folder:        'leave-management/documents',
+      resource_type: resType,
+      use_filename:  true,
+      unique_filename: true,
+    })
+
+    return NextResponse.json({ url: result.secure_url, name: file.name })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[leave-document upload]', message)
+    return NextResponse.json({ error: `Cloudinary error: ${message}` }, { status: 500 })
+  }
