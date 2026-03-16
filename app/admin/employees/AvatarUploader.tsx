@@ -23,6 +23,30 @@ export default function AvatarUploader({ name = 'avatarUrl', defaultUrl, initial
     setCurrentUrl(defaultUrl ?? null)
   }, [defaultUrl])
 
+  // Resize + compress image client-side to max 400x400 JPEG (≈ 50-80 KB as base64)
+  function resizeToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      const objectUrl = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl)
+        const MAX = 400
+        let { width, height } = img
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX }
+          else { width = Math.round(width * MAX / height); height = MAX }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', 0.82))
+      }
+      img.onerror = reject
+      img.src = objectUrl
+    })
+  }
+
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -35,11 +59,14 @@ export default function AvatarUploader({ name = 'avatarUrl', defaultUrl, initial
     setPreview(localPreview)
 
     try {
-      const fd = new FormData()
-      fd.append('file', file)
-      if (currentUrl) fd.append('oldUrl', currentUrl)
+      // Resize client-side → send base64 → API stores directly in DB
+      const base64 = await resizeToBase64(file)
 
-      const res  = await fetch('/api/upload/employee-avatar', { method: 'POST', body: fd })
+      const res  = await fetch('/api/upload/employee-avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64 }),
+      })
       const json = await res.json()
 
       if (!res.ok) {

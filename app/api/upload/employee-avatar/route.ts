@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { v2 as cloudinary } from 'cloudinary'
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key:    process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-})
-
-const MAX_SIZE    = 5 * 1024 * 1024 // 5 MB
-const VALID_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const MAX_BASE64_LEN = 400 * 1024 * 1.4 // ~400 KB base64 string
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -17,43 +9,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const formData = await req.formData()
-  const file     = formData.get('file') as File | null
-  const oldUrl   = formData.get('oldUrl') as string | null
-
-  if (!file || file.size === 0) {
-    return NextResponse.json({ error: 'ไม่พบไฟล์' }, { status: 400 })
-  }
-  if (!VALID_TYPES.includes(file.type)) {
-    return NextResponse.json({ error: 'รองรับเฉพาะ JPG, PNG, WEBP, GIF' }, { status: 400 })
-  }
-  if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: 'ไฟล์ต้องไม่เกิน 5 MB' }, { status: 400 })
-  }
-
-  const buffer     = Buffer.from(await file.arrayBuffer())
-  const dataUri    = `data:${file.type};base64,${buffer.toString('base64')}`
-
-  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-    return NextResponse.json({ error: 'ยังไม่ได้ตั้งค่า CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET ใน Railway Variables' }, { status: 500 })
-  }
-
+  let body: { base64?: string }
   try {
-    const result = await cloudinary.uploader.upload(dataUri, {
-      folder: 'leave-management/employees',
-      resource_type: 'image',
-    })
-
-    // Delete old Cloudinary image if it exists
-    if (oldUrl && oldUrl.includes('cloudinary.com')) {
-      const publicId = oldUrl.split('/').slice(-2).join('/').replace(/\.[^.]+$/, '')
-      await cloudinary.uploader.destroy(publicId).catch(() => {})
-    }
-
-    return NextResponse.json({ url: result.secure_url })
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error('[employee-avatar upload]', message)
-    return NextResponse.json({ error: `Cloudinary error: ${message}` }, { status: 500 })
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
+
+  const { base64 } = body
+  if (!base64 || !base64.startsWith('data:image/')) {
+    return NextResponse.json({ error: 'ไม่พบข้อมูลรูปภาพ' }, { status: 400 })
+  }
+  if (base64.length > MAX_BASE64_LEN) {
+    return NextResponse.json({ error: 'รูปภาพใหญ่เกินไป' }, { status: 400 })
+  }
+
+  // Return base64 data URL directly — the form saves it as avatarUrl in DB
+  return NextResponse.json({ url: base64 })
 }
+
