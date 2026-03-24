@@ -13,20 +13,24 @@ export async function updateProfile(
   const session = await auth()
   if (!session?.user?.id) return { success: false, message: 'ไม่ได้เข้าสู่ระบบ' }
 
-  const userId   = session.user.id
-  const name     = (formData.get('name') as string | null)?.trim()
-  const phone    = (formData.get('phone') as string | null)?.trim() || null
+  const userId    = session.user.id
+  const firstName = (formData.get('firstName') as string | null)?.trim()
+  const lastName  = (formData.get('lastName')  as string | null)?.trim()
+  const phone     = (formData.get('phone') as string | null)?.trim() || null
   const avatarUrl = (formData.get('avatarUrl') as string | null)?.trim() || null
 
-  if (!name) return { success: false, message: 'กรุณากรอกชื่อ' }
+  if (!firstName) return { success: false, message: 'กรุณากรอกชื่อ' }
+  if (!lastName)  return { success: false, message: 'กรุณากรอกนามสกุล' }
+
+  const fullName = `${firstName} ${lastName}`
 
   // Update User (name + avatarUrl)
-  await prisma.user.update({ where: { id: userId }, data: { name, avatarUrl } })
+  await prisma.user.update({ where: { id: userId }, data: { name: fullName, avatarUrl } })
 
-  // Update Employee phone (phone lives in Employee only)
+  // Update Employee firstName, lastName, phone
   await prisma.employee.updateMany({
     where: { userId },
-    data: { phone: phone ?? null },
+    data: { firstName, lastName, phone: phone ?? null },
   })
 
   revalidatePath('/profile')

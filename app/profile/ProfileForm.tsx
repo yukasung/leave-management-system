@@ -37,13 +37,14 @@ export default function ProfileForm({ data }: { data: ProfileData }) {
   const [showNew,     setShowNew]     = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
-  // Track name locally for initials
-  const [name, setName] = useState(data.name)
+  // Track firstName/lastName locally for initials
+  const [firstName, setFirstName] = useState(data.firstName ?? '')
+  const [lastName,  setLastName]  = useState(data.lastName  ?? '')
 
   const initials = (() => {
-    if (data.firstName && data.lastName)
-      return `${data.firstName[0]}${data.lastName[0]}`.toUpperCase()
-    return name.slice(0, 2).toUpperCase() || 'ME'
+    if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase()
+    if (firstName) return firstName.slice(0, 2).toUpperCase()
+    return 'ME'
   })()
 
   return (
@@ -70,13 +71,25 @@ export default function ProfileForm({ data }: { data: ProfileData }) {
             </div>
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls} htmlFor="name">ชื่อที่แสดง <span className="text-red-500">*</span></label>
+                <label className={labelCls} htmlFor="firstName">ชื่อ <span className="text-red-500">*</span></label>
                 <input
-                  id="name"
-                  name="name"
+                  id="firstName"
+                  name="firstName"
                   type="text"
-                  defaultValue={data.name}
-                  onChange={(e) => setName(e.target.value)}
+                  defaultValue={data.firstName ?? ''}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="lastName">นามสกุล <span className="text-red-500">*</span></label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  defaultValue={data.lastName ?? ''}
+                  onChange={(e) => setLastName(e.target.value)}
                   required
                   className={inputCls}
                 />
